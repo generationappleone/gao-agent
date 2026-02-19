@@ -540,11 +540,16 @@ not just WHAT it does]
 ### Execution Timeline
 ```
 Day 1: [URGENT tasks] ████████████░░░░░░░░
+        🧪 Deep Test    ░░░░░░░░░░░░█░░░░░░  ← Inter-sprint testing
 Day 2: [HIGH tasks]   ░░░░████████████░░░░
+        🧪 Deep Test    ░░░░░░░░░░░░░░░█░░░  ← Inter-sprint testing
 Day 3: [MEDIUM tasks] ░░░░░░░░████████████
+        🧪 Deep Test    ░░░░░░░░░░░░░░░░░░█  ← Inter-sprint testing
 Day 4: [LOW tasks]    ░░░░░░░░░░░░████████
-        Testing:      ░░░░░░░░░░░░░░░░████
+        🧪 Final Test   ░░░░░░░░░░░░░░░░████  ← Final verification
 ```
+
+**⚠️ RULE: Between each sprint/priority group, a mandatory deep testing phase MUST be executed. See Step 2.7 in `/context-work` for details.**
 
 ---
 
@@ -805,16 +810,23 @@ Generate a quick-reference checklist:
 ## Implementation Checklist
 
 - [ ] 🔴 Task 1: [description]
+- [ ] 🧪 Inter-sprint deep test (build + test + lint + app startup + DB + security)
 - [ ] 🔴 Task 2: [description]
+- [ ] 🧪 Inter-sprint deep test
 - [ ] 🟠 Task 3: [description]
+- [ ] 🧪 Inter-sprint deep test
 - [ ] 🟠 Task 4: [description]
+- [ ] 🧪 Inter-sprint deep test
 - [ ] 🟡 Task 5: [description]
+- [ ] 🧪 Inter-sprint deep test
 - [ ] 🟢 Task 6: [description]
-- [ ] 🧪 Run all tests
+- [ ] 🧪 Final comprehensive deep test
 - [ ] 📝 Update documentation
 - [ ] 🔍 Code review
 - [ ] 🚀 Deploy
 ```
+
+**⚠️ RULE: Each 🧪 checkpoint MUST pass before the next task begins. This ensures no cascading errors.**
 
 ### Step 5.3 — Integration with Other Workflows
 
@@ -837,6 +849,7 @@ A plan is NOT complete until it has ALL of the following:
 - [ ] Dependency analysis with vulnerability check (if new deps)
 - [ ] Task list with 4-level priority (URGENT/HIGH/MEDIUM/LOW)
 - [ ] Priority justification for EVERY task
+- [ ] Inter-sprint testing checkpoints between every task/sprint
 - [ ] Risk assessment with mitigation strategies
 - [ ] Testing strategy with edge cases
 - [ ] Rollback plan

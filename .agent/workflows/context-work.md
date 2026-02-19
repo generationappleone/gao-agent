@@ -272,9 +272,10 @@ Update the plan file — change task checkbox:
 - [x] 🔴 Task 1: Create notifications table migration ✅ (completed: 2026-02-19 11:30)
 ```
 
-### Step 2.6 — Progress Report
+### Step 2.6 — Progress Report (Informational Only — Do NOT Pause)
 
-After completing each priority group, report:
+After completing each priority group, show a progress report and **immediately continue** to the next step (testing).
+**⚠️ RULE: `continuous-execution.md` — NEVER ask "Continue?" or wait for user confirmation. Proceed automatically.**
 
 ```markdown
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -292,11 +293,122 @@ Total: 3/8 tasks completed (37.5%)
   2. Create Notification model
   3. Create NotificationService
 
-⏳ Next: Task #4 — Create NotificationController
-
-Continue? (Y/n)
+🧪 Running inter-sprint deep testing before next task...
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ```
+
+### Step 2.7 — Inter-Sprint Deep Testing (MANDATORY — Before Next Task/Sprint)
+
+**⚠️ RULE: After EVERY task or sprint is completed, MUST run comprehensive testing on the ENTIRE application before proceeding to the next task/sprint. This is NON-NEGOTIABLE.**
+
+This step ensures no cascading errors across sprints. The agent MUST NOT skip this step.
+
+#### A. Build Verification
+// turbo
+```bash
+# Build the entire project — MUST pass with zero errors
+npm run build 2>&1 | tail -50
+# Or for PHP/Laravel:
+php artisan route:clear && php artisan config:clear && php artisan view:clear && php artisan optimize 2>&1
+# Or for Python:
+python -m py_compile main.py 2>&1
+```
+
+#### B. Full Test Suite
+// turbo
+```bash
+# Run ALL tests — not just tests for the current task
+npm test 2>&1 | tail -80
+# Or for PHP/Laravel:
+php artisan test --parallel 2>&1 | tail -80
+# Or for Python:
+pytest -v 2>&1 | tail -80
+```
+
+#### C. Linting & Static Analysis
+// turbo
+```bash
+# Run linter on entire codebase
+npm run lint 2>&1 | tail -30
+# Or for PHP:
+./vendor/bin/phpstan analyse 2>&1 | tail -30
+# Or for Python:
+flake8 . 2>&1 | tail -30
+```
+
+#### D. Application Smoke Test
+// turbo
+```bash
+# Start the application and verify it runs without crash
+# For Node.js:
+npm run dev &
+sleep 5
+curl -s -o /dev/null -w "%{http_code}" http://localhost:3000 || echo "FAIL"
+kill %1 2>/dev/null
+
+# For Laravel:
+php artisan serve &
+sleep 3
+curl -s -o /dev/null -w "%{http_code}" http://localhost:8000 || echo "FAIL"
+kill %1 2>/dev/null
+```
+
+#### E. Database & Migration Check (if applicable)
+// turbo
+```bash
+# Verify migrations are clean
+php artisan migrate:status 2>&1
+# Or:
+npx prisma migrate status 2>&1
+# Or:
+npx prisma validate 2>&1
+```
+
+#### F. Security Quick Scan
+// turbo
+```bash
+# Dependency vulnerability check
+npm audit --production 2>&1 | tail -20
+# Or for PHP:
+composer audit 2>&1 | tail -20
+```
+
+#### G. Inter-Sprint Test Report
+
+After all checks, show the report:
+
+```markdown
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+🧪 INTER-SPRINT DEEP TEST REPORT — After Task #[N]
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+🔨 Build:           ✅ Passing / ❌ FAILED
+🧪 Tests:           ✅ [N] passing, [M] total / ❌ [X] FAILED
+📏 Lint:            ✅ No errors / ❌ [X] errors
+🚀 App Startup:     ✅ Running / ❌ CRASHED
+🗄️ DB Migrations:   ✅ Clean / ❌ PENDING/FAILED
+🔒 Security Audit:  ✅ No vulnerabilities / ⚠️ [X] found
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+🟢 ALL CHECKS PASSED → Proceeding to next task/sprint...
+— OR —
+🔴 CHECKS FAILED → Fixing issues before continuing...
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+```
+
+#### H. Decision Logic
+
+**If ALL checks pass (✅):**
+→ Proceed automatically to the next task/sprint. No pause needed.
+
+**If ANY check fails (❌):**
+→ **MUST fix ALL errors before continuing.** Follow this process:
+1. Identify all failing checks
+2. Fix each error systematically (build → tests → lint → app → db → security)
+3. Re-run ALL checks again (not just the fixed ones)
+4. Repeat until ALL checks pass
+5. Only then proceed to the next task/sprint
+
+**⚠️ CRITICAL: The agent MUST NOT proceed to the next task if ANY check fails. This prevents error accumulation across sprints.**
 
 ---
 
@@ -418,7 +530,7 @@ Security:  ✅ No vulnerabilities
 ## Execution Rules (Non-Negotiable)
 
 1. **NEVER skip a task** without user approval
-2. **NEVER ignore rules** — all 6 rules apply at all times
+2. **NEVER ignore rules** — all rules apply at all times
 3. **NEVER install dependencies** without following dependency-management.md
 4. **NEVER write raw SQL** — use parameterized queries
 5. **NEVER hardcode secrets** — use environment variables
@@ -427,3 +539,8 @@ Security:  ✅ No vulnerabilities
 8. **ALWAYS read the relevant skill** before implementing
 9. **ALWAYS verify after each task** — build, test, lint
 10. **ALWAYS update documentation** after structural changes
+11. **NEVER ask "Continue?"** between tasks/sprints — execute ALL tasks continuously until completion (`continuous-execution.md`)
+12. **ALWAYS proceed automatically** to the next task after completing the current one — no user confirmation needed
+13. **ALWAYS run inter-sprint deep testing** (Step 2.7) after EVERY task/sprint — build, test, lint, app startup, DB check, security audit on the ENTIRE application
+14. **NEVER proceed to the next task/sprint** if ANY inter-sprint test fails — FIX ALL errors first, re-run ALL checks, then continue
+15. **ALWAYS test the ENTIRE application** — not just the code from the current task, but ALL existing functionality to catch regressions

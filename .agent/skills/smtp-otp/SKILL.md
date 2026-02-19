@@ -6,221 +6,142 @@ description: Skill for implementing OTP (One-Time Password) via email using SMTP
 # SMTP OTP Skill
 
 ## Overview
-Email-based OTP provides a second factor of authentication or passwordless login by sending a time-limited code to the user's email address. This skill covers secure OTP generation, delivery via SMTP, verification, and rate limiting.
+Email-based OTP (One-Time Password) verification for user authentication, account recovery, and action confirmation. This skill covers secure OTP generation, delivery, and verification.
 
----
-
-## OTP Generation
-
+## OTP Service (Node.js)
 ```typescript
-import crypto from 'crypto';
+import crypto from "crypto";
+import nodemailer from "nodemailer";
 
-interface OtpConfig {
-  length: number;         // 6 digits default
-  expiresInMinutes: number;  // 5 minutes default
-  maxAttempts: number;    // 3 attempts default
+interface OTPRecord {
+  code: string;
+  email: string;
+  expiresAt: Date;
+  attempts: number;
+  verified: boolean;
 }
 
-const DEFAULT_CONFIG: OtpConfig = {
-  length: 6,
-  expiresInMinutes: 5,
-  maxAttempts: 3,
-};
+class OTPService {
+  private transporter: nodemailer.Transporter;
+  private otpStore: Map<string, OTPRecord> = new Map(); // Use Redis in production
 
-// ✅ Cryptographically secure OTP generation
-function generateOTP(length: number = 6): string {
-  const max = Math.pow(10, length);
-  const min = Math.pow(10, length - 1);
-  const randomInt = crypto.randomInt(min, max);
-  return randomInt.toString();
-}
+  constructor() {
+    this.transporter = nodemailer.createTransport({
+      host: process.env.SMTP_HOST,
+      port: Number(process.env.SMTP_PORT),
+      secure: true,
+      auth: { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS },
+    });
+  }
 
-// ❌ NEVER use Math.random() for OTP — it's predictable!
-```
+  // Generate cryptographically secure OTP
+  generateCode(length: number = 6): string {
+    const max = Math.pow(10, length);
+    const randomBytes = crypto.randomInt(0, max);
+    return randomBytes.toString().padStart(length, "0");
+  }
 
----
+  async sendOTP(email: string, purpose: string = "verification"): Promise<void> {
+    // Rate limiting: max 3 OTPs per email per hour
+    const recentCount = this.getRecentOTPCount(email);
+    if (recentCount >= 3) throw new Error("Too many OTP requests. Try again later.");
 
-## Database Schema
-
-```sql
-CREATE TABLE otp_codes (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id UUID REFERENCES users(id),
-  email VARCHAR(255) NOT NULL,
-  code_hash VARCHAR(255) NOT NULL,      -- Store HASHED, never plain
-  purpose VARCHAR(30) NOT NULL,          -- 'login', 'verify_email', 'reset_password', 'two_factor'
-  attempts INTEGER DEFAULT 0,
-  max_attempts INTEGER DEFAULT 3,
-  expires_at TIMESTAMPTZ NOT NULL,
-  used_at TIMESTAMPTZ,
-  created_at TIMESTAMPTZ DEFAULT NOW(),
-  
-  CONSTRAINT valid_purpose CHECK (purpose IN ('login', 'verify_email', 'reset_password', 'two_factor'))
-);
-
-CREATE INDEX idx_otp_email ON otp_codes(email, purpose) WHERE used_at IS NULL;
-```
-
----
-
-## Service Implementation
-
-```typescript
-import bcrypt from 'bcrypt';
-import { generateOTP } from './utils';
-import { sendEmail } from './emailService';
-
-interface OtpResult {
-  success: boolean;
-  message: string;
-  retryAfter?: number;  // seconds
-}
-
-class OtpService {
-  // Send OTP
-  async sendOtp(email: string, purpose: string): Promise<OtpResult> {
-    // 1. Rate limiting — max 3 OTPs per email per 15 minutes
-    const recentCount = await db.queryOne<{ count: number }>(`
-      SELECT COUNT(*) as count FROM otp_codes
-      WHERE email = $1 AND purpose = $2 AND created_at > NOW() - INTERVAL '15 minutes'
-    `, [email, purpose]);
-
-    if (recentCount && recentCount.count >= 3) {
-      return { success: false, message: 'Too many OTP requests. Try again later.', retryAfter: 900 };
-    }
-
-    // 2. Invalidate previous OTPs
-    await db.execute(`
-      UPDATE otp_codes SET used_at = NOW()
-      WHERE email = $1 AND purpose = $2 AND used_at IS NULL
-    `, [email, purpose]);
-
-    // 3. Generate & store
-    const code = generateOTP(6);
-    const codeHash = await bcrypt.hash(code, 10);
+    const code = this.generateCode();
     const expiresAt = new Date(Date.now() + 5 * 60 * 1000); // 5 minutes
 
-    await db.execute(`
-      INSERT INTO otp_codes (email, code_hash, purpose, max_attempts, expires_at)
-      VALUES ($1, $2, $3, 3, $4)
-    `, [email, codeHash, purpose, expiresAt]);
+    // Store OTP (use Redis with TTL in production)
+    const key = `${email}:${purpose}`;
+    this.otpStore.set(key, { code, email, expiresAt, attempts: 0, verified: false });
 
-    // 4. Send email
-    await sendEmail({
+    // Send email
+    await this.transporter.sendMail({
+      from: `"MyApp" <${process.env.SMTP_FROM}>`,
       to: email,
-      subject: `Your verification code: ${code}`,
-      html: getOtpEmailTemplate(code, purpose),
+      subject: `Your Verification Code: ${code}`,
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          <h2>Verification Code</h2>
+          <p>Your OTP code is:</p>
+          <div style="background: #f4f4f4; padding: 20px; text-align: center; font-size: 32px; letter-spacing: 8px; font-weight: bold; border-radius: 8px;">
+            ${code}
+          </div>
+          <p>This code expires in <strong>5 minutes</strong>.</p>
+          <p style="color: #666; font-size: 12px;">If you didn't request this code, please ignore this email.</p>
+        </div>
+      `,
     });
-
-    return { success: true, message: 'OTP sent successfully' };
   }
 
-  // Verify OTP
-  async verifyOtp(email: string, code: string, purpose: string): Promise<OtpResult> {
-    const otp = await db.queryOne<OtpRecord>(`
-      SELECT * FROM otp_codes
-      WHERE email = $1 AND purpose = $2 AND used_at IS NULL
-      ORDER BY created_at DESC LIMIT 1
-    `, [email, purpose]);
+  async verifyOTP(email: string, code: string, purpose: string = "verification"): Promise<boolean> {
+    const key = `${email}:${purpose}`;
+    const record = this.otpStore.get(key);
 
-    if (!otp) return { success: false, message: 'No OTP found. Request a new one.' };
-    if (new Date() > otp.expires_at) return { success: false, message: 'OTP expired. Request a new one.' };
-    if (otp.attempts >= otp.max_attempts) return { success: false, message: 'Too many attempts. Request a new one.' };
+    if (!record) throw new Error("No OTP found. Request a new one.");
+    if (record.verified) throw new Error("OTP already used.");
+    if (record.attempts >= 5) throw new Error("Too many attempts. Request a new OTP.");
+    if (new Date() > record.expiresAt) throw new Error("OTP expired. Request a new one.");
 
-    // Increment attempts
-    await db.execute('UPDATE otp_codes SET attempts = attempts + 1 WHERE id = $1', [otp.id]);
+    record.attempts++;
 
-    // Verify
-    const isValid = await bcrypt.compare(code, otp.code_hash);
-    if (!isValid) {
-      return { success: false, message: `Invalid code. ${otp.max_attempts - otp.attempts - 1} attempts remaining.` };
+    // Timing-safe comparison to prevent timing attacks
+    const isValid = crypto.timingSafeEqual(
+      Buffer.from(code.padStart(6, "0")),
+      Buffer.from(record.code)
+    );
+
+    if (isValid) {
+      record.verified = true;
+      this.otpStore.delete(key);
+      return true;
     }
 
-    // Mark as used
-    await db.execute('UPDATE otp_codes SET used_at = NOW() WHERE id = $1', [otp.id]);
-
-    return { success: true, message: 'OTP verified successfully' };
+    return false;
   }
 }
 ```
-
----
-
-## Email Templates
-
-```typescript
-function getOtpEmailTemplate(code: string, purpose: string): string {
-  const purposeText: Record<string, string> = {
-    login: 'login ke akun Anda',
-    verify_email: 'verifikasi email Anda',
-    reset_password: 'reset password Anda',
-    two_factor: 'verifikasi dua langkah',
-  };
-
-  return `
-    <div style="font-family: 'Inter', -apple-system, sans-serif; max-width: 460px; margin: 0 auto; padding: 40px 24px;">
-      <h2 style="color: #0f172a; font-size: 20px; margin-bottom: 16px;">Kode Verifikasi</h2>
-      <p style="color: #475569; font-size: 14px; line-height: 1.6;">
-        Gunakan kode berikut untuk ${purposeText[purpose] || purpose}:
-      </p>
-      <div style="background: #f8fafc; border: 2px solid #e2e8f0; border-radius: 12px; padding: 24px; text-align: center; margin: 24px 0;">
-        <span style="font-size: 32px; font-weight: 700; letter-spacing: 8px; color: #6366f1;">${code}</span>
-      </div>
-      <p style="color: #94a3b8; font-size: 13px;">
-        Kode ini berlaku selama <strong>5 menit</strong>. Jangan bagikan kode ini kepada siapapun.
-      </p>
-      <hr style="border: none; border-top: 1px solid #f1f5f9; margin: 24px 0;" />
-      <p style="color: #cbd5e1; font-size: 12px;">
-        Jika Anda tidak meminta kode ini, abaikan email ini.
-      </p>
-    </div>
-  `;
-}
-```
-
----
 
 ## API Endpoints
-
 ```typescript
-// POST /api/auth/otp/send
-router.post('/otp/send', rateLimiter({ max: 5, windowMs: 15 * 60 * 1000 }), async (req, res) => {
-  const { email, purpose } = req.body;
-  const result = await otpService.sendOtp(email, purpose);
-  res.status(result.success ? 200 : 429).json(result);
-});
-
-// POST /api/auth/otp/verify
-router.post('/otp/verify', rateLimiter({ max: 10, windowMs: 15 * 60 * 1000 }), async (req, res) => {
-  const { email, code, purpose } = req.body;
-  const result = await otpService.verifyOtp(email, code, purpose);
-  if (result.success && purpose === 'login') {
-    const user = await userRepo.findByEmail(email);
-    const token = generateJWT({ userId: user!.id });
-    return res.json({ ...result, token });
+// POST /api/otp/send
+app.post("/api/otp/send", async (req, res) => {
+  const { email } = req.body;
+  if (!email) return res.status(400).json({ error: "Email required" });
+  try {
+    await otpService.sendOTP(email);
+    res.json({ message: "OTP sent", expiresIn: 300 });
+  } catch (error) {
+    res.status(429).json({ error: error.message });
   }
-  res.status(result.success ? 200 : 400).json(result);
+});
+
+// POST /api/otp/verify
+app.post("/api/otp/verify", async (req, res) => {
+  const { email, code } = req.body;
+  try {
+    const isValid = await otpService.verifyOTP(email, code);
+    if (isValid) {
+      const token = generateJWT({ email, verified: true });
+      res.json({ message: "Verified", token });
+    } else {
+      res.status(400).json({ error: "Invalid OTP" });
+    }
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
 });
 ```
 
----
+## Best Practices
 
-## Security Rules
-
-```
-1. ✅ Store OTP HASHED (bcrypt) — never plain text
-2. ✅ Expire after 5 minutes maximum
-3. ✅ Max 3 verification attempts per OTP
-4. ✅ Rate limit OTP requests (3 per 15 min per email)
-5. ✅ Rate limit verify endpoint (10 per 15 min per IP)
-6. ✅ Invalidate previous OTPs when new one is generated
-7. ✅ Use crypto.randomInt() — never Math.random()
-8. ✅ Log OTP events (sent, verified, failed) without the code
-9. ❌ Never return the OTP in API response
-10. ❌ Never log the OTP code
-```
-
-## Rules Integration
-- **Developer Security**: OTP security patterns in `rules/developer-security.md`
-- **SMTP Email**: Email sending infrastructure in `skills/smtp-email/`
-- **Keycloak**: Can use Keycloak for OTP if centralized IAM in `skills/keycloak/`
+| Practice | Description |
+|----------|-------------|
+| **`crypto.randomInt`** | Cryptographically secure random numbers |
+| **Short expiry** | 5-10 minutes max for OTP validity |
+| **Rate limiting** | Max 3-5 OTPs per email per hour |
+| **Attempt limiting** | Max 5 verification attempts per OTP |
+| **Timing-safe compare** | Use `crypto.timingSafeEqual` against timing attacks |
+| **One-time use** | Delete OTP after successful verification |
+| **Redis storage** | Use Redis with TTL for OTP storage in production |
+| **No info leakage** | Don't reveal if email exists in error messages |
+| **Secure transport** | Use TLS for SMTP connection |
+| **Audit logging** | Log OTP events for security auditing |
