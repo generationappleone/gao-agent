@@ -144,28 +144,61 @@ The following rules MUST be applied to ALL code. They are non-negotiable.
 - **Breach Notification:** Notify Lembaga PDP within 3×24 hours, notify affected subjects
 - **Sanctions:** Criminal (6 years + Rp 6B) + Administrative (2% annual revenue)
 
+### 10. Verification Gate (`rules/verification-gate.md`)
+- **Iron Law:** No completion claims without fresh verification evidence
+- Run → Read → Verify → THEN claim (skip any step = lying, not verifying)
+- Red flags: "should", "probably", "seems to" — any wording implying success without running verification
+- Applies before commits, PRs, task completion, and ALL success/completion claims
+
+### 11. Adaptive TDD (`rules/adaptive-tdd.md`)
+- Three modes: **strict** (always test-first), **balanced** (default), **relaxed** (prototyping)
+- Red-Green-Refactor cycle: write failing test → minimal code to pass → refactor
+- Balanced mode exceptions: pure config, static content, throwaway prototypes, scaffolding
+- Write code before test? Delete it. Start over.
+
+### 12. Architecture Enforcement (`rules/architecture-enforcement.md`)
+- File placement: verify new files go in correct directory for the framework
+- Complexity limits: ≤ 1000 lines/file, ≤ 50 lines/function, ≤ 3 nesting depth, ≤ 5 params
+- Anti-spaghetti: detect god files/functions, circular imports, business logic in controllers
+- Violations = P1 Critical in code review
+
 ---
 
-## 🛠️ Available Skills (126)
+## 🛠️ Available Skills (183)
 
 Skills are reference implementations and best practices for specific technologies. Read the relevant `SKILL.md` when working with that technology.
+
+> **Rule vs Skill Priority:** Rules (`.agent/rules/`) are **mandatory constraints** — they MUST be followed at all times. Skills (`.agent/skills/`) are **implementation guides** — they provide best practices for HOW to follow the rules. **When a rule and skill conflict, the rule always wins.**
 
 ### Languages & Frameworks
 | Skill | Path | Use When |
 |-------|------|----------|
 | Laravel | `skills/laravel/` | PHP web apps with Laravel framework |
 | React.js | `skills/reactjs/` | React frontend applications |
+| Next.js | `skills/nextjs/` | Full-stack React with App Router, SSR/SSG/ISR |
+| Vue.js | `skills/vuejs/` | Vue 3 Composition API, Pinia, Vue Router |
+| Angular | `skills/angular/` | Enterprise Angular apps, RxJS, DI |
+| Svelte / SvelteKit | `skills/svelte/` | Svelte reactivity, SvelteKit routing, SSR |
 | Python | `skills/python/` | Python backend (FastAPI, Django) |
 | Java | `skills/java/` | Java/Spring Boot applications |
+| TypeScript | `skills/typescript/` | Type system, generics, utility types, strict mode |
 | JavaScript | `skills/javascript/` | Modern JS/ES2024+ patterns |
 | Flutter | `skills/flutter/` | Cross-platform mobile apps |
 | Go (Golang) | `skills/golang/` | Go backend services |
+| Rust | `skills/rust/` | Systems programming, ownership, Actix/Axum |
 | PHP | `skills/php/` | PHP 8.3+ development |
 | .NET | `skills/dotnet/` | .NET/C# applications |
 | ASP.NET | `skills/aspnet/` | ASP.NET Core web apps (MVC, Razor, Blazor) |
 | Flask | `skills/flask/` | Python Flask microframework, blueprints, SQLAlchemy |
 | Django | `skills/django/` | Python Django, DRF, ORM, admin, Celery |
-| ionCube | `skills/ioncube/` | PHP source code encoding/protection, Loader setup, licensing, obfuscation |
+| ionCube | `skills/ioncube/` | PHP source code encoding/protection, Loader setup |
+
+### Mobile & Desktop
+| Skill | Path | Use When |
+|-------|------|----------|
+| Kotlin / Android | `skills/kotlin-android/` | Native Android with Jetpack Compose, MVVM, Hilt |
+| Swift / iOS | `skills/swift-ios/` | Native iOS with SwiftUI, Combine, async/await |
+| Electron / Tauri | `skills/electron-tauri/` | Cross-platform desktop apps, IPC, native APIs |
 
 ### Databases
 | Skill | Path | Use When |
@@ -176,6 +209,11 @@ Skills are reference implementations and best practices for specific technologie
 | SAP HANA | `skills/sap-hana/` | SAP HANA in-memory DB |
 | Oracle | `skills/oracle/` | Oracle Database |
 | SQL Server | `skills/sql-server/` | Microsoft SQL Server |
+| Redis | `skills/redis/` | Caching, sessions, pub/sub, streams |
+| Elasticsearch | `skills/elasticsearch/` | Full-text search, aggregations, analyzers |
+| Firebase | `skills/firebase/` | Auth, Firestore, Cloud Functions, FCM |
+| Supabase | `skills/supabase/` | Auth, PostgreSQL, Realtime, Edge Functions, RLS |
+| Prisma ORM | `skills/prisma/` | Type-safe DB access, migrations, relations |
 
 ### CSS Frameworks & UI Libraries
 | Skill | Path | Use When |
@@ -211,18 +249,22 @@ Skills are reference implementations and best practices for specific technologie
 |-------|------|----------|
 | Node.js | `skills/nodejs/` | Node.js backend (Express, Fastify) |
 | Docker | `skills/docker/` | Containerization & compose |
+| Nginx | `skills/nginx/` | Reverse proxy, SSL/TLS, load balancing, caching |
 | SEO | `skills/seo/` | Search engine optimization |
 | Apache | `skills/apache/` | Apache HTTP Server config |
 | XAMPP | `skills/xampp/` | XAMPP local development |
 | Laragon | `skills/laragon/` | Laragon Windows dev environment |
 | Kubernetes | `skills/kubernetes/` | Container orchestration |
 | Git | `skills/git/` | Version control & branching |
+| Terraform / IaC | `skills/terraform/` | Infrastructure as Code, HCL, providers, modules |
+| GitHub API | `skills/github-api/` | REST/GraphQL API, Actions, webhooks, Octokit |
 
-### Messaging & Infrastructure
+### Messaging & Real-Time
 | Skill | Path | Use When |
 |-------|------|----------|
-| Redis | `skills/redis/` | Caching, sessions, pub/sub |
 | Kafka | `skills/kafka/` | Event streaming & messaging |
+| RabbitMQ | `skills/rabbitmq/` | Message queuing, exchanges, dead letter queues |
+| WebSocket | `skills/websocket/` | Real-time communication, Socket.IO, rooms |
 | Load Balancing | `skills/load-balancing/` | Nginx, HAProxy, ALB config |
 
 ### Deployment
@@ -256,10 +298,32 @@ Skills are reference implementations and best practices for specific technologie
 | Shopify | `skills/shopify/` | Shopify theme/app (Liquid) |
 | Magento | `skills/magento/` | Magento 2 module dev |
 
+### Process & Development Lifecycle
+| Skill | Path | Use When |
+|-------|------|----------|
+| Brainstorming | `skills/brainstorming/` | BEFORE creative work — explore intent, requirements & design |
+| Writing Plans | `skills/writing-plans/` | Create implementation plans from requirements or specs |
+| Executing Plans | `skills/executing-plans/` | Execute written implementation plans task by task |
+| Test-Driven Development | `skills/test-driven-development/` | Feature or bugfix — write test first, red-green-refactor |
+| Systematic Debugging | `skills/systematic-debugging/` | Bugs, test failures, unexpected behavior — root cause first |
+| Verification Before Completion | `skills/verification-before-completion/` | BEFORE claiming work is complete — evidence over claims |
+| Knowledge Compounding | `skills/knowledge-compounding/` | After solving non-trivial problems — capture for future |
+| Code Review | `skills/code-review/` | Multi-perspective review with severity classification |
+| Architecture Enforcement | `skills/architecture-enforcement/` | BEFORE writing code — verify file placement & dependency direction |
+| Compatibility Check | `skills/compatibility-check/` | BEFORE adding dependencies — validate version compatibility |
+| UI/UX Pro Max | `skills/ui-ux-pro-max/` | Frontend work — design intelligence with 67 styles, 96 palettes, 57 fonts |
+| Dark & Light Mode | `skills/dark-light-mode/` | Theming, CSS design tokens, toggle logic, FOUC prevention |
+| Unit Testing Patterns | `skills/unit-testing/` | AAA pattern, mocking, fixtures, TDD, Jest/Vitest/PHPUnit/pytest |
+
 ### Security & Quality
 | Skill | Path | Use When |
 |-------|------|----------|
+| Security Audit | `skills/security-audit/` | Full OWASP Top 10 audit, severity reporting, skill orchestration |
 | Security Code Review | `skills/security-code-review/` | OWASP, SAST/DAST, Hack23 ISMS review |
+| Secure Code Patterns | `skills/secure-code-patterns/` | Input validation, output encoding, parameterized queries, JWT security |
+| Secrets Management | `skills/secrets-management/` | Secret detection, .env best practices, vault integration, PII redaction |
+| Threat Modeling | `skills/threat-modeling/` | STRIDE analysis, trust boundaries, attack surface, DREAD risk scoring |
+| Data Privacy | `skills/data-privacy/` | PII detection, consent verification, data subject rights, privacy impact |
 | Code Quality | `skills/code-quality/` | SonarCloud, CheckStyle, SpotBugs, quality gates |
 
 ### Security Frameworks & Compliance Standards
@@ -307,11 +371,51 @@ Skills are reference implementations and best practices for specific technologie
 | Cloudflare Turnstile | `skills/turnstile/` | Privacy-friendly CAPTCHA, invisible verification, UU PDP compliant |
 | Google reCAPTCHA | `skills/recaptcha/` | reCAPTCHA v2 checkbox, v3 invisible, score-based decisions |
 
+### Authentication & API Standards
+| Skill | Path | Use When |
+|-------|------|----------|
+| OAuth 2.0 / JWT | `skills/oauth-jwt/` | Authorization flows, access/refresh tokens, PKCE, scopes |
+| GraphQL | `skills/graphql/` | Schema design, resolvers, Apollo Server/Client, subscriptions |
+
 ### API Design & Standards
 | Skill | Path | Use When |
 |-------|------|----------|
 | REST API | `skills/rest-api/` | URL conventions, HTTP methods, status codes, pagination, versioning, OpenAPI |
 | IETF JSON Standards | `skills/ietf-json/` | RFC 9457 Problem Details, JSON Patch/Merge Patch, JSON:API, RFC 3339 dates |
+
+### Communication & Payments
+| Skill | Path | Use When |
+|-------|------|----------|
+| Stripe / Payment Gateway | `skills/stripe/` | Checkout, Payment Intents, subscriptions, webhooks, PCI compliance |
+| Twilio / WhatsApp API | `skills/twilio-whatsapp/` | SMS, Voice, WhatsApp Business API, Verify OTP |
+
+### File & Data Processing
+| Skill | Path | Use When |
+|-------|------|----------|
+| CSV / Excel Processing | `skills/csv-excel/` | Parsing, generation, streaming, PapaParse, ExcelJS, pandas |
+| PDF Generation | `skills/pdf-generation/` | Invoices, reports, PDFKit, Puppeteer HTML-to-PDF, jsPDF |
+| Image Processing | `skills/image-processing/` | Sharp, Pillow, resizing, cropping, watermarking, optimization |
+| Cron / Task Scheduling | `skills/cron-scheduling/` | node-cron, Bull/BullMQ, Laravel Scheduler, APScheduler, Celery |
+
+### Scripting & Automation
+| Skill | Path | Use When |
+|-------|------|----------|
+| Shell Script (Bash/Zsh) | `skills/shell-script/` | Unix shell scripts, text processing, automation |
+| Batch Script (BAT/CMD) | `skills/batch-script/` | Windows CMD scripts, services, registry, automation |
+| PowerShell | `skills/powershell/` | Windows PowerShell cmdlets, modules, remoting |
+| Regex | `skills/regex/` | Regular expressions in JS, Python, PHP |
+
+### Data Formats & Markup
+| Skill | Path | Use When |
+|-------|------|----------|
+| Markdown | `skills/markdown/` | CommonMark, GFM, README, CHANGELOG, ADR, Mermaid |
+| XML | `skills/xml/` | XML 1.0, XSD Schema, XSLT, XPath, Maven POM, SVG |
+| YAML | `skills/yaml/` | YAML 1.2, CI/CD, Docker Compose, Kubernetes, OpenAPI |
+
+### Design & Architecture Patterns
+| Skill | Path | Use When |
+|-------|------|----------|
+| Design Patterns | `skills/design-patterns/` | GoF patterns, Repository, CQRS, Event-Driven in TS/JS |
 
 ### Data Engineering
 | Skill | Path | Use When |
@@ -347,6 +451,13 @@ Skills are reference implementations and best practices for specific technologie
 | System Analyst | `skills/system-analyst/` | UML, ERD, DFD, sequence diagrams, SRS, feasibility studies |
 | Quality Control | `skills/quality-control/` | Testing pyramid, code review, quality gates, defect management, QA metrics |
 | Project Management | `skills/project-management/` | Scrum/Kanban, sprint planning, estimation, risk management, status reports |
+
+### Cloud Platforms
+| Skill | Path | Use When |
+|-------|------|----------|
+| AWS Services | `skills/aws/` | EC2, S3, Lambda, RDS, CloudFront, IAM, API Gateway, DynamoDB |
+| Google Cloud Platform | `skills/gcp/` | Cloud Run, Cloud Functions, Cloud Storage, BigQuery, Pub/Sub |
+| Microsoft Azure | `skills/azure/` | App Service, Azure Functions, Blob Storage, Cosmos DB, Key Vault |
 
 ### Observability & Monitoring
 | Skill | Path | Use When |
@@ -420,7 +531,7 @@ Before submitting any code, verify:
 
 ---
 
-## 🔄 Available Workflows
+## 🔄 Available Workflows (22)
 
 | Workflow | Command | Purpose |
 |----------|---------|---------|
@@ -429,6 +540,22 @@ Before submitting any code, verify:
 | Context Plan | `/context-plan` | Create detailed implementation plan with diagrams, priorities & dependency analysis |
 | Context Work | `/context-work` | Execute tasks from an approved plan, following all rules & skills |
 | Context Test | `/context-test` | Comprehensive testing (features, data flow, security, reliability) with detailed reports |
+| Context Build | `/context-build` | Auto-detect framework and execute correct build command with validation |
+| Context Brainstorm | `/context-brainstorm` | Explore feature ideas collaboratively before planning |
+| Context Debug | `/context-debug` | Systematically diagnose and fix bugs with root-cause investigation |
+| Context Review | `/context-review` | Multi-perspective code review with severity classification |
+| Context Compound | `/context-compound` | Capture solved problems as searchable documentation |
+| Context Launch | `/context-launch` | Full pipeline: brainstorm → plan → work → build → test → security → review → compound |
+| Context Reload | `/context-reload` | Reload all agent rules mid-conversation |
+| Context Compatibility | `/context-compatibility` | Full tech stack compatibility audit (read-only) |
+| Context UI/UX | `/context-ui-ux` | Generate professional UI/UX with design intelligence |
+| Context Security | `/context-security` | Full security audit: OWASP Top 10, dependency scanning (read-only) |
+| Context Deploy | `/context-deploy` | Deploy application — auto-detects framework, routes to deploy skill |
+| Context Refactor | `/context-refactor` | Guided code refactoring with safety nets and test verification |
+| Context Migrate | `/context-migrate` | Database migration management — generate, review, apply, rollback, seed |
+| Context Upgrade | `/context-upgrade` | Safe dependency upgrades with breaking change analysis |
+| Context Docs | `/context-docs` | Generate user-facing documentation (README, CHANGELOG, API docs) |
+| Context Git | `/context-git` | Git operations — branching, commits, merging, tagging, changelog |\r\n| Context Help | `/context-help` | List all workflows, rules, and skills — quick reference |
 
 ---
 

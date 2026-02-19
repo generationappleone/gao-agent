@@ -34,7 +34,14 @@ The agent should ONLY stop and ask the user in these specific cases:
 - **Security risk**: Implementation would introduce a known security vulnerability
 - **Missing required information**: Plan references undefined requirements
 
-### 5. Applies To
+### 5. Verification is Inline, Not a Pause
+The `verification-gate` rule requires verification before completion claims. This does NOT conflict with continuous execution:
+- Run verification commands (build, test, lint) **as part of the task flow** — do not stop and ask the user before running them
+- If verification passes → continue to next task immediately
+- If verification fails → attempt auto-fix (up to 2 attempts), then continue or escalate per Exception rules
+- **Verification is a step within a task, not a pause between tasks**
+
+### 6. Applies To
 This rule applies to all execution workflows including but not limited to:
 - `/context-work` task execution
 - Sprint execution

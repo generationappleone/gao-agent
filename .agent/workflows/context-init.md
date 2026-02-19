@@ -9,6 +9,13 @@ This workflow performs a **complete project analysis** to generate comprehensive
 
 The output is a set of documentation files in `.agent/context/` that the agent should **always consult first** before writing any new code, creating new flows, or making architectural decisions.
 
+> **Cross-OS Note:** Shell commands below are written for Unix/Linux (bash). On **Windows/PowerShell**, the agent MUST automatically adapt commands:
+> - `ls -la` → `Get-ChildItem` or `dir`
+> - `find . -type f` → `Get-ChildItem -Recurse -File` or use the `find_by_name` tool
+> - `head -N` → `Select-Object -First N`
+> - `grep -rn` → `Select-String -Recurse` or use the `grep_search` tool
+> - **Preferred:** Use the agent's built-in tools (`list_dir`, `find_by_name`, `grep_search`) which are OS-agnostic.
+
 ---
 
 ## Phase 1: Project Discovery
