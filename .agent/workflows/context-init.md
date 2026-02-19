@@ -18,6 +18,14 @@ The output is a set of documentation files in `.agent/context/` that the agent s
 
 ---
 
+## Phase 0: Load Mandatory Rules
+// turbo
+Read these rules BEFORE analyzing the project:
+- `.agent/rules/deep-thinking.md` — Deep analysis, anti-hallucination, quality standards (MANDATORY)
+- `.agent/rules/developer-security.md` — Security awareness during analysis (MANDATORY)
+
+---
+
 ## Phase 1: Project Discovery
 
 ### Step 1.1 — Identify Project Root & Top-Level Structure

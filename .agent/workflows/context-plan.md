@@ -1,20 +1,127 @@
 ---
-description: Create a comprehensive implementation plan with flow diagrams, database changes, code structure, dependency analysis, priority ordering, and detailed justifications — saved as a persistent reference document.
+description: Create a comprehensive implementation plan — with optional brainstorming, flow diagrams, database changes, code structure, dependency analysis, priority ordering, and detailed justifications. Replaces /context-brainstorm.
 ---
 
-# Context Plan — Implementation Planning & Documentation
+# Context Plan — Exploration + Implementation Planning
 
 ## Purpose
-This workflow creates a **complete, detailed, and well-structured implementation plan** based on the user's requirements. The plan serves as a **blueprint** that guides the entire development process, ensuring nothing is missed and every decision is justified.
+This workflow creates a **complete, detailed, and well-structured implementation plan** based on the user's requirements. It optionally starts with a **brainstorming/exploration phase** when requirements are unclear, then produces a **blueprint** that guides the entire development process.
 
 The plan is **saved to disk** as a persistent reference document at `.agent/plans/`.
+
+> **Replaces:** `/context-brainstorm` — brainstorming is now Phase 0 of this workflow.
 
 ---
 
 ## Activation
 The user triggers this workflow by:
 - Using `/context-plan` followed by what they want to build/change
+- Using `/context-plan --explore` to force brainstorming phase first
+- Using `/context-brainstorm` (alias — routes here automatically)
 - Describing a feature, change, or improvement they want planned
+
+---
+
+## Phase 0: Exploration & Brainstorming (Conditional)
+
+> **This phase runs when:**
+> - User explicitly requests brainstorming (`--explore` flag or `/context-brainstorm`)
+> - Requirements are vague, broad, or ambiguous
+> - Multiple viable approaches exist and need evaluation
+>
+> **This phase is SKIPPED when:**
+> - Requirements are already detailed and specific
+> - Small bug fixes with clear reproduction steps
+> - Direct tasks ("add field X to model Y")
+> - User explicitly says "skip brainstorm"
+
+### Step 0.1 — Load Planning Skills & Mandatory Rules
+// turbo
+Read these BEFORE any planning activity:
+- `skills/brainstorming/SKILL.md` — Brainstorming process
+- `skills/writing-plans/SKILL.md` — Plan writing methodology
+- `.agent/rules/deep-thinking.md` — Deep analysis, anti-hallucination, quality (MANDATORY)
+- `.agent/rules/developer-security.md` — Security considerations in planning (MANDATORY)
+- `.agent/rules/database-design.md` — If plan involves database changes (MANDATORY)
+- `.agent/rules/solid-principles.md` — Code structure principles (MANDATORY)
+
+### Step 0.2 — Assess Readiness
+Evaluate the user's request:
+
+| Signal | Action |
+|--------|--------|
+| Vague idea ("I want something like...") | → Full brainstorm (Phase 0.3-0.6) |
+| Partial spec ("I need X with Y features") | → Quick exploration (Phase 0.4-0.5) |
+| Detailed requirements with acceptance criteria | → Skip to Phase 1 |
+| Bug fix with reproduction steps | → Skip to Phase 1 |
+
+### Step 0.3 — Understand Context
+// turbo
+1. Research the codebase and `.agent/context/` docs for context
+2. Ask clarifying questions **ONE AT A TIME** (max 5 questions):
+   - What problem are you solving?
+   - Who is the target user?
+   - What does success look like?
+   - Are there constraints (time, tech, budget)?
+   - Any reference/inspiration?
+
+### Step 0.4 — Explore Approaches
+Present **2-4 approaches** with clear trade-offs:
+
+```markdown
+## 🧠 Exploration: [Topic]
+
+### Approach A: [Name] ⭐ Recommended
+**Summary:** [2-3 sentences]
+**Pros:** [list]
+**Cons:** [list]
+**Effort:** [hours/days]
+**Risk:** [Low/Medium/High]
+**Compatibility:** [How it fits with current stack]
+
+### Approach B: [Name]
+**Summary:** [2-3 sentences]
+**Pros:** [list]
+**Cons:** [list]
+**Effort:** [hours/days]
+**Risk:** [Low/Medium/High]
+**Compatibility:** [How it fits with current stack]
+
+### Approach C: [Name] (optional)
+[Same structure]
+
+### 📊 Comparison Matrix
+| Criteria        | Approach A | Approach B | Approach C |
+|----------------|-----------|-----------|-----------|
+| Complexity      | ...       | ...       | ...       |
+| Performance     | ...       | ...       | ...       |
+| Scalability     | ...       | ...       | ...       |
+| Time to Deliver | ...       | ...       | ...       |
+| Maintenance     | ...       | ...       | ...       |
+
+🏆 **Recommendation:** Approach [X] because [reasoning]
+```
+
+### Step 0.5 — UI/UX Design Intelligence (If Frontend Work)
+If the idea involves **frontend/UI work**:
+1. Auto-invoke `ui-ux-pro-max` skill for design intelligence
+2. Generate design system recommendations
+3. Present visual direction options
+
+### Step 0.6 — Compatibility Pre-Check
+If the brainstorm introduces new technologies/dependencies:
+- Flag potential compatibility issues with existing stack
+- Reference `skills/compatibility-check/SKILL.md` for quick validation
+- Note any required skill gaps (addressed in Phase 1.5)
+
+### Step 0.7 — Save Brainstorm & Transition
+1. Save brainstorm document to `docs/brainstorms/YYYY-MM-DD-<topic>-brainstorm.md`
+2. Get user approval on chosen approach
+3. **Seamlessly transition to Phase 1** with the chosen approach as input
+
+```markdown
+✅ Brainstorm captured. Transitioning to implementation planning...
+```
 
 ---
 
@@ -321,6 +428,7 @@ The plan document MUST follow this EXACT structure:
 > **Requested by:** User
 > **Estimated Effort:** [X hours/days]
 > **Risk Level:** Low | Medium | High | Critical
+> **Brainstorm:** [link to brainstorm doc, if Phase 0 was run]
 
 ---
 

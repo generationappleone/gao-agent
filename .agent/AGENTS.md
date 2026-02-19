@@ -531,31 +531,36 @@ Before submitting any code, verify:
 
 ---
 
-## 🔄 Available Workflows (22)
+## 🔄 Available Workflows (18)
 
 | Workflow | Command | Purpose |
-|----------|---------|---------|
+|----------|---------|---------| 
 | Context Init | `/context-init` | Full project analysis & documentation generation |
 | Context Ask | `/context-ask` | Ask anything — get detailed answers with code analysis & internet research |
-| Context Plan | `/context-plan` | Create detailed implementation plan with diagrams, priorities & dependency analysis |
+| Context Plan | `/context-plan` | Create implementation plan (with optional brainstorming) — diagrams, priorities, dependencies |
 | Context Work | `/context-work` | Execute tasks from an approved plan, following all rules & skills |
 | Context Test | `/context-test` | Comprehensive testing (features, data flow, security, reliability) with detailed reports |
 | Context Build | `/context-build` | Auto-detect framework and execute correct build command with validation |
-| Context Brainstorm | `/context-brainstorm` | Explore feature ideas collaboratively before planning |
-| Context Debug | `/context-debug` | Systematically diagnose and fix bugs with root-cause investigation |
-| Context Review | `/context-review` | Multi-perspective code review with severity classification |
-| Context Compound | `/context-compound` | Capture solved problems as searchable documentation |
-| Context Launch | `/context-launch` | Full pipeline: brainstorm → plan → work → build → test → security → review → compound |
+| Context Debug | `/context-debug` | Systematic debugging + automatic knowledge capture (replaces `/context-compound`) |
+| Context Review | `/context-review` | Code review + integrated security audit (replaces `/context-security`) |
+| Context Launch | `/context-launch` | Full pipeline: plan → work → build → test → review → documentation |
 | Context Reload | `/context-reload` | Reload all agent rules mid-conversation |
-| Context Compatibility | `/context-compatibility` | Full tech stack compatibility audit (read-only) |
 | Context UI/UX | `/context-ui-ux` | Generate professional UI/UX with design intelligence |
-| Context Security | `/context-security` | Full security audit: OWASP Top 10, dependency scanning (read-only) |
 | Context Deploy | `/context-deploy` | Deploy application — auto-detects framework, routes to deploy skill |
-| Context Refactor | `/context-refactor` | Guided code refactoring with safety nets and test verification |
+| Context Refactor | `/context-refactor` | Guided code refactoring with safety nets, metrics, and atomic execution |
 | Context Migrate | `/context-migrate` | Database migration management — generate, review, apply, rollback, seed |
-| Context Upgrade | `/context-upgrade` | Safe dependency upgrades with breaking change analysis |
-| Context Docs | `/context-docs` | Generate user-facing documentation (README, CHANGELOG, API docs) |
-| Context Git | `/context-git` | Git operations — branching, commits, merging, tagging, changelog |\r\n| Context Help | `/context-help` | List all workflows, rules, and skills — quick reference |
+| Context Upgrade | `/context-upgrade` | Dependency audit + safe upgrades (replaces `/context-compatibility`) |
+| Context Docs | `/context-docs` | Generate user-facing documentation (README, CHANGELOG, API docs, ADR) |
+| Context Git | `/context-git` | Git operations — branching, commits, merging, tagging, PR templates, changelog |
+| Context Help | `/context-help` | List all workflows, rules, and skills — quick reference |
+
+### Aliases (Redirects from Merged Workflows)
+| Alias | Redirects To | Notes |
+|-------|-------------|-------|
+| `/context-brainstorm` | `/context-plan` | Phase 0: Exploration |
+| `/context-compatibility` | `/context-upgrade` | Phase 1: Compatibility Audit (read-only) |
+| `/context-security` | `/context-review` | Phase 2: Security Audit |
+| `/context-compound` | `/context-debug` | Phase 5: Knowledge Capture |
 
 ---
 

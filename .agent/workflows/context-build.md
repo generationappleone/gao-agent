@@ -96,15 +96,27 @@ Build options:
 Which option?
 ```
 
-### Step 1.3 — Read Context (if available)
+### Step 1.3 — Read Context & Rules
 // turbo
-Check for project context to understand build requirements:
+Check for project context and mandatory rules:
 
 ```bash
 # Check if context documentation exists
 cat .agent/context/DEVELOPMENT_GUIDE.md 2>/dev/null | head -50
 cat .agent/context/DEPENDENCIES.md 2>/dev/null | head -30
 ```
+
+Also read mandatory rules:
+- `.agent/rules/deep-thinking.md` — Quality standards (MANDATORY)
+- Read the framework-specific skill for build best practices:
+  - **Node.js/React/Next.js**: `skills/nodejs/SKILL.md` or `skills/nextjs/SKILL.md`
+  - **Laravel**: `skills/laravel/SKILL.md`
+  - **Java**: `skills/java/SKILL.md`
+  - **Flutter**: `skills/flutter/SKILL.md`
+  - **Python**: `skills/python/SKILL.md`
+  - **Go**: `skills/golang/SKILL.md`
+  - **.NET**: `skills/aspnet/SKILL.md`
+  - **Rust**: `skills/rust/SKILL.md`
 
 ### Step 1.4 — Load Relevant Deployment Skill
 // turbo

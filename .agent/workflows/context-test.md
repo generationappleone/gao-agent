@@ -30,7 +30,17 @@ Load project understanding:
 4. .agent/context/API_REFERENCE.md       ← API endpoints
 5. .agent/context/DEPENDENCIES.md        ← Installed packages
 6. .agent/context/BUSINESS_DOMAINS.md    ← Business rules
+7. .agent/rules/deep-thinking.md         ← Deep analysis standards (MANDATORY)
 ```
+
+### Step 1.1b — Load Testing Skills
+// turbo
+Read relevant testing skills based on detected framework:
+- `skills/unit-testing/SKILL.md` — Unit testing patterns (AAA, mocking, fixtures)
+- `skills/playwright/SKILL.md` or `skills/cypress/SKILL.md` — E2E testing (if frontend)
+- `skills/security-audit/SKILL.md` — Security testing patterns
+- `skills/load-testing/SKILL.md` — Performance testing (if applicable)
+- `skills/accessibility-testing/SKILL.md` — A11y testing (if frontend)
 
 ### Step 1.2 — Load Related Plan (If Applicable)
 

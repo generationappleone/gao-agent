@@ -49,7 +49,7 @@ Read the entire plan file to understand:
 - Dependencies to install
 - Testing requirements
 
-### Step 1.3 — Read Project Context
+### Step 1.3 — Read Project Context & Mandatory Rules
 // turbo
 Before writing any code, MUST read context (as per Post-Init Rules in AGENTS.md):
 
@@ -59,6 +59,9 @@ Before writing any code, MUST read context (as per Post-Init Rules in AGENTS.md)
 3. .agent/context/DATABASE_SCHEMA.md (if DB changes)
 4. .agent/context/API_REFERENCE.md (if API changes)
 5. .agent/context/DEPENDENCIES.md (if adding packages)
+6. .agent/rules/deep-thinking.md (MANDATORY — deep analysis, anti-hallucination, quality)
+7. .agent/rules/developer-security.md (MANDATORY — security practices)
+8. .agent/rules/database-design.md (MANDATORY if DB changes — schema conventions)
 ```
 
 ### Step 1.4 — Verify Plan Status

@@ -121,9 +121,15 @@ If the question is about specific code, read the relevant files:
 // turbo
 If the question involves a technology covered by a skill or rule:
 
-1. Check `.agent/skills/` for relevant technology skill
-2. Check `.agent/rules/` for applicable rules
-3. Reference these in the answer to ensure advice aligns with project standards
+1. **MANDATORY:** Read `.agent/rules/deep-thinking.md` — apply anti-hallucination protocol
+2. Check `.agent/skills/` for relevant technology skill
+3. Check `.agent/rules/` for applicable rules
+4. Reference these in the answer to ensure advice aligns with project standards
+
+**Anti-hallucination mandate:** Before answering, verify:
+- Do NOT invent API methods, file paths, or configurations that may not exist
+- If unsure, state uncertainty explicitly and suggest verification steps
+- Cross-reference your answer with actual project code when applicable
 
 ---
 

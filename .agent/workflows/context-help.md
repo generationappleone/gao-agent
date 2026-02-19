@@ -1,79 +1,158 @@
 ---
-description: List all available workflows, rules, and skills with descriptions. Use when you want to see what the agent can do.
+description: "List all available workflows, rules, and skills with descriptions. Use when you want to see what the agent can do."
 ---
 
-# Context Help — Available Commands Reference
+# Context Help — Agent Command Reference
 
-This workflow displays all available agent capabilities, organized by category.
+## Quick Reference
 
-## Steps
+When the user asks for help, list all available commands organized by category.
 
-1. **Display quick reference** — Show the user:
+### Steps
+
+1. **Read the workflows directory:**
+   // turbo
+   ```bash
+   find .agent/workflows -name "*.md" -not -name "*.bak" | sort
+   ```
+
+2. **Read the rules directory:**
+   // turbo
+   ```bash
+   find .agent/rules -name "*.md" | sort
+   ```
+
+3. **Read the skills directory:**
+   // turbo
+   ```bash
+   ls .agent/skills/
+   ```
+
+4. **Present the following reference:**
 
 ```markdown
-# 🤖 Agent Quick Reference
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+🤖 AGENT COMMAND REFERENCE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-## 📋 Workflows (slash commands)
+## 🔧 Development Workflows (Core Pipeline)
 
-### Development Lifecycle
-| Command | Purpose |
-|---------|---------|
-| `/context-init` | Analyze project & generate context docs (run once for new projects) |
-| `/context-brainstorm` | Explore feature ideas collaboratively before planning |
-| `/context-plan` | Create detailed implementation plan with priorities |
-| `/context-work` | Execute tasks from an approved plan |
-| `/context-build` | Auto-detect framework & run build command |
-| `/context-test` | Run comprehensive test suite with reporting |
-| `/context-launch` | Full pipeline: brainstorm → plan → work → build → test → security → review |
+| Command | Description | When to Use |
+|---------|-------------|-------------|
+| `/context-init` | Analyze entire codebase, generate AI context docs | First time setup, after major structural changes |
+| `/context-plan` | Create implementation plan (with optional brainstorming) | Before building any feature or making significant changes |
+| `/context-work` | Execute tasks from an approved plan | After plan is approved, ready to implement |
+| `/context-build` | Auto-detect framework + build project | After implementation, before testing |
+| `/context-test` | Run comprehensive test suite + generate report | After build, verify everything works |
+| `/context-review` | Code review + security audit (unified) | After implementation, before merge/deploy |
+| `/context-launch` | Full pipeline: plan → work → build → test → review | End-to-end feature development |
 
-### Quality & Security
-| Command | Purpose |
-|---------|---------|
-| `/context-review` | Multi-perspective code review (severity classification) |
-| `/context-security` | Full security audit (OWASP Top 10, dependency scan) — read-only |
-| `/context-compatibility` | Tech stack compatibility audit — read-only |
-| `/context-debug` | Systematic bug diagnosis with root-cause investigation |
+## 🐛 Debugging & Maintenance
 
-### Operations & Maintenance
-| Command | Purpose |
-|---------|---------|
-| `/context-deploy` | Deploy app (auto-detects framework, routes to deploy skill) |
-| `/context-refactor` | Guided code refactoring with safety nets |
-| `/context-migrate` | Database migration management (generate, apply, rollback) |
-| `/context-upgrade` | Safe dependency upgrades with breaking change analysis |
-| `/context-git` | Git operations (branching, commits, tagging, changelog) |
+| Command | Description | When to Use |
+|---------|-------------|-------------|
+| `/context-debug` | Systematic debugging + knowledge capture | Bugs, errors, test failures |
+| `/context-refactor` | Guided code refactoring with safety nets | Improve code quality, reduce complexity |
+| `/context-upgrade` | Dependency audit + safe upgrades (unified) | Keep dependencies current, fix vulnerabilities |
+| `/context-migrate` | Database migration management | Schema changes, data migration |
 
-### Documentation & Knowledge
-| Command | Purpose |
-|---------|---------|
-| `/context-docs` | Generate user-facing docs (README, CHANGELOG, API docs) |
-| `/context-compound` | Capture solved problems as searchable documentation |
-| `/context-ui-ux` | Generate professional UI/UX with design intelligence |
-| `/context-ask` | Ask anything with detailed code analysis & research |
+## 📝 Documentation & Knowledge
 
-### Meta
-| Command | Purpose |
-|---------|---------|
-| `/context-help` | This help page — list all available commands |
-| `/context-reload` | Reload agent rules mid-conversation |
+| Command | Description | When to Use |
+|---------|-------------|-------------|
+| `/context-docs` | Generate user-facing docs (README, CHANGELOG, API) | After features are complete |
+| `/context-ask` | Research, Q&A, and detailed answers | Need information, guidance, or analysis |
 
-## 📏 Rules (always active)
-Rules are mandatory constraints that apply to ALL work:
-- **SOLID Principles** — Clean architecture patterns
-- **Developer Security** — 4-layer security model
-- **Database Design** — UUID, soft delete, audit columns
-- **Verification Gate** — No claims without evidence
-- **Adaptive TDD** — Test-first development
-- **Continuous Execution** — No pausing between tasks
-- **Production Code Standards** — Zero hallucinations
+## 🔀 Version Control & Operations
 
-## 🛠️ Skills
-The agent has **183 skills** covering languages, frameworks, databases, security, cloud, and more. Skills are loaded automatically when relevant to your task.
+| Command | Description | When to Use |
+|---------|-------------|-------------|
+| `/context-git` | Branching, commits, merges, tags, releases | Git operations with conventions |
+| `/context-deploy` | Deploy to target environment | Ship to staging/production |
 
-For the full skill catalog, see `AGENTS.md`.
+## ⚙️ Utility
+
+| Command | Description | When to Use |
+|---------|-------------|-------------|
+| `/context-reload` | Reload all agent rules mid-conversation | After editing .agent/rules/ |
+| `/context-help` | Show this reference | Anytime |
+| `/context-ui-ux` | Generate professional UI/UX with design intelligence | Frontend/UI work |
+
+## 🔀 Aliases (Redirects)
+
+These commands are aliases that redirect to their unified counterparts:
+
+| Alias | Redirects To | Phase |
+|-------|-------------|-------|
+| `/context-brainstorm` | `/context-plan` | Phase 0: Exploration |
+| `/context-compatibility` | `/context-upgrade` | Phase 1: Compatibility Audit |
+| `/context-security` | `/context-review` | Phase 2: Security Audit |
+| `/context-compound` | `/context-debug` | Phase 5: Knowledge Capture |
+
+## 📏 Mandatory Rules (Always Active)
+
+These rules apply to ALL agent actions, regardless of workflow:
+
+| Rule | Scope |
+|------|-------|
+| `deep-thinking.md` | Deep analysis, anti-hallucination, completeness (HIGHEST PRIORITY) |
+| `error-memory.md` | Mistake logging & learning — never repeat errors |
+| `self-learning.md` | Adaptive learning from user preferences & corrections |
+| `solid-principles.md` | Code structure & design |
+| `developer-security.md` | Security practices |
+| `database-design.md` | Database conventions |
+| `dependency-management.md` | Package vetting |
+| `iso-27000-compliance.md` | Compliance standards |
+| `ui-ux-design.md` | UI/UX standards |
+
+## 🧰 Skills Library
+
+The agent has **[N] skills** covering technologies including:
+- **Languages:** JavaScript, TypeScript, PHP, Python, Go, Java, Rust, C#, Kotlin, Swift, Dart
+- **Frameworks:** React, Next.js, Vue, Angular, Svelte, Laravel, Django, Flask, Spring Boot, .NET
+- **Databases:** PostgreSQL, MySQL, MongoDB, Redis, Elasticsearch, Oracle, SQL Server
+- **Cloud:** AWS, GCP, Azure, Firebase, Supabase
+- **DevOps:** Docker, Kubernetes, Terraform, Nginx, Apache
+- **Testing:** Playwright, Cypress, Jest, Vitest, PHPUnit, pytest, Artillery, OWASP ZAP
+- **Security:** OAuth2, JWT, AES-256, NIST CSF, ISO 27001, CIS Controls
+- **AI/ML:** TensorFlow, PyTorch, Scikit-learn, OpenAI API, Gemini API
+- **And many more...**
+
+Use `/context-ask [technology]` to learn about any specific skill.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ```
 
-## When to Use
-- You're new and want to see what's available
-- You can't remember a specific command
-- You want an overview of agent capabilities
+## Workflow Selection Guide
+
+Help the user choose the right workflow:
+
+```
+"I want to..."
+    │
+    ├── "...build something new"
+    │   ├── Big feature → /context-launch (full pipeline)
+    │   ├── Planned feature → /context-work (execute plan)
+    │   ├── Need to think first → /context-plan --explore (brainstorm + plan)
+    │   └── Just plan it → /context-plan
+    │
+    ├── "...fix something"
+    │   ├── Bug/error → /context-debug
+    │   ├── Code quality → /context-refactor
+    │   └── Dependencies → /context-upgrade
+    │
+    ├── "...check something"
+    │   ├── Code quality + security → /context-review
+    │   ├── Dependency health → /context-upgrade --audit-only
+    │   ├── Run tests → /context-test
+    │   └── Build project → /context-build
+    │
+    ├── "...deploy/ship"
+    │   ├── Setup project → /context-init
+    │   ├── Commit changes → /context-git
+    │   ├── Deploy → /context-deploy
+    │   └── Generate docs → /context-docs
+    │
+    └── "...learn/research"
+        └── Any question → /context-ask
+```
