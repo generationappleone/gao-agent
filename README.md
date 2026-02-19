@@ -2,18 +2,19 @@
 
 # 🧠 GAO Agent
 
-### **Generative AI Operations — Intelligent Coding Agent**
+### **Generative AI Operations — Intelligent Coding Agent Framework**
 
-*An enterprise-grade AI coding agent framework with 126 skills, 9 mandatory rules, 6 workflows, and full-stack development capabilities.*
+*Enterprise-grade AI coding agent with 360 skills, 17 enforced rules, 18 automated workflows, self-learning memory, and full-stack development capabilities across 10+ languages and 30+ frameworks.*
 
-[![Skills](https://img.shields.io/badge/Skills-126-blue?style=for-the-badge&logo=bookstack&logoColor=white)](#-skills-126)
-[![Rules](https://img.shields.io/badge/Rules-9-red?style=for-the-badge&logo=shield&logoColor=white)](#-mandatory-rules-9)
-[![Workflows](https://img.shields.io/badge/Workflows-6-green?style=for-the-badge&logo=githubactions&logoColor=white)](#-workflows-6)
-[![License](https://img.shields.io/badge/License-Proprietary-orange?style=for-the-badge&logo=lock&logoColor=white)](#license)
+[![Skills](https://img.shields.io/badge/Skills-360-blue?style=for-the-badge&logo=bookstack&logoColor=white)](#-skills-library-360)
+[![Rules](https://img.shields.io/badge/Rules-17-red?style=for-the-badge&logo=shield&logoColor=white)](#-mandatory-rules-17)
+[![Workflows](https://img.shields.io/badge/Workflows-18-green?style=for-the-badge&logo=githubactions&logoColor=white)](#-workflows-18)
+[![Memory](https://img.shields.io/badge/Memory-Self--Learning-purple?style=for-the-badge&logo=brain&logoColor=white)](#-memory-system)
+[![License](https://img.shields.io/badge/License-Proprietary-orange?style=for-the-badge&logo=lock&logoColor=white)](#-license)
 
 ---
 
-*GAO Agent is a comprehensive AI-powered coding assistant framework that provides structured skills, enforced rules, and automated workflows for building production-ready applications across multiple languages, frameworks, and platforms.*
+*GAO Agent transforms any AI coding assistant into a production-grade software engineer — enforcing security, quality, and consistency through structured skills, non-negotiable rules, and automated workflows. It learns from every interaction, remembers every mistake, and never repeats the same error twice.*
 
 </div>
 
@@ -22,38 +23,74 @@
 ## 📋 Table of Contents
 
 - [Overview](#-overview)
+- [Key Differentiators](#-key-differentiators)
 - [Architecture](#-architecture)
 - [Getting Started](#-getting-started)
-- [Mandatory Rules](#-mandatory-rules-9)
-- [Workflows](#-workflows-6)
-- [Skills](#-skills-126)
-- [Project Structure](#-project-structure)
+- [Mandatory Rules (17)](#-mandatory-rules-17)
+- [Workflows (18)](#-workflows-18)
+- [Skills Library (360)](#-skills-library-360)
+- [Memory System](#-memory-system)
 - [How It Works](#-how-it-works)
+- [Decision Matrix](#-decision-matrix)
 - [Contributing](#-contributing)
-- [License](#license)
+- [Statistics](#-statistics)
+- [License](#-license)
 
 ---
 
 ## 🌟 Overview
 
-**GAO Agent** (Generative AI Operations) is an intelligent coding agent framework designed to produce consistent, secure, and production-grade code. Unlike generic AI assistants, GAO Agent operates with:
+**GAO Agent** (Generative AI Operations) is a comprehensive, enterprise-grade AI coding agent framework. It is **NOT** a run-of-the-mill AI assistant — it is a **structured operating system** for AI-powered software development that ensures every line of code is secure, tested, documented, and production-ready.
 
-- **🔒 9 Enforced Rules** — Security, SOLID principles, database design, UI/UX standards, and compliance (UU PDP/GDPR) are non-negotiable
-- **🛠️ 126 Technical Skills** — Deep reference implementations across 20+ technology categories
-- **📋 6 Automated Workflows** — From project initialization to testing and deployment
-- **📚 Context-Aware** — Reads and maintains project documentation to ensure consistency across every change
+### What Makes GAO Agent Different?
 
-### Key Capabilities
+| Traditional AI Assistant | GAO Agent |
+|--------------------------|-----------|
+| Generates code on demand | Generates code **with enforced security, architecture, and quality rules** |
+| No memory between sessions | **Self-learning memory** — learns from corrections and never repeats mistakes |
+| Generic responses | **Context-aware** — reads your entire codebase before writing a single line |
+| Inconsistent patterns | **17 mandatory rules** ensure consistent output across ALL tasks |
+| Limited framework knowledge | **360 deep technical skills** covering 30+ frameworks in production detail |
+| Manual workflows | **18 automated workflows** from planning to deployment |
+| No compliance awareness | **Built-in compliance**: ISO 27001, NIST CSF, CIS Controls, UU PDP/GDPR |
 
-| Capability | Description |
-|-----------|------------|
-| **Multi-Language Support** | JavaScript, TypeScript, Python, Java, Go, PHP, C#, Dart, Rust |
-| **Full-Stack Development** | Frontend (React, Vue, Angular) + Backend (Laravel, Django, Spring Boot) + Mobile (Flutter) |
-| **Security-First** | OWASP, ISO 27001, NIST CSF, CIS Controls compliance built-in |
-| **Data Privacy** | UU PDP (Indonesia GDPR) compliance with field-level encryption |
-| **AI/ML Integration** | TensorFlow, PyTorch, Scikit-learn, Gemini AI, OpenAI API |
-| **Observability** | Structured logging, Prometheus, OpenTelemetry, ELK Stack |
-| **Automated CI/CD** | Build detection, deployment recipes for 7 frameworks |
+---
+
+## 🏆 Key Differentiators
+
+### 1. 🧠 Self-Learning Memory
+GAO Agent **remembers and learns** from every interaction:
+- **Error Memory** — Every mistake is logged with root cause, correct approach, and prevention rule. The agent **never makes the same mistake twice.**
+- **Learned Knowledge** — User preferences, corrections, coding style, and project conventions are recorded and applied proactively in ALL future tasks.
+
+### 2. 🔒 Security-First by Design
+Security is not an afterthought — it's enforced at every layer:
+- 4-layer security model (Code → Dependencies → Containers → Infrastructure)
+- OWASP Top 10 protection in every API endpoint
+- AES-256-GCM encryption for sensitive data
+- Field-level encryption for PII compliance
+- Post-quantum cryptography readiness (ML-KEM/Kyber)
+
+### 3. 🏗️ Architecture Enforcement
+The agent doesn't just write code — it **enforces architectural patterns**:
+- SOLID principles are non-negotiable
+- Feature-based folder structure for frontends
+- Service-Repository pattern for backends
+- Proper normalization and indexing for databases
+- No `any` in TypeScript, no `var` in JavaScript
+
+### 4. 📊 Full Development Lifecycle
+From idea to production in a single pipeline:
+```
+/context-plan → /context-work → /context-build → /context-test → /context-review → /context-deploy
+```
+
+### 5. 🌏 Indonesia-Ready Compliance
+Built with Indonesian digital ecosystem in mind:
+- **UU PDP** (Undang-Undang Pelindungan Data Pribadi) — full compliance
+- **Payment Gateways**: Midtrans, Xendit, DOKU
+- **SNAP BI** compliance for banking integrations
+- **QRIS** payment support
 
 ---
 
@@ -61,44 +98,74 @@
 
 ```
 .agent/
-├── AGENTS.md                    # Master configuration (mandatory rules, skill registry)
 │
-├── rules/                       # 9 enforced coding rules
-│   ├── solid-principles.md          # SOLID design principles
-│   ├── developer-security.md        # 4-layer security model
-│   ├── database-design.md           # UUID, audit columns, soft delete
-│   ├── dependency-management.md     # Vetting, pinning, auditing
-│   ├── iso-27000-compliance.md      # ISO 27001 data classification
-│   ├── ui-ux-design.md              # Design tokens, dark mode, accessibility
-│   ├── production-code-standards.md # Zero hallucinations, type safety
-│   ├── frontend-architecture.md     # Feature-based, thin components
-│   └── uu-pdp-compliance.md         # Indonesia data privacy law
+├── AGENTS.md                        # Master configuration — rules registry, skill index, conventions
 │
-├── workflows/                   # 6 automated workflows
-│   ├── context-init.md              # Project analysis & doc generation
-│   ├── context-ask.md               # Intelligent Q&A with research
-│   ├── context-plan.md              # Implementation planning
-│   ├── context-work.md              # Task execution engine
-│   ├── context-test.md              # Comprehensive testing
-│   └── context-build.md             # Framework-aware build engine
+├── rules/                           # 17 mandatory coding & quality rules
+│   ├── deep-thinking.md                # Deep analysis, anti-hallucination, quality checklist (HIGHEST)
+│   ├── error-memory.md                 # Mistake logging & learning — never repeat errors
+│   ├── self-learning.md                # Adaptive learning from user preferences & corrections
+│   ├── solid-principles.md             # SOLID design principles enforcement
+│   ├── developer-security.md           # 4-layer security model
+│   ├── database-design.md              # UUID, audit columns, soft delete, normalization
+│   ├── dependency-management.md        # Vetting, pinning, auditing, license checks
+│   ├── iso-27000-compliance.md         # ISO 27001 data classification & encryption
+│   ├── ui-ux-design.md                 # Design tokens, dark mode, accessibility
+│   ├── production-code-standards.md    # Zero hallucinations, type safety, verification
+│   ├── frontend-architecture.md        # Feature-based folders, thin components, 4 UI states
+│   ├── uu-pdp-compliance.md            # Indonesia data privacy law (GDPR equivalent)
+│   ├── dark-light-mode.md              # Dark/light mode theming standards
+│   ├── architecture-enforcement.md     # Architecture pattern validation
+│   ├── adaptive-tdd.md                 # Test-driven development rules
+│   ├── continuous-execution.md         # Auto-proceed between workflow stages
+│   └── verification-gate.md            # Mandatory verification before completion claims
 │
-├── skills/                      # 126 technical skills
-│   ├── laravel/SKILL.md             # Laravel PHP framework
-│   ├── reactjs/SKILL.md             # React.js frontend
-│   ├── deploy-frontend/SKILL.md     # Frontend deployment
-│   ├── aes-256/SKILL.md             # AES-256 encryption
-│   ├── post-quantum-crypto/SKILL.md # Post-quantum cryptography
-│   └── ... (127 skill directories)
+├── workflows/                       # 18 automated development workflows
+│   ├── context-init.md                 # Full project analysis & documentation generation
+│   ├── context-plan.md                 # Implementation planning with brainstorming
+│   ├── context-work.md                 # Task execution engine from approved plans
+│   ├── context-build.md                # Framework-aware build engine (11 frameworks)
+│   ├── context-test.md                 # Comprehensive testing (unit, E2E, security, a11y)
+│   ├── context-review.md               # Multi-perspective code review + security audit
+│   ├── context-deploy.md               # Deployment orchestration (Docker, Cloud, K8s, VPS)
+│   ├── context-debug.md                # Systematic debugging + knowledge capture
+│   ├── context-ask.md                  # Intelligent Q&A with code analysis & web research
+│   ├── context-docs.md                 # Documentation generation (README, API, CHANGELOG)
+│   ├── context-git.md                  # Git operations (branching, commits, PRs, releases)
+│   ├── context-migrate.md              # Database migration management
+│   ├── context-refactor.md             # Safe code refactoring with metrics
+│   ├── context-upgrade.md              # Dependency audit & safe upgrade
+│   ├── context-ui-ux.md                # Professional UI/UX generation
+│   ├── context-launch.md               # Full pipeline: plan → work → build → test → review
+│   ├── context-reload.md               # Hot-reload agent configuration mid-conversation
+│   └── context-help.md                 # List all available commands, rules, and skills
 │
-└── context/                     # Auto-generated project docs
-    ├── CONTEXT_INDEX.md             # Master index
-    ├── ARCHITECTURE.md              # System architecture
-    ├── DATABASE_SCHEMA.md           # Database documentation
-    ├── API_REFERENCE.md             # API endpoints
-    ├── DEPENDENCIES.md              # Package inventory
-    ├── DEVELOPMENT_GUIDE.md         # Setup instructions
-    ├── BUSINESS_DOMAINS.md          # Domain documentation
-    └── PROJECT_OVERVIEW.md          # Project summary
+├── skills/                          # 360 technical skill directories
+│   ├── laravel/SKILL.md                # Laravel PHP framework
+│   ├── reactjs/SKILL.md                # React.js frontend
+│   ├── nextjs/SKILL.md                 # Next.js full-stack
+│   ├── aes-256/SKILL.md                # AES-256 encryption
+│   ├── midtrans/SKILL.md               # Midtrans payment gateway (Indonesia)
+│   ├── xendit/SKILL.md                 # Xendit payment gateway (Indonesia)
+│   ├── doku/SKILL.md                   # DOKU payment gateway (Indonesia)
+│   ├── post-quantum-crypto/SKILL.md    # Post-quantum cryptography (ML-KEM)
+│   ├── kubernetes/SKILL.md             # Container orchestration
+│   ├── mcp-*/SKILL.md                  # 65+ MCP server integrations
+│   └── ... (350+ more skill directories)
+│
+├── memory/                          # Persistent learning & error memory
+│   ├── ERROR_LOG.md                    # Every mistake logged with root cause & prevention rule
+│   └── LEARNED_KNOWLEDGE.md            # User preferences, corrections, patterns learned
+│
+└── context/                         # Auto-generated project documentation
+    ├── CONTEXT_INDEX.md                # Master index of all documentation
+    ├── ARCHITECTURE.md                 # System architecture & patterns
+    ├── DATABASE_SCHEMA.md              # Complete database documentation
+    ├── API_REFERENCE.md                # All API endpoints & contracts
+    ├── DEPENDENCIES.md                 # Package inventory & versions
+    ├── DEVELOPMENT_GUIDE.md            # Setup & configuration instructions
+    ├── BUSINESS_DOMAINS.md             # Domain model documentation
+    └── PROJECT_OVERVIEW.md             # Project summary & tech stack
 ```
 
 ---
@@ -107,259 +174,552 @@
 
 ### Prerequisites
 
-- AI coding assistant (Gemini, Claude, GPT, or compatible)
+- AI coding assistant that supports agent mode (Gemini, Claude, GPT, or compatible)
 - Project workspace with source code
+- Node.js / Python / PHP / Java / Go / .NET / Flutter SDK (based on your stack)
 
 ### Installation
 
-1. **Clone/copy the `.agent/` directory** into your project root:
+#### Step 1: Clone the Agent Framework
 
 ```bash
-# Copy the agent framework into your project
+# Clone the repository
+git clone https://github.com/generationappleone/gao-agent.git
+
+# Copy the .agent directory into your project
 cp -r gao-agent/.agent /path/to/your-project/.agent
 ```
 
-2. **Initialize the project context** (first-time setup):
+#### Step 2: Initialize Project Context
 
 ```
 /context-init
 ```
 
-This will scan your entire codebase and generate documentation in `.agent/context/`.
+This command scans your **entire codebase** and generates comprehensive documentation:
+- Architecture patterns, naming conventions, tech stack detection
+- Database schema analysis with relationship mapping
+- API endpoint inventory with request/response shapes
+- Dependency audit with version and license information
+- Business domain extraction
 
-3. **Start building:**
+#### Step 3: Start Building
+
+```bash
+# Plan a feature
+/context-plan Add user authentication with JWT and OAuth2
+
+# Execute the plan
+/context-work
+
+# Build the project
+/context-build
+
+# Run comprehensive tests
+/context-test
+
+# Deploy to production
+/context-deploy
+```
+
+#### Step 4: Full Autonomous Pipeline (Optional)
+
+For the complete end-to-end development lifecycle:
 
 ```
-/context-plan    # Plan your feature
-/context-work    # Execute the plan
-/context-build   # Build the project
-/context-test    # Run tests
+/context-launch Add payment gateway integration with Midtrans
+```
+
+This automatically runs: **Plan → Work → Build → Test → Review → Deploy**
+
+---
+
+## 🔒 Mandatory Rules (17)
+
+Every action performed by GAO Agent must comply with these rules. **They are non-negotiable and enforced automatically.**
+
+### Tier 1: Intelligence & Learning Rules (HIGHEST PRIORITY)
+
+| # | Rule | File | Purpose |
+|---|------|------|---------|
+| 1 | **Deep Thinking** | `deep-thinking.md` | 12-point checklist before writing any code: understand requirements, check edge cases, verify security, validate assumptions, check past mistakes |
+| 2 | **Error Memory** | `error-memory.md` | Every mistake is logged with root cause, correct approach, and prevention rule. Agent reads error log before every task |
+| 3 | **Self Learning** | `self-learning.md` | Learns from user corrections, preferences, and patterns. Stored in persistent knowledge base and applied proactively |
+
+### Tier 2: Code Quality Rules
+
+| # | Rule | File | Purpose |
+|---|------|------|---------|
+| 4 | **SOLID Principles** | `solid-principles.md` | SRP (max 50 lines/function), OCP (extend via interfaces), LSP, ISP, DIP enforcement |
+| 5 | **Production Code** | `production-code-standards.md` | Zero hallucinations, type safety, full context awareness, surgical edits only |
+| 6 | **Frontend Architecture** | `frontend-architecture.md` | Feature-based folders, thin components, 4 UI states (loading/error/empty/success), LCP < 2.5s |
+| 7 | **Architecture Enforcement** | `architecture-enforcement.md` | Validates correct folder placement, dependency direction, framework conventions |
+| 8 | **Adaptive TDD** | `adaptive-tdd.md` | Test-driven development rules adapted to project context |
+| 9 | **Verification Gate** | `verification-gate.md` | Mandatory verification commands before claiming any work is complete |
+
+### Tier 3: Security & Compliance Rules
+
+| # | Rule | File | Purpose |
+|---|------|------|---------|
+| 10 | **Developer Security** | `developer-security.md` | 4-layer security: Secure Code → Dependencies → Containers → Infrastructure |
+| 11 | **ISO 27000** | `iso-27000-compliance.md` | Data classification (Public/Internal/Confidential/Restricted), AES-256-GCM, audit logging |
+| 12 | **UU PDP Compliance** | `uu-pdp-compliance.md` | Indonesia data privacy: consent management, field-level encryption, breach notification 3×24h |
+
+### Tier 4: Design & Convention Rules
+
+| # | Rule | File | Purpose |
+|---|------|------|---------|
+| 13 | **Database Design** | `database-design.md` | UUID PKs, audit columns, soft delete, normalization (3NF+), proper indexing |
+| 14 | **Dependency Mgmt** | `dependency-management.md` | Research before install, check popularity/security/license, pin versions |
+| 15 | **UI/UX Design** | `ui-ux-design.md` | Design tokens, micro-interactions, WCAG 2.1 AA, mobile-first responsive |
+| 16 | **Dark/Light Mode** | `dark-light-mode.md` | CSS variables, system preference detection, FOUC prevention, semantic colors |
+
+### Tier 5: Process Rules
+
+| # | Rule | File | Purpose |
+|---|------|------|---------|
+| 17 | **Continuous Execution** | `continuous-execution.md` | Auto-proceed between workflow stages, no unnecessary pauses |
+
+### Deep Thinking Checklist (Applied Before EVERY Action)
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                    DEEP THINKING CHECKLIST                   │
+├─────────────────────────────────────────────────────────────┤
+│  1. ☐ Have I checked ERROR_LOG.md for past mistakes?        │
+│  2. ☐ Have I checked LEARNED_KNOWLEDGE.md for user prefs?   │
+│  3. ☐ Do I FULLY understand what is being asked?            │
+│  4. ☐ Have I read ALL relevant context and existing code?   │
+│  5. ☐ What are the EDGE CASES I must handle?                │
+│  6. ☐ What can go WRONG? (failure modes, race conditions)   │
+│  7. ☐ Is this SECURE? (injection, auth bypass, data leak)   │
+│  8. ☐ Is the data model CORRECT and NORMALIZED?             │
+│  9. ☐ Does this follow existing PATTERNS in the codebase?   │
+│ 10. ☐ Will this SCALE? (N+1 queries, memory, concurrency)  │
+│ 11. ☐ Am I making ASSUMPTIONS? → If yes, ASK the user.     │
+│ 12. ☐ Is there a SIMPLER, more ELEGANT solution?            │
+└─────────────────────────────────────────────────────────────┘
 ```
 
 ---
 
-## 🔒 Mandatory Rules (9)
+## 📋 Workflows (18)
 
-Every line of code produced by GAO Agent must comply with these rules. **They are non-negotiable.**
+### Development Lifecycle Workflows
 
-### 1. SOLID Principles
-| Principle | Enforcement |
-|-----------|------------|
-| **SRP** | Each class/function has ONE responsibility. Max 50 lines per function |
-| **OCP** | Extend via interfaces/abstractions, not modification |
-| **LSP** | Subtypes must be substitutable for base types |
-| **ISP** | Small, focused interfaces over large monolithic ones |
-| **DIP** | Depend on abstractions, inject dependencies |
+| # | Command | Name | Purpose |
+|---|---------|------|---------|
+| 1 | `/context-init` | **Project Init** | Full codebase analysis → generates 8 documentation files in `.agent/context/` |
+| 2 | `/context-plan` | **Planning** | Brainstorming + implementation plan with priorities, diagrams, database schema review |
+| 3 | `/context-work` | **Execution** | Executes tasks from approved plan with quality verification at each step |
+| 4 | `/context-build` | **Build** | Auto-detects framework (11 supported) and runs correct build command |
+| 5 | `/context-test` | **Testing** | Comprehensive testing: unit, integration, E2E, security, accessibility, performance |
+| 6 | `/context-review` | **Review** | Multi-perspective code review + OWASP security audit + severity classification |
+| 7 | `/context-deploy` | **Deploy** | Deployment orchestration: Docker, Vercel, Netlify, AWS, GCP, Azure, VPS, Kubernetes |
+| 8 | `/context-launch` | **Full Pipeline** | Autonomous: Plan → Work → Build → Test → Review → Deploy (all in one) |
 
-### 2. Developer Security
+### Maintenance & Operations Workflows
+
+| # | Command | Name | Purpose |
+|---|---------|------|---------|
+| 9 | `/context-debug` | **Debug** | Systematic root-cause debugging + automatic knowledge capture |
+| 10 | `/context-refactor` | **Refactor** | Safe refactoring with before/after metrics, atomic execution, test verification |
+| 11 | `/context-upgrade` | **Upgrade** | Dependency audit + safe upgrade with breaking change analysis |
+| 12 | `/context-migrate` | **Migrate** | Database migration: generate, review, apply, rollback, seed |
+
+### Documentation & Knowledge Workflows
+
+| # | Command | Name | Purpose |
+|---|---------|------|---------|
+| 13 | `/context-docs` | **Documentation** | Generate README, CHANGELOG, API docs, contributing guide, ADR |
+| 14 | `/context-ask` | **Ask** | Intelligent Q&A with code analysis, skill reference, and web research |
+| 15 | `/context-git` | **Git Ops** | Branching, conventional commits, merge, release tagging, PR templates |
+
+### UI/UX & Utility Workflows
+
+| # | Command | Name | Purpose |
+|---|---------|------|---------|
+| 16 | `/context-ui-ux` | **UI/UX** | Professional UI generation with design system, 67 styles, 96 color palettes |
+| 17 | `/context-reload` | **Reload** | Hot-reload rules, workflows, and skills mid-conversation |
+| 18 | `/context-help` | **Help** | List all available commands, rules, skills, and capabilities |
+
+### Workflow Pipeline Visualization
+
 ```
-Layer 1: Secure Code     → Input validation, output encoding, parameterized queries
-Layer 2: Dependencies    → Vetting, pinning, auditing (npm audit, pip audit)
-Layer 3: Containers      → Non-root, minimal base images, vulnerability scanning
-Layer 4: Infrastructure  → Secrets in vault, security headers, HTTPS
-```
-
-### 3. Database Design
-- ✅ UUID primary keys (never auto-increment for public IDs)
-- ✅ Audit columns: `created_at`, `updated_at` on every table
-- ✅ Soft delete: `deleted_at` column (never hard delete user data)
-- ✅ Proper normalization (3NF minimum)
-- ✅ Indexes on foreign keys and frequently queried columns
-
-### 4. Dependency Management
-- Research before installing ANY dependency
-- Check: popularity, maintenance, security, license, size
-- Pin exact versions, run security audits
-
-### 5. ISO 27000 Compliance
-- Data classification: Public, Internal, Confidential, Restricted
-- AES-256-GCM encryption for sensitive data
-- Audit logging for all security events
-- Vulnerability patching SLA (Critical: 24h, High: 7d)
-
-### 6. UI/UX Design
-- Micro-interactions and smooth transitions
-- WCAG 2.1 AA accessibility compliance
-- Dark mode support (mandatory)
-- Design token system for consistency
-- Mobile-first responsive design
-
-### 7. Production Code Standards
-- Zero hallucinations — verify every import and function exists
-- Type-safe everything — `any` is BANNED in TypeScript
-- Full context awareness — read ALL related files before coding
-- Surgical edits — change only what's necessary
-
-### 8. Frontend Architecture
-- Feature-based folder structure
-- Thin components (JSX only — logic in hooks)
-- 4 UI states: loading, error, empty, success
-- Performance budgets: LCP < 2.5s, bundle < 200KB gzipped
-
-### 9. UU PDP Compliance (Indonesia GDPR)
-- Data classification: Umum (general) vs Spesifik (sensitive)
-- Explicit consent before processing
-- Field-level encryption for Data Spesifik (AES-256-GCM)
-- 7 data subject rights implementation
-- Breach notification within 3×24 hours
-
----
-
-## 📋 Workflows (6)
-
-| # | Workflow | Command | Purpose |
-|---|----------|---------|---------|
-| 1 | **Context Init** | `/context-init` | Scans the entire codebase and generates comprehensive documentation |
-| 2 | **Context Ask** | `/context-ask` | Answers questions with code analysis and internet research |
-| 3 | **Context Plan** | `/context-plan` | Creates detailed implementation plans with priorities and dependencies |
-| 4 | **Context Work** | `/context-work` | Executes tasks from an approved plan with quality verification |
-| 5 | **Context Test** | `/context-test` | Runs comprehensive testing (features, security, reliability) |
-| 6 | **Context Build** | `/context-build` | Auto-detects framework and runs the correct build command |
-
-### Workflow Chain
-```
-/context-init  →  /context-plan  →  /context-work  →  /context-build  →  /context-test
-    ↓                  ↓                  ↓                  ↓                  ↓
- Analyze           Plan it           Execute it          Build it           Test it
- Project           (diagrams,        (code, DB,          (detect            (E2E,
-                   priorities)       APIs, UI)           framework)         security)
+┌──────────────────────────────────────────────────────────────────────────────┐
+│                        GAO AGENT WORKFLOW PIPELINE                          │
+├──────────────────────────────────────────────────────────────────────────────┤
+│                                                                              │
+│  📊 PLAN          🔨 WORK          🏗️ BUILD         🧪 TEST                │
+│  ┌─────────┐     ┌─────────┐     ┌─────────┐     ┌─────────┐              │
+│  │ Analyze  │────▶│ Execute │────▶│ Compile │────▶│ Verify  │              │
+│  │ Design   │     │ Code    │     │ Bundle  │     │ Quality │              │
+│  │ Plan     │     │ Test    │     │ Optimize│     │ Security│              │
+│  └─────────┘     └─────────┘     └─────────┘     └─────────┘              │
+│       │                                                │                    │
+│       ▼                                                ▼                    │
+│  ┌─────────┐                                     ┌─────────┐              │
+│  │ ⛔ USER │                                     │ 🔍 CODE │              │
+│  │ APPROVAL│                                     │ REVIEW  │              │
+│  └─────────┘                                     └────┬────┘              │
+│                                                       │                    │
+│                                                       ▼                    │
+│                                                  ┌─────────┐              │
+│                                                  │ 🚀 DEPLOY│              │
+│                                                  │ ⛔ APPROVE│             │
+│                                                  └─────────┘              │
+│                                                                              │
+│  🔄 SUPPORTING WORKFLOWS:                                                   │
+│  /context-debug    — Systematic debugging with knowledge capture            │
+│  /context-refactor — Safe refactoring with metrics                          │
+│  /context-upgrade  — Dependency audit & upgrade                             │
+│  /context-migrate  — Database migration management                          │
+│  /context-docs     — Documentation generation                               │
+│  /context-git      — Git operations & release management                    │
+│  /context-ui-ux    — Professional UI/UX generation                          │
+│                                                                              │
+└──────────────────────────────────────────────────────────────────────────────┘
 ```
 
-### `/context-build` — Framework Auto-Detection
-
-The build workflow automatically detects your project framework:
+### `/context-build` — Auto-Detection Matrix
 
 | Detected File | Framework | Build Command |
-|--------------|-----------|--------------|
+|---------------|-----------|---------------|
 | `next.config.*` | Next.js | `npm run build` |
 | `vite.config.*` | Vite (React/Vue) | `npm run build` |
 | `angular.json` | Angular | `ng build --configuration production` |
+| `nuxt.config.*` | Nuxt.js | `npm run build` |
 | `pom.xml` | Java (Maven) | `mvn clean package -DskipTests` |
 | `build.gradle` | Java (Gradle) | `./gradlew build -x test` |
 | `pubspec.yaml` | Flutter | `flutter build web/apk/ios` |
 | `go.mod` | Go | `go build ./...` |
 | `composer.json` | Laravel/PHP | `php artisan optimize` |
-| `*.csproj` | .NET | `dotnet build --configuration Release` |
-| `requirements.txt` | Python | `pip install && collectstatic` |
+| `*.csproj / *.sln` | .NET/C# | `dotnet build --configuration Release` |
 | `Cargo.toml` | Rust | `cargo build --release` |
+| `requirements.txt` | Python | `pip install && collectstatic` |
+| `Gemfile` | Ruby/Rails | `bundle exec rails assets:precompile` |
 
 ---
 
-## 🛠 Skills (126)
+## 🛠 Skills Library (360)
 
-### Overview by Category
+GAO Agent includes **360 deep technical skill directories**, each containing production-ready reference implementations, architecture patterns, and best practices. Skills are NOT generic documentation — they are **battle-tested implementation guides** that the agent reads before writing any code.
 
-| Category | Count | Technologies |
-|----------|-------|-------------|
-| **Languages & Frameworks** | 13 | Laravel, React.js, Python, Java, JavaScript, Flutter, Go, PHP, .NET, ASP.NET, Flask, Django, ionCube |
-| **Databases** | 6 | PostgreSQL, MySQL, MongoDB, SAP HANA, Oracle, SQL Server |
-| **CSS & UI** | 6 | Bootstrap, Tailwind CSS, shadcn/ui, Chakra UI, Bulma, Material UI |
-| **Frontend Enhancement** | 3 | Animation & Motion, Data Visualization, Icon Libraries |
-| **Admin Templates** | 8 | TailAdmin, AdminLTE, AdminKit, Shadcn Admin, CelestialAdmin, PlainAdmin, Focus Admin, Ample Admin |
-| **Platform & Tools** | 8 | Node.js, Docker, SEO, Apache, XAMPP, Laragon, Kubernetes, Git |
-| **Messaging & Infra** | 3 | Redis, Kafka, Load Balancing |
-| **Deployment** | 7 | Frontend, Laravel, Java, Flutter, Python, Go, .NET |
-| **Business Platforms** | 2 | WHMCS, Odoo |
-| **CMS** | 4 | WordPress, Joomla, Drupal, Wix/Squarespace |
-| **E-Commerce** | 2 | Shopify, Magento |
-| **Security & Quality** | 2 | Security Code Review, Code Quality |
-| **Security Frameworks** | 3 | ISO 27001, NIST CSF, CIS Controls |
-| **Privacy & Compliance** | 3 | UU PDP, Consent Management, Data Privacy Engineering |
-| **Authentication** | 2 | Keycloak, Google OAuth |
-| **Email & Messaging** | 2 | SMTP OTP, SMTP Email |
-| **Application Security** | 3 | XSS Security, DDoS Protection, WAF |
-| **Encryption** | 2 | AES-256, Post-Quantum Cryptography |
-| **CAPTCHA & Bot** | 2 | Cloudflare Turnstile, Google reCAPTCHA |
-| **API Standards** | 2 | REST API, IETF JSON Standards |
-| **Data Engineering** | 4 | Data Lake, Data Warehouse, ETL, Hadoop |
-| **AI & ML** | 6 | AI/ML, Machine Learning, TensorFlow, PyTorch, Scikit-learn, Predictive Analytics |
-| **AI API Providers** | 2 | Gemini AI, OpenAI |
-| **Roles & Methodology** | 7 | Data Scientist, Business Analyst, BI, System Design, System Analyst, Quality Control, Project Management |
-| **Observability** | 4 | Structured Logging, ELK Stack, Prometheus, OpenTelemetry |
-| **Testing (Auto-Install)** | 9 | Playwright, Cypress, Load Testing, Newman, Accessibility, ESLint, Snyk, Python Security, PHPStan |
-| **Testing (CLI)** | 9 | OWASP ZAP, Nikto, Nmap, SQLMap, FFuf, Burp Suite, Trivy, SonarQube, Checkmarx |
-| **Testing (Cloud/SaaS)** | 3 | Cross-Browser, Datadog, PagerDuty |
+### Languages & Core Frameworks
 
-### Skill File Format
+| Skill | Description |
+|-------|-------------|
+| `javascript` | ES2024+, async patterns, module systems, Node.js backend |
+| `typescript` | Type system, generics, utility types, decorators, strict mode |
+| `python` | Type hints, async, FastAPI, Django, testing, packaging |
+| `java` | Spring Boot, JPA/Hibernate, REST APIs, enterprise patterns |
+| `php` | PHP 8.3+, OOP, Composer, PSR standards, security |
+| `golang` | Clean architecture, HTTP servers, concurrency, error handling |
+| `rust` | Ownership, borrowing, traits, async/await, Actix/Axum web |
+| `kotlin-android` | Jetpack Compose, MVVM, Coroutines, Room, Hilt DI |
+| `swift-ios` | SwiftUI, UIKit, Combine, Core Data, App Store deployment |
+| `flutter` | Cross-platform, state management, platform integration |
+| `dotnet` | Clean architecture, Entity Framework, DI, async patterns |
 
-Each skill follows a consistent structure:
+### Web Frameworks
 
-```markdown
+| Skill | Description |
+|-------|-------------|
+| `reactjs` | Components, hooks, state management, performance optimization |
+| `nextjs` | App Router, Server Components, Server Actions, SSR/SSG/ISR |
+| `vuejs` | Composition API, Pinia, Vue Router, Nuxt.js integration |
+| `angular` | Modules, services, RxJS, routing, forms, HttpClient |
+| `svelte` | Reactivity, SvelteKit, server-side rendering, form actions |
+| `laravel` | Eloquent ORM, API development, authentication, queue workers |
+| `django` | Models, DRF, admin, testing, deployment |
+| `flask` | Blueprints, REST APIs, SQLAlchemy, testing |
+| `aspnet` | MVC, Razor Pages, Blazor, SignalR, middleware |
+| `nodejs` | Express/Fastify, middleware, auth, database integration |
+
+### Databases
+
+| Skill | Description |
+|-------|-------------|
+| `postgresql` | Advanced queries, indexing, performance tuning, extensions |
+| `mysql` | Schema design, binary UUIDs, query optimization, replication |
+| `mongodb` | Document modeling, aggregation pipelines, transactions |
+| `sql-server` | T-SQL, query optimization, .NET integration |
+| `oracle` | PL/SQL, partitioning, performance tuning |
+| `sap-hana` | CDS views, SQLScript, calculation views |
+| `redis` | Caching, pub/sub, streams, clustering |
+| `elasticsearch` | Full-text search, Query DSL, analyzers, aggregations |
+| `firebase` | Firestore, Auth, Realtime DB, Cloud Functions |
+| `supabase` | Auth, PostgreSQL, Realtime, Storage, RLS |
+| `prisma` | Schema design, migrations, type-safe CRUD, relations |
+
+### Security & Encryption
+
+| Skill | Description |
+|-------|-------------|
+| `aes-256` | AES-256-GCM/CBC, key management, field-level encryption |
+| `post-quantum-crypto` | ML-KEM/Kyber, ML-DSA/Dilithium, hybrid encryption |
+| `oauth-jwt` | OAuth 2.0 flows, JWT, PKCE, token management |
+| `keycloak` | IAM, OIDC/SAML, role management, user federation |
+| `xss-security` | Reflected/stored/DOM XSS, CSP, output encoding |
+| `ddos-protection` | Rate limiting, Cloudflare, AWS Shield, Nginx config |
+| `waf` | Cloudflare WAF, AWS WAF, ModSecurity, OWASP CRS |
+| `secrets-management` | Secret detection, vault integration, key rotation |
+| `secure-code-patterns` | Input validation, parameterized queries, JWT security |
+| `threat-modeling` | STRIDE methodology, attack surface analysis, risk scoring |
+| `security-audit` | OWASP Top 10 checklist, dependency scanning, reporting |
+
+### Payment Gateways (Indonesia)
+
+| Skill | Description |
+|-------|-------------|
+| `midtrans` | Snap API, Core API, VA, e-wallet, QRIS, credit cards |
+| `xendit` | Invoices, e-wallets (OVO, DANA, ShopeePay), VA, disbursements |
+| `doku` | Checkout API, Direct API, SNAP BI compliance, QRIS |
+| `stripe` | Payment Intents, subscriptions, webhooks, PCI compliance |
+
+### Cloud & Infrastructure
+
+| Skill | Description |
+|-------|-------------|
+| `aws` | EC2, S3, Lambda, RDS, CloudFront, IAM, DynamoDB, SQS |
+| `gcp` | Cloud Run, Functions, Storage, BigQuery, Pub/Sub |
+| `azure` | App Service, Functions, Blob Storage, Cosmos DB, Key Vault |
+| `docker` | Multi-stage builds, docker-compose, security hardening |
+| `kubernetes` | Pods, deployments, services, ingress, autoscaling |
+| `terraform` | HCL, providers, modules, state management, workspaces |
+| `nginx` | Reverse proxy, SSL/TLS, rate limiting, security headers |
+
+### AI & Machine Learning
+
+| Skill | Description |
+|-------|-------------|
+| `ai-ml` | ML pipeline architecture, model serving, MLOps, LLM integration |
+| `tensorflow` | CNNs, RNNs, transfer learning, TensorFlow Serving |
+| `pytorch` | Model building, training loops, TorchServe deployment |
+| `scikit-learn` | Classification, regression, clustering, pipelines |
+| `gemini-api` | Text generation, multimodal, function calling, embeddings |
+| `openai-api` | Chat completions, structured output, assistants API |
+| `machine-learning` | Model selection, hyperparameter tuning, cross-validation |
+| `predictive-analytics` | Forecasting, customer analytics, churn prediction |
+
+### Deployment Skills
+
+| Skill | Target |
+|-------|--------|
+| `deploy-frontend` | Vercel, Netlify, Cloudflare Pages, Nginx, Docker |
+| `deploy-laravel` | Nginx/Apache, PHP-FPM, Forge, Deployer, Docker |
+| `deploy-java` | JAR/WAR, Docker, Kubernetes, Tomcat, CI/CD |
+| `deploy-python` | Gunicorn, uWSGI, Docker, Nginx, systemd |
+| `deploy-flutter` | Android (Play Store), iOS (App Store), Web hosting |
+| `deploy-go` | Static binary, Docker scratch, systemd, K8s |
+| `deploy-dotnet` | IIS, Kestrel, Azure App Service, Docker |
+
+### MCP Server Integrations (65+)
+
+GAO Agent includes **65+ Model Context Protocol (MCP) server skills** for direct integration with external tools and services:
+
+| Category | MCP Skills |
+|----------|-----------|
+| **DevOps** | GitHub, Azure DevOps, GitLab, Vercel, Terraform, Octopus Deploy |
+| **Monitoring** | Sentry, Datadog, Dynatrace, Netdata, Logfire |
+| **Design** | Figma, Anima, Miro |
+| **Database** | Supabase, Neon, DBHub, Elasticsearch, PgEdge, Chroma |
+| **Security** | Snyk, SonarQube, Stackhawk, Sonatype, Codacy |
+| **Productivity** | Notion, Monday, Todoist, Atlassian, Box, Intercom |
+| **AI/ML** | HuggingFace, Azure AI Foundry |
+| **Web** | Playwright, Firecrawl, ScrapGraph, Tavily, Webflow, Wix |
+| **Cloud** | Azure (AKS, ARM, Sentinel), Microsoft Enterprise |
+
+### Testing & Security Scanning
+
+| Category | Skills |
+|----------|--------|
+| **E2E Testing** | Playwright, Cypress |
+| **API Testing** | Newman/Postman, Swagger Inspector |
+| **Security Scanning** | OWASP ZAP, Burp Suite, Nikto, Nmap, SQLMap, FFuf |
+| **Vulnerability** | Snyk, Trivy, OpenVAS, Nessus, Qualys, Checkmarx |
+| **Code Quality** | SonarQube, ESLint Security, PHPStan, Semgrep |
+| **Performance** | Artillery, k6, JMeter, Autocannon |
+| **Accessibility** | pa11y, axe-core, Lighthouse CI |
+| **Cross-Browser** | BrowserStack, Sauce Labs |
+
+### Observability & Monitoring
+
+| Skill | Description |
+|-------|-------------|
+| `structured-logging` | JSON logs, correlation IDs, sensitive data redaction |
+| `elk-stack` | Elasticsearch + Logstash + Kibana, dashboards |
+| `prometheus` | Metric types, PromQL, alerting, Grafana dashboards |
+| `opentelemetry` | Traces, metrics, logs, auto-instrumentation |
+| `grafana` | Multi-datasource dashboards, alerting, HTTP API |
+| `datadog` | APM, synthetic tests, log management |
+| `new-relic` | Full-stack observability, NRQL, NerdGraph API |
+
+### Enterprise & Business Platforms
+
+| Skill | Description |
+|-------|-------------|
+| `wordpress` | Theme/plugin development, REST API, WooCommerce |
+| `shopify` | Liquid, Storefront API, Hydrogen (headless) |
+| `odoo` | Module development, ORM, views, business logic |
+| `whmcs` | Module development, API, hooks, hosting automation |
+| `magento` | Component creation, DI, plugins, layout XML |
+
+### UI/CSS Frameworks & Admin Templates
+
+| Category | Skills |
+|----------|--------|
+| **CSS Frameworks** | Bootstrap, Tailwind CSS, Bulma, Material UI, Chakra UI, shadcn/ui |
+| **Admin Templates** | AdminLTE, AdminKit, TailAdmin, Shadcn Admin, PlainAdmin, Focus Admin, CelestialAdmin, Ample Admin Lite |
+| **Design** | Animation & Motion, Data Visualization, Icon Libraries, Dark/Light Mode |
+
+### Data Engineering & Analytics
+
+| Skill | Description |
+|-------|-------------|
+| `data-lake` | Medallion architecture, partitioning, Parquet/Delta/Iceberg |
+| `data-warehouse` | Dimensional modeling, star/snowflake schema, ETL |
+| `etl` | Extraction, transformation, loading, Airflow, Prefect |
+| `hadoop` | HDFS, MapReduce, YARN, Hive, Spark, HBase |
+| `business-intelligence` | KPI dashboards, Metabase, Superset, Power BI |
+
+### Professional Roles & Methodology
+
+| Skill | Description |
+|-------|-------------|
+| `data-scientist` | EDA, statistical methods, feature engineering, experiment tracking |
+| `business-analyst` | Requirements, user stories, BPMN, use cases |
+| `system-design` | Microservices, event-driven, caching, load balancing |
+| `system-analyst` | Requirements analysis, UML, ERD, DFD |
+| `project-management` | Agile, sprint planning, estimation, risk management |
+| `quality-control` | Testing strategies, code review, quality gates |
+| `design-patterns` | GoF patterns, Repository, CQRS, Event-Driven |
+
 ---
-name: Skill Name
-description: Brief description covering key capabilities
----
 
-# Skill Name
+## 🧠 Memory System
 
-## Overview
-What this skill covers and when to use it.
+GAO Agent features a **persistent memory system** that makes it smarter over time:
 
-## Key Concepts
-Core patterns, architecture decisions, and comparison tables.
+### Error Memory (`error-memory.md`)
 
-## Implementation Examples
-Production-ready code examples in relevant languages.
-
-## Best Practices
-Do's and don'ts with rationale.
+```
+┌─────────────────────────────────────────────────────────────┐
+│                    ERROR MEMORY FLOW                        │
+├─────────────────────────────────────────────────────────────┤
+│                                                             │
+│  BEFORE TASK:                                               │
+│    ① Read .agent/memory/ERROR_LOG.md                       │
+│    ② Scan prevention rules for relevance                   │
+│    ③ Apply lessons learned to current task                 │
+│                                                             │
+│  DURING TASK (if error detected):                           │
+│    ④ STOP → LOG → Fix → Resume                            │
+│    ⑤ Record: what went wrong, root cause, correct way      │
+│    ⑥ Create prevention rule (IF-THEN format)               │
+│                                                             │
+│  RESULT:                                                    │
+│    → Agent NEVER makes the same mistake twice               │
+│    → Prevention rules accumulate over time                  │
+│    → Knowledge is persistent across conversations           │
+│                                                             │
+└─────────────────────────────────────────────────────────────┘
 ```
 
----
+**12 Error Categories Tracked:** Code Error, Build Error, Test Failure, Wrong Approach, Hallucination, Security Issue, Database Error, Command Error, Logic Error, User Correction, Repeated Rework, Pattern Detection.
 
-## 📁 Project Structure
+### Self-Learning Knowledge (`self-learning.md`)
 
 ```
-your-project/
-├── .agent/                    # GAO Agent configuration
-│   ├── AGENTS.md              # Master configuration file
-│   ├── rules/                 # 9 mandatory coding rules
-│   ├── skills/                # 126 technical skills
-│   ├── workflows/             # 6 automated workflows
-│   └── context/               # Auto-generated project documentation
-│
-├── src/                       # Your application source code
-├── tests/                     # Test files
-├── package.json               # (or pom.xml, composer.json, etc.)
-└── README.md                  # Project README
+┌─────────────────────────────────────────────────────────────┐
+│                 SELF-LEARNING FLOW                          │
+├─────────────────────────────────────────────────────────────┤
+│                                                             │
+│  👁️ OBSERVE:                                                │
+│    • User corrections → "Don't use var, use const"         │
+│    • User preferences → Always use Bahasa Indonesia        │
+│    • Request patterns → Always wants dark mode in UI       │
+│    • Project conventions → UUID for primary keys           │
+│                                                             │
+│  📝 RECORD:                                                 │
+│    → Write to .agent/memory/LEARNED_KNOWLEDGE.md           │
+│    → Format: ID, description, when to apply, action rule   │
+│    → Acknowledge: "📚 Noted: [what was learned]"           │
+│                                                             │
+│  ⚡ APPLY:                                                  │
+│    → Read LEARNED_KNOWLEDGE.md before every task           │
+│    → Scan rules relevant to current task                   │
+│    → Apply PROACTIVELY without being told again            │
+│                                                             │
+│  🔄 EVOLVE:                                                 │
+│    → Increase confidence level with observations           │
+│    → Resolve conflicts: newer > older, explicit > implicit │
+│    → Never delete — only supersede                         │
+│                                                             │
+└─────────────────────────────────────────────────────────────┘
 ```
+
+**Learning Categories:** Communication & Language, Coding Style, Architecture & Patterns, Database & Schema, Technology Preferences, Workflow & Process, Project Conventions, UI/UX Preferences.
 
 ---
 
 ## ⚙ How It Works
 
-### 1. Pre-Task Protocol
-Before writing ANY code, GAO Agent:
-1. **Reads** `CONTEXT_INDEX.md` and relevant context files
-2. **Identifies** existing patterns (architecture, naming, conventions)
-3. **Loads** applicable skills for the technology stack
-4. **Enforces** all 9 mandatory rules
+### Pre-Task Protocol (Before Writing ANY Code)
 
-### 2. Code Generation
-During implementation:
-- Follows existing project patterns (never introduces new patterns without permission)
-- Validates all inputs, encodes outputs, uses parameterized queries
-- Applies SOLID principles and proper error handling
-- Generates type-safe code (no `any` in TypeScript)
+```
+1. READ    → .agent/memory/ERROR_LOG.md          (past mistakes)
+2. READ    → .agent/memory/LEARNED_KNOWLEDGE.md  (user preferences)
+3. READ    → .agent/context/CONTEXT_INDEX.md      (project context)
+4. READ    → .agent/context/ARCHITECTURE.md       (patterns)
+5. LOAD    → Applicable skills for the tech stack
+6. ENFORCE → All 17 mandatory rules
+7. VERIFY  → Deep thinking checklist (12 points)
+```
 
-### 3. Post-Task Protocol
-After making changes:
-- Updates relevant documentation (DATABASE_SCHEMA, API_REFERENCE, etc.)
-- Runs build verification
-- Executes linting and tests
-- Reports completion status
+### During Task Execution
 
-### Decision Matrix
+```
+• Follow existing project patterns (never introduce new patterns without permission)
+• Validate all inputs, encode outputs, use parameterized queries
+• Apply SOLID principles and proper error handling
+• Generate type-safe code (no `any` in TypeScript, no `var` in JavaScript)
+• Log errors and corrections to memory files
+• Record user preferences as they emerge
+```
 
-| Question | GAO Agent's Answer |
-|----------|-------------------|
-| Which database ID? | UUID (never auto-increment for public IDs) |
-| Hard or soft delete? | Soft delete (`deleted_at` column) |
-| Store password how? | bcrypt (cost ≥ 12) or Argon2id |
-| API response format? | `{ data, error, meta }` |
-| Where to put logic? | Service layer (never in controllers) |
-| CSS approach? | Follow existing project pattern |
-| New dependency? | Research first (check popularity, security, license) |
+### Post-Task Protocol
+
+```
+1. UPDATE  → Documentation (DATABASE_SCHEMA, API_REFERENCE, etc.)
+2. RUN     → Build verification
+3. RUN     → Linting and tests
+4. LOG     → Any errors to ERROR_LOG.md
+5. LOG     → Any new knowledge to LEARNED_KNOWLEDGE.md
+6. REPORT  → Completion status with verification evidence
+```
+
+---
+
+## 📐 Decision Matrix
+
+When GAO Agent encounters common architectural decisions, it follows these defaults:
+
+| Question | GAO Agent's Decision | Rationale |
+|----------|---------------------|-----------|
+| Which database ID? | **UUID v4/v7** | Never auto-increment for public IDs — prevents enumeration attacks |
+| Hard or soft delete? | **Soft delete** (`deleted_at`) | Data recovery, audit trail, referential integrity preservation |
+| Store password how? | **bcrypt (cost ≥ 12)** or **Argon2id** | Industry standard, resistant to GPU/ASIC attacks |
+| API response format? | `{ data, error, meta }` | Consistent, predictable, supports pagination and error details |
+| Where to put logic? | **Service layer** | Never in controllers — separation of concerns, testability |
+| CSS approach? | **Follow existing project pattern** | Consistency over preference |
+| New dependency? | **Research first** | Check popularity, maintenance, security, license, bundle size |
+| Secret management? | **Environment variables / Vault** | Never hardcode, never commit to git |
+| Error handling? | **Typed exceptions / Result pattern** | Never silently swallow errors |
+| Logging format? | **Structured JSON** | Machine-parseable, searchable, correlation IDs |
+| API authentication? | **JWT + Refresh tokens** or **OAuth 2.0** | Stateless, scalable, industry standard |
+| Database columns? | `created_at`, `updated_at`, `deleted_at` | Audit trail on every table |
+| Primary language? | **Follow user preference** | Detected from LEARNED_KNOWLEDGE.md |
 
 ---
 
@@ -367,41 +727,64 @@ After making changes:
 
 ### Adding a New Skill
 
-1. Create a directory: `.agent/skills/<skill-name>/`
+1. Create the directory:
+   ```bash
+   mkdir .agent/skills/<skill-name>
+   ```
+
 2. Create `SKILL.md` with YAML frontmatter:
+   ```markdown
+   ---
+   name: Your Skill Name
+   description: Brief description covering key capabilities
+   ---
 
-```markdown
----
-name: Your Skill Name
-description: Brief description of what the skill covers
----
+   # Your Skill Name
 
-# Your Skill Name
-[Content following the standard skill structure]
-```
+   ## Overview
+   What this skill covers and when to use it.
+
+   ## Key Concepts
+   Core patterns, architecture decisions, comparison tables.
+
+   ## Implementation Examples
+   Production-ready code examples in relevant languages.
+
+   ## Best Practices
+   Do's and don'ts with rationale.
+
+   ## Security Considerations
+   Security-specific guidance for this technology.
+   ```
 
 3. Register the skill in `.agent/AGENTS.md` under the appropriate category
-4. Update the skill count in the header
 
 ### Adding a New Rule
 
-1. Create `.agent/rules/<rule-name>.md` with the rule content
-2. Register in `AGENTS.md` under "📏 Mandatory Rules"
+1. Create `.agent/rules/<rule-name>.md`
+2. Follow the structure: Core Principle → Enforcement Details → Examples → Anti-Patterns
+3. Register in `AGENTS.md` under "📏 Mandatory Rules"
+4. Add reference to `context-help.md` mandatory rules table
 
 ### Adding a New Workflow
 
 1. Create `.agent/workflows/<workflow-name>.md` with YAML frontmatter:
+   ```markdown
+   ---
+   description: Short description of what the workflow does
+   ---
 
-```markdown
----
-description: Short description of what the workflow does
----
+   # Workflow Title
 
-# Workflow Title
-[Workflow steps with phases and turbo annotations]
-```
+   ## Phase 1: [Phase Name]
+   ### Step 1.1 — [Step Name]
+   // turbo
+   [Step instructions with skill bindings and rule references]
+   ```
 
-2. Register in `AGENTS.md` under "🔄 Available Workflows"
+2. Include mandatory rule reads (especially `deep-thinking.md`)
+3. Bind to relevant skills from `.agent/skills/`
+4. Register in `AGENTS.md` under "🔄 Available Workflows"
 
 ---
 
@@ -409,20 +792,25 @@ description: Short description of what the workflow does
 
 | Metric | Count |
 |--------|-------|
-| **Total Skills** | 126 |
-| **Mandatory Rules** | 9 |
-| **Automated Workflows** | 6 |
-| **Languages Supported** | 9+ (JS, TS, Python, Java, Go, PHP, C#, Dart, Rust) |
-| **Frameworks Covered** | 15+ (React, Next.js, Vue, Angular, Laravel, Django, Flask, Spring Boot, Flutter, .NET, etc.) |
-| **Databases Supported** | 6 (PostgreSQL, MySQL, MongoDB, Oracle, SQL Server, SAP HANA) |
-| **Security Frameworks** | 3 (ISO 27001, NIST CSF, CIS Controls) |
+| **Total Skill Directories** | 360 |
+| **Mandatory Rules** | 17 |
+| **Automated Workflows** | 18 |
+| **Memory Files** | 2 (Error Log + Learned Knowledge) |
+| **Languages Supported** | 11 (JS, TS, Python, Java, Go, PHP, C#, Dart, Rust, Kotlin, Swift) |
+| **Web Frameworks** | 12 (React, Next.js, Vue, Angular, Svelte, Laravel, Django, Flask, ASP.NET, Node.js, Nuxt, SvelteKit) |
+| **Mobile Frameworks** | 3 (Flutter, Kotlin/Android, Swift/iOS) |
+| **Databases Supported** | 11 (PostgreSQL, MySQL, MongoDB, Oracle, SQL Server, SAP HANA, Redis, Elasticsearch, Firebase, Supabase, Prisma) |
+| **Cloud Platforms** | 5 (AWS, GCP, Azure, OpenStack, Virtuozzo) |
+| **Security Frameworks** | 3 (ISO 27001, NIST CSF, CIS Controls v8) |
+| **Payment Gateways** | 4 (Midtrans, Xendit, DOKU, Stripe) |
 | **Deployment Targets** | 7 (Frontend, Laravel, Java, Flutter, Python, Go, .NET) |
-| **Testing Tools** | 21 (E2E, Security, Performance, Accessibility) |
-| **AI/ML Skills** | 8 (TensorFlow, PyTorch, Sklearn, Gemini, OpenAI, Predictive Analytics) |
-| **Encryption** | 2 (AES-256-GCM, Post-Quantum/ML-KEM) |
-| **Skill Directories** | 127 |
-| **Rule Files** | 9 |
-| **Workflow Files** | 6 |
+| **MCP Integrations** | 65+ |
+| **Testing Tools** | 25+ (E2E, Security, Performance, Accessibility, Code Quality) |
+| **AI/ML Skills** | 8 (TensorFlow, PyTorch, Sklearn, Gemini, OpenAI, ML, Predictive, AI/ML) |
+| **Encryption** | 2 (AES-256-GCM, Post-Quantum ML-KEM/Kyber) |
+| **Admin Templates** | 8 |
+| **SIEM/SOC Skills** | 15+ (Splunk, QRadar, Wazuh, Elastic, etc.) |
+| **CMS Platforms** | 5 (WordPress, Joomla, Drupal, Shopify, Magento) |
 
 ---
 
@@ -436,6 +824,8 @@ This project is proprietary. All rights reserved.
 
 **Built with ❤️ by GAO Agent Team**
 
-*Making AI coding assistants production-ready, secure, and compliant.*
+*Transforming AI coding assistants into production-grade software engineers — secure, compliant, and always learning.*
+
+**360 Skills · 17 Rules · 18 Workflows · Self-Learning Memory**
 
 </div>
