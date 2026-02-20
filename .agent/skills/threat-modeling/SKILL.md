@@ -5,210 +5,209 @@ description: Skill for threat modeling using STRIDE methodology — covering tru
 
 # Threat Modeling Skill
 
-## Purpose
-This skill provides a structured approach to **identifying, classifying, and mitigating threats** to application security using the STRIDE methodology and complementary techniques.
+## Overview
+Threat modeling is a structured approach to identifying, quantifying, and mitigating security threats in software systems. It helps teams proactively find vulnerabilities during design, before they become exploitable bugs in production.
 
----
-
-## When to Use
-
-- During design phase of new features (proactive)
-- During security audits (reactive, via `/context-security`)
-- When adding authentication/authorization flows
-- When integrating external services or APIs
-- When handling sensitive data (PII, financial, health)
+**References**:
+- [OWASP Threat Modeling](https://owasp.org/www-community/Threat_Modeling)
+- [Microsoft STRIDE](https://learn.microsoft.com/en-us/azure/security/develop/threat-modeling-tool-threats)
+- [OWASP Threat Modeling Cheat Sheet](https://cheatsheetseries.owasp.org/cheatsheets/Threat_Modeling_Cheat_Sheet.html)
 
 ---
 
 ## STRIDE Methodology
 
-STRIDE categorizes threats into 6 types:
-
-| Category | Threat | Question | Security Property |
-|----------|--------|----------|-------------------|
-| **S** — Spoofing | Impersonating a user or system | "Can someone pretend to be someone else?" | Authentication |
-| **T** — Tampering | Modifying data or code | "Can data be changed without detection?" | Integrity |
-| **R** — Repudiation | Denying actions occurred | "Can someone deny performing an action?" | Non-repudiation |
-| **I** — Information Disclosure | Exposing data to unauthorized parties | "Can unauthorized people see this data?" | Confidentiality |
-| **D** — Denial of Service | Making the system unavailable | "Can someone make the system unusable?" | Availability |
-| **E** — Elevation of Privilege | Gaining unauthorized access | "Can someone get more access than allowed?" | Authorization |
+| Threat | Description | Security Property | Example |
+|--------|-------------|-------------------|---------|
+| **S**poofing | Impersonating another user or system | Authentication | Stolen JWT, session hijacking |
+| **T**ampering | Modifying data or code | Integrity | SQL injection, parameter tampering |
+| **R**epudiation | Denying actions performed | Non-repudiation | Missing audit logs |
+| **I**nformation Disclosure | Exposing data to unauthorized parties | Confidentiality | API leaking PII, verbose errors |
+| **D**enial of Service | Making system unavailable | Availability | DDoS, resource exhaustion |
+| **E**levation of Privilege | Gaining unauthorized access | Authorization | IDOR, broken access control |
 
 ---
 
-## Process
+## Threat Modeling Process
 
-### Step 1: Identify Trust Boundaries
-
-Map where trust levels change in the application:
-
+### Step 1: Define System Architecture
 ```
-┌─────────────────────────────────────────────────────┐
-│ EXTERNAL (Untrusted)                                │
-│  Users, Third-party APIs, CDN                       │
-│                                                     │
-│  ═══════════ TRUST BOUNDARY 1 ═══════════════       │
-│                                                     │
-│  ┌───────────────────────────────────────────┐      │
-│  │ DMZ / Edge Layer                          │      │
-│  │  Load Balancer, WAF, Reverse Proxy        │      │
-│  │                                           │      │
-│  │  ═══════════ TRUST BOUNDARY 2 ═══════     │      │
-│  │                                           │      │
-│  │  ┌─────────────────────────────────┐      │      │
-│  │  │ Application Layer               │      │      │
-│  │  │  API Server, Auth Service       │      │      │
-│  │  │                                 │      │      │
-│  │  │  ═══════ TRUST BOUNDARY 3 ═══  │      │      │
-│  │  │                                 │      │      │
-│  │  │  ┌───────────────────────┐      │      │      │
-│  │  │  │ Data Layer            │      │      │      │
-│  │  │  │  Database, Cache,     │      │      │      │
-│  │  │  │  File Storage         │      │      │      │
-│  │  │  └───────────────────────┘      │      │      │
-│  │  └─────────────────────────────────┘      │      │
-│  └───────────────────────────────────────────┘      │
-└─────────────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────┐
+│                     TRUST BOUNDARY: Internet                 │
+│                                                              │
+│  ┌──────────┐    HTTPS     ┌──────────┐    HTTP    ┌──────┐ │
+│  │  Browser  │────────────▶│   CDN/   │──────────▶ │ WAF  │ │
+│  │  (React)  │◀────────────│CloudFlare│◀────────── │      │ │
+│  └──────────┘              └──────────┘            └──┬───┘ │
+│                                                       │     │
+├───────────────────────────────────────────────────────┼─────┤
+│                  TRUST BOUNDARY: DMZ                  │     │
+│                                                       ▼     │
+│                                              ┌──────────┐   │
+│                                              │  Nginx   │   │
+│                                              │  (LB)    │   │
+│                                              └────┬─────┘   │
+│                                                   │         │
+├───────────────────────────────────────────────────┼─────────┤
+│               TRUST BOUNDARY: Application         │         │
+│                                                   ▼         │
+│  ┌──────────┐   JWT    ┌──────────┐    SQL   ┌─────────┐   │
+│  │  Auth    │◀────────▶│   API    │─────────▶│PostgreSQL│  │
+│  │ Service  │          │  Server  │          │  (RDS)   │   │
+│  └──────────┘          └────┬─────┘          └─────────┘   │
+│                              │                              │
+│                         ┌────▼─────┐    ┌──────────┐       │
+│                         │  Redis   │    │   S3     │       │
+│                         │ (Cache)  │    │ (Files)  │       │
+│                         └──────────┘    └──────────┘       │
+└─────────────────────────────────────────────────────────────┘
 ```
 
-### Step 2: Identify Entry Points
-
-List all ways data enters or leaves the system:
-
-| # | Entry Point | Method | Auth Required | Data Type |
-|---|-------------|--------|---------------|-----------|
-| 1 | `/api/auth/login` | POST | No | Credentials |
-| 2 | `/api/auth/register` | POST | No | PII |
-| 3 | `/api/users/:id` | GET | Yes (Bearer) | User data |
-| 4 | `/api/upload` | POST | Yes | File binary |
-| 5 | WebSocket `/ws` | WS | Yes (Token) | Real-time events |
-| 6 | Webhook `/webhook/stripe` | POST | Signature | Payment events |
-
-### Step 3: STRIDE Analysis per Entry Point
-
-For each entry point, evaluate all 6 STRIDE categories:
+### Step 2: Identify Threats (STRIDE per Element)
 
 ```markdown
-#### Entry Point: POST /api/auth/login
+## API Server Threats
 
-| STRIDE | Threat | Risk | Mitigation |
-|--------|--------|------|------------|
-| **S** Spoofing | Brute force password attack | High | Rate limiting (5/15min), CAPTCHA after 3 fails |
-| **S** Spoofing | Credential stuffing | High | Check haveibeenpwned API, require strong passwords |
-| **T** Tampering | Modify request in transit | Medium | HTTPS/TLS enforced |
-| **R** Repudiation | Deny login attempt | Medium | Log all auth events with IP, timestamp, user-agent |
-| **I** Info Disclosure | Expose valid usernames | Medium | Generic error: "Invalid email or password" |
-| **I** Info Disclosure | Timing attack on password check | Low | Constant-time comparison |
-| **D** DoS | Flood login endpoint | High | Rate limiting, WAF, queue-based processing |
-| **E** Elevation | JWT algorithm confusion | High | Explicit algorithm in verify: `algorithms: ['HS256']` |
+### Spoofing
+| ID | Threat | Risk | Mitigation |
+|----|--------|------|------------|
+| S1 | JWT token theft via XSS | HIGH | HttpOnly cookies, CSP, SameSite=Strict |
+| S2 | API key leakage in client code | HIGH | Server-side API calls only, env vars |
+| S3 | Session fixation | MEDIUM | Regenerate session on login |
+
+### Tampering
+| ID | Threat | Risk | Mitigation |
+|----|--------|------|------------|
+| T1 | SQL injection via user input | CRITICAL | Parameterized queries, ORM |
+| T2 | Mass assignment (over-posting) | HIGH | DTOs with explicit field lists |
+| T3 | JWT payload manipulation | HIGH | Signature verification, short expiry |
+| T4 | CSRF on state-changing endpoints | MEDIUM | CSRF tokens, SameSite cookies |
+
+### Repudiation
+| ID | Threat | Risk | Mitigation |
+|----|--------|------|------------|
+| R1 | No audit trail for admin actions | MEDIUM | Structured audit logging |
+| R2 | Log injection/tampering | MEDIUM | Log sanitization, immutable log storage |
+
+### Information Disclosure
+| ID | Threat | Risk | Mitigation |
+|----|--------|------|------------|
+| I1 | Stack traces in error responses | HIGH | Generic error messages, log details server-side |
+| I2 | Sensitive data in API responses | HIGH | Response DTOs, field filtering |
+| I3 | PII in logs | MEDIUM | Log redaction for email, phone, SSN |
+| I4 | Directory listing enabled | LOW | Disable autoindex in Nginx |
+
+### Denial of Service
+| ID | Threat | Risk | Mitigation |
+|----|--------|------|------------|
+| D1 | API rate limiting absent | HIGH | Rate limiter (100 req/min per IP) |
+| D2 | Large file upload exhaustion | MEDIUM | File size limits (10MB), validation |
+| D3 | ReDoS via user input | MEDIUM | Bounded regex, input length limits |
+| D4 | Slow loris attack | LOW | Nginx timeout configuration |
+
+### Elevation of Privilege
+| ID | Threat | Risk | Mitigation |
+|----|--------|------|------------|
+| E1 | IDOR (access other users' data) | CRITICAL | Ownership checks in every query |
+| E2 | Broken role-based access | HIGH | Middleware auth + role checks |
+| E3 | Privilege escalation via API | HIGH | Server-side role validation |
+| E4 | Path traversal in file access | HIGH | Sanitize paths, allowlist directories |
 ```
 
-### Step 4: Risk Scoring
-
-Use the DREAD model for risk prioritization:
-
-| Factor | Score Range | Description |
-|--------|------------|-------------|
-| **D**amage | 1-3 | How bad if exploited? (3 = catastrophic) |
-| **R**eproducibility | 1-3 | How easy to reproduce? (3 = always) |
-| **E**xploitability | 1-3 | How easy to exploit? (3 = trivial) |
-| **A**ffected Users | 1-3 | How many users affected? (3 = all) |
-| **D**iscoverability | 1-3 | How easy to find? (3 = obvious) |
-
-**Risk Score = Sum / 5** → Low (1.0-1.5), Medium (1.6-2.0), High (2.1-2.5), Critical (2.6-3.0)
-
-### Step 5: Common Web Application Threats
-
-#### Authentication Threats
-```
-- Credential stuffing (leaked password databases)
-- Session hijacking (XSS stealing cookies)
-- Session fixation (forcing known session ID)
-- Password reset poisoning (host header injection)
-- JWT secret brute force (weak secrets)
-- OAuth redirect manipulation (open redirect)
-```
-
-#### Authorization Threats
-```
-- Insecure Direct Object Reference (IDOR)
-- Horizontal privilege escalation (user A accesses user B data)
-- Vertical privilege escalation (user becomes admin)
-- Missing function-level access control
-- Parameter manipulation (changing role in request)
-```
-
-#### Data Threats
-```
-- SQL injection (all forms)
-- NoSQL injection (MongoDB operators)
-- Mass assignment (unvalidated field binding)
-- Server-Side Request Forgery (SSRF)
-- XML External Entity (XXE)
-- Path traversal (../../etc/passwd)
-```
-
-#### Infrastructure Threats
-```
-- Subdomain takeover (dangling DNS records)
-- Cloud metadata exposure (169.254.169.254)
-- Container escape (Docker breakout)
-- Kubernetes secrets exposure
-- Debug endpoints in production
-```
-
-### Step 6: Generate Threat Model Document
+### Step 3: Risk Scoring (DREAD)
 
 ```markdown
-# Threat Model: [Feature/System Name]
+| Factor | Scale | Description |
+|--------|-------|-------------|
+| **D**amage | 1-10 | How bad if exploited? |
+| **R**eproducibility | 1-10 | How easy to reproduce? |
+| **E**xploitability | 1-10 | How easy to exploit? |
+| **A**ffected Users | 1-10 | How many users affected? |
+| **D**iscoverability | 1-10 | How easy to discover? |
 
-## Overview
-- **Scope:** [What is being modeled]
-- **Date:** [YYYY-MM-DD]
-- **Author:** AI Agent + User Review
+Total = (D + R + E + A + D) / 5
 
-## Architecture Diagram
-[Trust boundary diagram]
+| Score | Rating | Action |
+|-------|--------|--------|
+| 8-10 | CRITICAL | Fix immediately, block release |
+| 5-7 | HIGH | Fix before next release |
+| 3-4 | MEDIUM | Plan fix in upcoming sprint |
+| 1-2 | LOW | Accept risk or fix when convenient |
+```
 
-## Entry Points
-[Table of all entry points]
+### Step 4: Example Risk Assessment
 
-## STRIDE Analysis
-[Per-entry-point threat analysis]
-
-## Risk Matrix
-| Threat | STRIDE | DREAD Score | Risk Level | Status |
-|--------|--------|-------------|------------|--------|
-| [threat] | [S/T/R/I/D/E] | [1.0-3.0] | [C/H/M/L] | [Open/Mitigated] |
-
-## Mitigation Plan
-| Priority | Threat | Mitigation | Implementation |
-|----------|--------|------------|---------------|
-| P1 | [Critical threats] | [How to fix] | [Where to implement] |
-| P2 | [High threats] | [How to fix] | [Where to implement] |
-
-## Assumptions
-- [Assumption 1]
-- [Assumption 2]
-
-## Out of Scope
-- [What was not analyzed]
+```markdown
+| Threat ID | Threat | D | R | E | A | D | Score | Rating |
+|-----------|--------|---|---|---|---|---|-------|--------|
+| T1 | SQL Injection | 10 | 10 | 8 | 10 | 9 | 9.4 | CRITICAL |
+| E1 | IDOR | 9 | 9 | 7 | 8 | 7 | 8.0 | CRITICAL |
+| I1 | Stack traces exposed | 6 | 10 | 10 | 10 | 10 | 9.2 | CRITICAL |
+| S1 | JWT theft via XSS | 8 | 7 | 6 | 8 | 6 | 7.0 | HIGH |
+| D1 | No rate limiting | 7 | 10 | 10 | 10 | 8 | 9.0 | CRITICAL |
+| T4 | CSRF | 6 | 8 | 5 | 6 | 5 | 6.0 | HIGH |
+| R1 | No audit trail | 4 | 10 | 10 | 5 | 3 | 6.4 | HIGH |
+| I4 | Directory listing | 3 | 10 | 10 | 2 | 8 | 6.6 | HIGH |
+| D4 | Slow loris | 5 | 7 | 4 | 8 | 3 | 5.4 | HIGH |
 ```
 
 ---
 
-## Quick STRIDE Scan (for `/context-security`)
+## Mitigation Checklist
 
-When invoked from the security audit workflow, perform a **quick scan** (not full model):
+```markdown
+### Authentication & Session
+- [ ] JWT stored in HttpOnly cookies (not localStorage)
+- [ ] Short-lived access tokens (15min) + refresh tokens (7d)
+- [ ] Session invalidation on password change
+- [ ] Brute force protection (account lockout after 5 attempts)
+- [ ] MFA for admin accounts
 
-1. Identify major trust boundaries (external → app → db)
-2. Check for missing auth/authz on entry points
-3. Verify audit logging for sensitive operations
-4. Check for denial-of-service vectors (rate limiting, pagination)
-5. Verify data classification and encryption
+### Authorization
+- [ ] RBAC middleware on all protected endpoints
+- [ ] Ownership check on every resource access (IDOR prevention)
+- [ ] Principle of least privilege for API keys
+- [ ] Server-side role validation (never trust client)
+
+### Input Validation
+- [ ] Parameterized queries / ORM for all database access
+- [ ] Input validation (type, length, format) on server side
+- [ ] File upload validation (type, size, content-type)
+- [ ] Output encoding for XSS prevention
+
+### Data Protection
+- [ ] TLS 1.3 for all connections
+- [ ] Encryption at rest for sensitive data
+- [ ] PII redaction in logs
+- [ ] Secure error responses (no stack traces)
+
+### Infrastructure
+- [ ] Rate limiting (100 req/min per IP)
+- [ ] WAF (Cloudflare/AWS WAF)
+- [ ] Security headers (CSP, HSTS, X-Frame-Options)
+- [ ] Network segmentation (DB not publicly accessible)
+```
 
 ---
 
-## Integration with Rules
-- `rules/developer-security.md` — 4-layer security model
-- `rules/iso-27000-compliance.md` — Risk assessment requirements
-- `rules/production-code-standards.md` — Verify everything exists before using
+## Best Practices
+
+| Practice | Details |
+|----------|---------|
+| **Shift left** | Threat model during design, not after deployment |
+| **STRIDE** | Systematic threat enumeration per component |
+| **DREAD** | Quantitative risk scoring for prioritization |
+| **Trust boundaries** | Identify data flow across trust zones |
+| **Iterate** | Update threat model with each major feature/change |
+| **Collaborate** | Include dev, security, ops, and product in sessions |
+| **Document** | Store threat models alongside architecture docs |
+| **Automate** | Validate mitigations with DAST/SAST in CI/CD |
+
+---
+
+## Rules Integration
+- **Methodology**: STRIDE for threats, DREAD for risk scoring
+- **Architecture**: Data flow diagrams with trust boundaries
+- **Threats**: Categorized per STRIDE, scored per DREAD
+- **Mitigations**: Mapped to each threat with implementation status
+- **Integration**: Findings feed into security backlog and CI/CD gates

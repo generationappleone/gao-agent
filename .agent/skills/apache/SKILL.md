@@ -6,44 +6,16 @@ description: Skill for configuring and managing Apache HTTP Server, covering vir
 # Apache HTTP Server Skill
 
 ## Overview
-Apache HTTP Server (httpd) is the world's most widely used web server. This skill covers virtual host configuration, SSL, URL rewriting, security hardening, and reverse proxy setup.
+Apache HTTP Server (httpd) is one of the most widely used web servers. It provides virtual hosting, SSL/TLS, URL rewriting (mod_rewrite), reverse proxy (mod_proxy), access control, and module-based architecture. Apache is commonly used with PHP/Laravel applications.
 
-## Installation
-```bash
-# Ubuntu/Debian
-sudo apt update && sudo apt install apache2 -y
-sudo systemctl enable apache2 && sudo systemctl start apache2
+**References**:
+- [Apache HTTP Server Documentation](https://httpd.apache.org/docs/2.4/)
+- [mod_rewrite Guide](https://httpd.apache.org/docs/2.4/mod/mod_rewrite.html)
 
-# CentOS/RHEL
-sudo dnf install httpd -y
-sudo systemctl enable httpd && sudo systemctl start httpd
-
-# macOS (Homebrew)
-brew install httpd
-```
-
-## Directory Structure
-```
-/etc/apache2/                    # Debian/Ubuntu
-├── apache2.conf                 # Main configuration
-├── ports.conf                   # Listen directives
-├── sites-available/             # Virtual host configs
-│   ├── 000-default.conf
-│   └── myapp.conf
-├── sites-enabled/               # Symlinks to active sites
-├── mods-available/              # Available modules
-├── mods-enabled/                # Active modules
-└── conf-available/              # Additional configs
-
-/etc/httpd/                      # CentOS/RHEL
-├── conf/httpd.conf
-├── conf.d/                      # Virtual hosts
-└── conf.modules.d/              # Module configs
-```
+---
 
 ## Virtual Host Configuration
 
-### HTTP (Port 80)
 ```apache
 # /etc/apache2/sites-available/myapp.conf
 <VirtualHost *:80>
@@ -51,38 +23,25 @@ brew install httpd
     ServerAlias www.myapp.com
     DocumentRoot /var/www/myapp/public
 
-    # Redirect all HTTP to HTTPS
+    # Redirect to HTTPS
     RewriteEngine On
     RewriteCond %{HTTPS} off
     RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
-
-    ErrorLog ${APACHE_LOG_DIR}/myapp-error.log
-    CustomLog ${APACHE_LOG_DIR}/myapp-access.log combined
 </VirtualHost>
-```
 
-### HTTPS (Port 443) with SSL
-```apache
 <VirtualHost *:443>
     ServerName myapp.com
     ServerAlias www.myapp.com
     DocumentRoot /var/www/myapp/public
 
-    # SSL Configuration
+    # SSL
     SSLEngine on
-    SSLCertificateFile      /etc/letsencrypt/live/myapp.com/fullchain.pem
-    SSLCertificateKeyFile   /etc/letsencrypt/live/myapp.com/privkey.pem
+    SSLCertificateFile /etc/letsencrypt/live/myapp.com/fullchain.pem
+    SSLCertificateKeyFile /etc/letsencrypt/live/myapp.com/privkey.pem
+    SSLProtocol all -SSLv3 -TLSv1 -TLSv1.1
+    SSLCipherSuite HIGH:!aNULL:!MD5
 
-    # Modern TLS settings
-    SSLProtocol             all -SSLv3 -TLSv1 -TLSv1.1
-    SSLCipherSuite          ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES256-GCM-SHA384
-    SSLHonorCipherOrder     off
-    SSLSessionTickets       off
-
-    # HSTS
-    Header always set Strict-Transport-Security "max-age=63072000; includeSubDomains; preload"
-
-    # Directory permissions
+    # Document root
     <Directory /var/www/myapp/public>
         Options -Indexes +FollowSymLinks
         AllowOverride All
@@ -90,20 +49,76 @@ brew install httpd
     </Directory>
 
     # Security headers
+    Header always set X-Frame-Options "SAMEORIGIN"
     Header always set X-Content-Type-Options "nosniff"
-    Header always set X-Frame-Options "DENY"
-    Header always set X-XSS-Protection "0"
+    Header always set X-XSS-Protection "1; mode=block"
+    Header always set Strict-Transport-Security "max-age=31536000; includeSubDomains"
     Header always set Referrer-Policy "strict-origin-when-cross-origin"
-    Header always set Permissions-Policy "camera=(), microphone=(), geolocation=()"
-    Header always set Content-Security-Policy "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'"
 
-    ErrorLog ${APACHE_LOG_DIR}/myapp-ssl-error.log
-    CustomLog ${APACHE_LOG_DIR}/myapp-ssl-access.log combined
+    # Gzip compression
+    <IfModule mod_deflate.c>
+        AddOutputFilterByType DEFLATE text/html text/plain text/css
+        AddOutputFilterByType DEFLATE application/javascript application/json
+        AddOutputFilterByType DEFLATE image/svg+xml
+    </IfModule>
+
+    # Static file caching
+    <IfModule mod_expires.c>
+        ExpiresActive On
+        ExpiresByType image/jpeg "access plus 1 year"
+        ExpiresByType image/png "access plus 1 year"
+        ExpiresByType image/svg+xml "access plus 1 year"
+        ExpiresByType text/css "access plus 1 month"
+        ExpiresByType application/javascript "access plus 1 month"
+        ExpiresByType font/woff2 "access plus 1 year"
+    </IfModule>
+
+    # Logging
+    ErrorLog ${APACHE_LOG_DIR}/myapp_error.log
+    CustomLog ${APACHE_LOG_DIR}/myapp_access.log combined
 </VirtualHost>
 ```
 
-### Reverse Proxy (Node.js / API Backend)
+---
+
+## Laravel .htaccess
+
 ```apache
+# /var/www/myapp/public/.htaccess
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    RewriteBase /
+
+    # Handle Authorization Header
+    RewriteCond %{HTTP:Authorization} .
+    RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
+
+    # Redirect trailing slashes
+    RewriteCond %{REQUEST_FILENAME} !-d
+    RewriteCond %{REQUEST_URI} (.+)/$
+    RewriteRule ^ %1 [L,R=301]
+
+    # Handle front controller
+    RewriteCond %{REQUEST_FILENAME} !-d
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteRule ^ index.php [L]
+</IfModule>
+
+# Block sensitive files
+<FilesMatch "^\.">
+    Require all denied
+</FilesMatch>
+<FilesMatch "\.(env|log|sql|bak)$">
+    Require all denied
+</FilesMatch>
+```
+
+---
+
+## Reverse Proxy
+
+```apache
+# Proxy to Node.js/Express app
 <VirtualHost *:443>
     ServerName api.myapp.com
 
@@ -112,100 +127,70 @@ brew install httpd
     SSLCertificateKeyFile /etc/letsencrypt/live/api.myapp.com/privkey.pem
 
     ProxyPreserveHost On
-    ProxyPass / http://127.0.0.1:3000/
-    ProxyPassReverse / http://127.0.0.1:3000/
+    ProxyPass / http://localhost:3000/
+    ProxyPassReverse / http://localhost:3000/
 
-    # WebSocket support
+    # WebSocket proxy
     RewriteEngine On
     RewriteCond %{HTTP:Upgrade} websocket [NC]
     RewriteCond %{HTTP:Connection} upgrade [NC]
-    RewriteRule ^/?(.*) ws://127.0.0.1:3000/$1 [P,L]
+    RewriteRule ^/?(.*) "ws://localhost:3000/$1" [P,L]
 
-    # Timeout settings
-    ProxyTimeout 300
-    ProxyBadHeader Ignore
+    # Rate limiting
+    <IfModule mod_ratelimit.c>
+        <Location /api/>
+            SetOutputFilter RATE_LIMIT
+            SetEnv rate-limit 1024
+        </Location>
+    </IfModule>
 </VirtualHost>
 ```
 
-## .htaccess (mod_rewrite)
-```apache
-# Laravel / PHP Framework
-RewriteEngine On
-RewriteCond %{REQUEST_FILENAME} !-d
-RewriteCond %{REQUEST_FILENAME} !-f
-RewriteRule ^ index.php [L]
-
-# Force HTTPS
-RewriteCond %{HTTPS} off
-RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
-
-# Remove trailing slash
-RewriteCond %{REQUEST_FILENAME} !-d
-RewriteRule ^(.*)/$ /$1 [L,R=301]
-
-# Cache static assets
-<IfModule mod_expires.c>
-    ExpiresActive On
-    ExpiresByType image/webp "access plus 1 year"
-    ExpiresByType image/avif "access plus 1 year"
-    ExpiresByType text/css "access plus 1 month"
-    ExpiresByType application/javascript "access plus 1 month"
-    ExpiresByType font/woff2 "access plus 1 year"
-</IfModule>
-
-# Gzip compression
-<IfModule mod_deflate.c>
-    AddOutputFilterByType DEFLATE text/html text/css application/javascript application/json image/svg+xml
-</IfModule>
-
-# Block sensitive files
-<FilesMatch "\.(env|git|htpasswd|log|sql|bak)$">
-    Require all denied
-</FilesMatch>
-```
-
-## Essential Modules
-```bash
-# Enable modules
-sudo a2enmod rewrite ssl headers proxy proxy_http proxy_wstunnel deflate expires
-
-# Enable site
-sudo a2ensite myapp.conf
-sudo apache2ctl configtest  # Test before restart
-sudo systemctl reload apache2
-```
-
-## Security Hardening
-```apache
-# Hide Apache version
-ServerTokens Prod
-ServerSignature Off
-
-# Disable directory listings
-Options -Indexes
-
-# Limit request size (10MB)
-LimitRequestBody 10485760
-
-# Timeout settings
-Timeout 60
-KeepAlive On
-MaxKeepAliveRequests 100
-KeepAliveTimeout 5
-```
+---
 
 ## Commands
+
 ```bash
-sudo apache2ctl configtest    # Test config
-sudo systemctl reload apache2 # Reload config
-sudo systemctl restart apache2 # Full restart
-sudo a2ensite myapp.conf      # Enable site
-sudo a2dissite myapp.conf     # Disable site
-sudo a2enmod rewrite          # Enable module
-tail -f /var/log/apache2/error.log  # Watch errors
+# Enable modules
+sudo a2enmod rewrite ssl proxy proxy_http deflate expires headers
+
+# Enable/disable site
+sudo a2ensite myapp.conf
+sudo a2dissite 000-default.conf
+
+# Test configuration
+sudo apache2ctl configtest
+
+# Restart
+sudo systemctl restart apache2
+sudo systemctl reload apache2
+
+# Check status
+sudo systemctl status apache2
 ```
 
+---
+
+## Best Practices
+
+| Practice | Details |
+|----------|---------|
+| **SSL/TLS** | TLS 1.2+ only, HSTS header, strong ciphers |
+| **Security headers** | X-Frame-Options, CSP, X-Content-Type-Options |
+| **AllowOverride** | Use `All` for .htaccess or `None` for performance |
+| **mod_rewrite** | Front controller pattern for frameworks |
+| **Gzip** | Compress text, CSS, JS, JSON, SVG |
+| **Caching** | Expire static assets (1 year for immutable) |
+| **Block sensitive** | Deny access to .env, .git, .log files |
+| **Logging** | Separate error/access logs per virtual host |
+| **Reverse proxy** | ProxyPass for backend API servers |
+| **WebSocket** | Use mod_proxy_wstunnel for WS connections |
+
+---
+
 ## Rules Integration
-- **Security**: TLS 1.2+, security headers, .htaccess file blocking, ServerTokens Prod
-- **ISO 27001**: Access logging, SSL enforcement, directory listing disabled
-- **SEO**: HTTPS redirect, trailing slash normalization, cache headers
+- **Virtual host**: SSL, security headers, gzip, caching
+- **Rewrite**: Front controller, HTTPS redirect, trailing slash
+- **Proxy**: Reverse proxy to Node.js/Express, WebSocket
+- **Security**: Block sensitive files, deny directory listing
+- **Performance**: mod_deflate, mod_expires, connection pooling

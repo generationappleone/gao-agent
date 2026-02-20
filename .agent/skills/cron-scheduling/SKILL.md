@@ -6,131 +6,111 @@ description: Skill for task scheduling — covering cron syntax, Node.js schedul
 # Cron / Task Scheduling Skill
 
 ## Overview
-Task scheduling automates recurring operations (reports, cleanup, notifications). This skill covers cron syntax and scheduling libraries.
+Task scheduling automates recurring operations like email digests, report generation, data cleanup, and subscription billing. Node.js uses node-cron for in-process scheduling and BullMQ for distributed job queues backed by Redis.
 
-## Cron Syntax
-```
-┌───────────── minute (0-59)
-│ ┌───────────── hour (0-23)
-│ │ ┌───────────── day of month (1-31)
-│ │ │ ┌───────────── month (1-12)
-│ │ │ │ ┌───────────── day of week (0-7, 0=7=Sunday)
-│ │ │ │ │
-* * * * *
-```
+**References**:
+- [node-cron](https://github.com/node-cron/node-cron)
+- [BullMQ](https://docs.bullmq.io/)
 
-| Expression | Description |
-|------------|-------------|
-| `* * * * *` | Every minute |
-| `0 * * * *` | Every hour |
-| `0 0 * * *` | Every day at midnight |
-| `0 9 * * 1-5` | Weekdays at 9:00 AM |
-| `0 0 1 * *` | First day of month |
-| `*/5 * * * *` | Every 5 minutes |
-| `0 */2 * * *` | Every 2 hours |
-| `0 9,18 * * *` | At 9 AM and 6 PM |
-| `0 0 * * 0` | Every Sunday at midnight |
-| `30 4 1,15 * *` | 4:30 AM on 1st and 15th |
+---
 
-## Node.js — node-cron
+## node-cron
+
 ```typescript
-import cron from "node-cron";
+import cron from 'node-cron';
 
-// Schedule tasks
-cron.schedule("0 0 * * *", async () => {
-  console.log("Running daily cleanup...");
-  await cleanExpiredSessions();
+// Daily report at 6 AM
+cron.schedule('0 6 * * *', async () => {
+  console.log('Generating daily report...');
+  const report = await generateDailyReport();
+  await sendEmail({ to: 'admin@myapp.com', subject: 'Daily Report', html: report });
 });
 
-cron.schedule("0 9 * * 1", async () => {
-  console.log("Sending weekly report...");
-  await generateWeeklyReport();
+// Every 5 minutes: cleanup expired sessions
+cron.schedule('*/5 * * * *', async () => {
+  await db.session.deleteMany({ where: { expiresAt: { lt: new Date() } } });
 });
 
-cron.schedule("*/30 * * * *", async () => {
-  await syncExternalData();
-}, { timezone: "Asia/Jakarta" });
+// Monthly billing (1st of each month at midnight)
+cron.schedule('0 0 1 * *', async () => {
+  const subscriptions = await db.subscription.findMany({ where: { status: 'active' } });
+  for (const sub of subscriptions) await processSubscriptionBilling(sub);
+});
 ```
 
-## Node.js — BullMQ (Production Job Queue)
-```typescript
-import { Queue, Worker } from "bullmq";
-import IORedis from "ioredis";
+---
 
-const connection = new IORedis(process.env.REDIS_URL!);
+## BullMQ (Distributed Queues)
+
+```typescript
+import { Queue, Worker } from 'bullmq';
+
+const connection = { host: process.env.REDIS_HOST, port: Number(process.env.REDIS_PORT) };
 
 // Queue
-const emailQueue = new Queue("email", { connection });
+const emailQueue = new Queue('email', { connection });
+const orderQueue = new Queue('order-processing', { connection });
 
 // Add jobs
-await emailQueue.add("welcome", { userId: "123", email: "user@example.com" });
-await emailQueue.add("report", { type: "weekly" }, {
-  repeat: { pattern: "0 9 * * 1" }, // Every Monday 9 AM
-});
+await emailQueue.add('welcome', { userId: user.id, email: user.email }, { attempts: 3, backoff: { type: 'exponential', delay: 1000 } });
+await orderQueue.add('process', { orderId: order.id }, { delay: 5000 }); // delayed job
 
-// Delayed job
-await emailQueue.add("reminder", { orderId: "456" }, { delay: 24 * 60 * 60 * 1000 }); // 24h later
+// Repeatable (cron-like)
+await emailQueue.add('digest', {}, { repeat: { pattern: '0 8 * * *' } }); // daily at 8 AM
 
 // Worker
-const worker = new Worker("email", async (job) => {
+const emailWorker = new Worker('email', async (job) => {
   switch (job.name) {
-    case "welcome":
-      await sendWelcomeEmail(job.data.email);
-      break;
-    case "report":
-      await generateAndSendReport(job.data.type);
-      break;
+    case 'welcome': await sendWelcomeEmail(job.data.email); break;
+    case 'digest': await sendDigestEmail(); break;
   }
-}, {
-  connection,
-  concurrency: 5,
-  limiter: { max: 10, duration: 1000 }, // Rate limit: 10/sec
-});
+}, { connection, concurrency: 5 });
 
-worker.on("completed", (job) => console.log(`Job ${job.id} completed`));
-worker.on("failed", (job, err) => console.error(`Job ${job?.id} failed:`, err));
+emailWorker.on('completed', (job) => console.log(`Job ${job.id} completed`));
+emailWorker.on('failed', (job, err) => console.error(`Job ${job?.id} failed:`, err.message));
 ```
 
-## Laravel Scheduler
-```php
-// app/Console/Kernel.php
-protected function schedule(Schedule $schedule) {
-    $schedule->command('reports:generate')->dailyAt('09:00');
-    $schedule->command('sessions:cleanup')->hourly();
-    $schedule->command('backup:run')->daily()->at('02:00');
-    $schedule->job(new SyncDataJob)->everyThirtyMinutes();
-    $schedule->call(fn() => cache()->flush())->weekly();
-}
+---
+
+## Cron Syntax
+
+```
+* * * * *
+│ │ │ │ │
+│ │ │ │ └── Day of week (0-7, Sun=0,7)
+│ │ │ └──── Month (1-12)
+│ │ └────── Day of month (1-31)
+│ └──────── Hour (0-23)
+└────────── Minute (0-59)
+
+*/5 * * * *    Every 5 minutes
+0 * * * *      Every hour
+0 6 * * *      Daily at 6 AM
+0 0 * * 0      Weekly on Sunday
+0 0 1 * *      Monthly on 1st
 ```
 
-## Python — APScheduler
-```python
-from apscheduler.schedulers.asyncio import AsyncIOScheduler
-
-scheduler = AsyncIOScheduler(timezone="Asia/Jakarta")
-
-@scheduler.scheduled_job("cron", hour=0, minute=0)
-async def daily_cleanup():
-    await clean_expired_sessions()
-
-@scheduler.scheduled_job("interval", minutes=30)
-async def sync_data():
-    await fetch_external_data()
-
-scheduler.start()
-```
+---
 
 ## Best Practices
 
-| Practice | Description |
-|----------|-------------|
-| **Job queues** | Use BullMQ/Celery for production (not cron for heavy tasks) |
+| Practice | Details |
+|----------|---------|
+| **node-cron** | In-process for simple schedules |
+| **BullMQ** | Distributed queues with Redis |
+| **Retries** | Configure attempts + backoff |
 | **Idempotency** | Jobs should be safe to retry |
-| **Dead letter queue** | Handle failed jobs explicitly |
-| **Monitoring** | Track job completion and failure rates |
-| **Timezone** | Always specify timezone explicitly |
-| **Concurrency** | Limit concurrent workers per queue |
-| **Rate limiting** | Prevent overwhelming external services |
-| **Logging** | Log job start, completion, and failures |
-| **Health checks** | Monitor scheduler/worker process health |
-| **Graceful shutdown** | Complete running jobs before stopping |
+| **Concurrency** | Limit concurrent workers |
+| **Monitoring** | Bull Board for queue UI |
+| **Dead letter** | Handle permanently failed jobs |
+| **Delayed jobs** | Schedule jobs for future execution |
+| **Repeatable** | Cron-like repeatable jobs |
+| **Logging** | Log job start, completion, failure |
+
+---
+
+## Rules Integration
+- **Cron**: node-cron for in-process schedules
+- **Queues**: BullMQ for distributed job processing
+- **Retries**: Exponential backoff with attempt limits
+- **Monitoring**: Bull Board dashboard

@@ -6,45 +6,19 @@ description: Skill for building web applications with Flask — covering project
 # Flask Skill
 
 ## Overview
-**Flask** is a lightweight Python web framework (microframework). It provides routing, templating (Jinja2), and request handling, with extensions for everything else (ORM, auth, CORS, etc.).
+Flask is a lightweight Python micro-framework for building web applications and APIs. It provides routing, request handling, and extension support while staying minimal and flexible. Flask-SQLAlchemy, Flask-Migrate, and Flask-JWT-Extended are the most common extensions.
+
+**References**:
+- [Flask Documentation](https://flask.palletsprojects.com/)
+- [Flask-SQLAlchemy](https://flask-sqlalchemy.palletsprojects.com/)
+- [Flask-JWT-Extended](https://flask-jwt-extended.readthedocs.io/)
 
 ---
 
-## Project Structure
+## Setup
 
-```
-my_app/
-├── app/
-│   ├── __init__.py          # Application factory
-│   ├── config.py            # Configuration
-│   ├── extensions.py        # Extension instances (db, migrate, etc.)
-│   ├── models/
-│   │   ├── __init__.py
-│   │   ├── user.py
-│   │   └── order.py
-│   ├── api/
-│   │   ├── __init__.py      # Blueprint registration
-│   │   ├── auth.py          # Auth routes
-│   │   ├── users.py         # User CRUD
-│   │   └── orders.py        # Order CRUD
-│   ├── services/
-│   │   ├── auth_service.py
-│   │   └── user_service.py
-│   ├── schemas/             # Marshmallow/Pydantic schemas
-│   │   ├── user_schema.py
-│   │   └── order_schema.py
-│   └── utils/
-│       ├── errors.py        # Error handlers
-│       └── decorators.py    # Auth decorators
-├── migrations/              # Alembic migrations
-├── tests/
-│   ├── conftest.py
-│   ├── test_auth.py
-│   └── test_users.py
-├── .env
-├── .flaskenv
-├── requirements.txt
-└── wsgi.py                  # WSGI entry point
+```bash
+pip install flask flask-sqlalchemy flask-migrate flask-jwt-extended flask-cors marshmallow
 ```
 
 ---
@@ -54,198 +28,326 @@ my_app/
 ```python
 # app/__init__.py
 from flask import Flask
-from app.config import Config
-from app.extensions import db, migrate, cors, jwt
-
-def create_app(config_class=Config):
-    app = Flask(__name__)
-    app.config.from_object(config_class)
-    
-    # Initialize extensions
-    db.init_app(app)
-    migrate.init_app(app, db)
-    cors.init_app(app, resources={r"/api/*": {"origins": app.config['CORS_ORIGINS']}})
-    jwt.init_app(app)
-    
-    # Register blueprints
-    from app.api.auth import auth_bp
-    from app.api.users import users_bp
-    from app.api.orders import orders_bp
-    
-    app.register_blueprint(auth_bp, url_prefix='/api/v1/auth')
-    app.register_blueprint(users_bp, url_prefix='/api/v1/users')
-    app.register_blueprint(orders_bp, url_prefix='/api/v1/orders')
-    
-    # Register error handlers
-    from app.utils.errors import register_error_handlers
-    register_error_handlers(app)
-    
-    return app
-
-# app/extensions.py
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
-from flask_cors import CORS
 from flask_jwt_extended import JWTManager
+from flask_cors import CORS
 
 db = SQLAlchemy()
 migrate = Migrate()
-cors = CORS()
 jwt = JWTManager()
 
-# app/config.py
-import os
+def create_app(config_name='default'):
+    app = Flask(__name__)
+    app.config.from_object(config[config_name])
 
-class Config:
-    SECRET_KEY = os.environ.get('SECRET_KEY', 'dev-secret')
-    SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL', 'sqlite:///app.db')
-    SQLALCHEMY_TRACK_MODIFICATIONS = False
-    JWT_SECRET_KEY = os.environ.get('JWT_SECRET_KEY', 'jwt-dev-secret')
-    JWT_ACCESS_TOKEN_EXPIRES = 900  # 15 minutes
-    CORS_ORIGINS = os.environ.get('CORS_ORIGINS', 'http://localhost:5173').split(',')
+    # Initialize extensions
+    db.init_app(app)
+    migrate.init_app(app, db)
+    jwt.init_app(app)
+    CORS(app)
 
-class TestConfig(Config):
-    TESTING = True
-    SQLALCHEMY_DATABASE_URI = 'sqlite:///:memory:'
-```
+    # Register blueprints
+    from app.api.auth import auth_bp
+    from app.api.products import products_bp
+    from app.api.orders import orders_bp
 
----
+    app.register_blueprint(auth_bp, url_prefix='/api/auth')
+    app.register_blueprint(products_bp, url_prefix='/api/products')
+    app.register_blueprint(orders_bp, url_prefix='/api/orders')
 
-## REST API Blueprint
+    # Register error handlers
+    register_error_handlers(app)
 
-```python
-# app/api/users.py
-from flask import Blueprint, request, jsonify
-from flask_jwt_extended import jwt_required, get_jwt_identity
-from app.models.user import User
-from app.schemas.user_schema import UserSchema
-from app.extensions import db
+    return app
 
-users_bp = Blueprint('users', __name__)
-user_schema = UserSchema()
-users_schema = UserSchema(many=True)
-
-@users_bp.route('/', methods=['GET'])
-@jwt_required()
-def get_users():
-    page = request.args.get('page', 1, type=int)
-    per_page = request.args.get('per_page', 20, type=int)
-    
-    query = User.query.filter_by(is_active=True)
-    
-    # Filtering
-    if role := request.args.get('role'):
-        query = query.filter_by(role=role)
-    
-    # Sorting
-    sort = request.args.get('sort', 'created_at')
-    order = request.args.get('order', 'desc')
-    sort_col = getattr(User, sort, User.created_at)
-    query = query.order_by(sort_col.desc() if order == 'desc' else sort_col.asc())
-    
-    pagination = query.paginate(page=page, per_page=per_page, error_out=False)
-    
-    return jsonify({
-        'success': True,
-        'data': users_schema.dump(pagination.items),
-        'meta': {
-            'page': pagination.page,
-            'per_page': pagination.per_page,
-            'total': pagination.total,
-            'total_pages': pagination.pages,
-        }
-    })
-
-@users_bp.route('/<uuid:user_id>', methods=['GET'])
-@jwt_required()
-def get_user(user_id):
-    user = User.query.get_or_404(str(user_id))
-    return jsonify({'success': True, 'data': user_schema.dump(user)})
-
-@users_bp.route('/<uuid:user_id>', methods=['PATCH'])
-@jwt_required()
-def update_user(user_id):
-    user = User.query.get_or_404(str(user_id))
-    data = request.get_json()
-    
-    for key, value in data.items():
-        if hasattr(user, key) and key not in ('id', 'created_at', 'password_hash'):
-            setattr(user, key, value)
-    
-    db.session.commit()
-    return jsonify({'success': True, 'data': user_schema.dump(user)})
-```
-
----
-
-## Error Handling
-
-```python
-# app/utils/errors.py
-from flask import jsonify
-from werkzeug.exceptions import HTTPException
 
 def register_error_handlers(app):
     @app.errorhandler(400)
     def bad_request(e):
-        return jsonify({'success': False, 'error': {'code': 'BAD_REQUEST', 'message': str(e)}}), 400
-    
+        return {'error': 'Bad request', 'message': str(e)}, 400
+
     @app.errorhandler(404)
     def not_found(e):
-        return jsonify({'success': False, 'error': {'code': 'NOT_FOUND', 'message': 'Resource not found'}}), 404
-    
+        return {'error': 'Not found'}, 404
+
     @app.errorhandler(422)
-    def validation_error(e):
-        return jsonify({'success': False, 'error': {'code': 'VALIDATION_ERROR', 'message': str(e)}}), 422
-    
+    def unprocessable(e):
+        return {'error': 'Validation error', 'message': str(e)}, 422
+
     @app.errorhandler(500)
-    def internal_error(e):
-        return jsonify({'success': False, 'error': {'code': 'INTERNAL_ERROR', 'message': 'Internal server error'}}), 500
+    def server_error(e):
+        return {'error': 'Internal server error'}, 500
 ```
 
 ---
 
-## Testing
+## Configuration
 
 ```python
-# tests/conftest.py
-import pytest
-from app import create_app
-from app.config import TestConfig
-from app.extensions import db as _db
+# app/config.py
+import os
 
-@pytest.fixture
-def app():
-    app = create_app(TestConfig)
-    with app.app_context():
-        _db.create_all()
-        yield app
-        _db.drop_all()
+class Config:
+    SECRET_KEY = os.environ.get('SECRET_KEY', 'change-me')
+    SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL', 'postgresql://localhost/myapp')
+    SQLALCHEMY_TRACK_MODIFICATIONS = False
+    JWT_SECRET_KEY = os.environ.get('JWT_SECRET_KEY', 'jwt-change-me')
+    JWT_ACCESS_TOKEN_EXPIRES = 3600  # 1 hour
+    JWT_REFRESH_TOKEN_EXPIRES = 2592000  # 30 days
 
-@pytest.fixture
-def client(app):
-    return app.test_client()
+class DevelopmentConfig(Config):
+    DEBUG = True
 
-@pytest.fixture
-def auth_headers(client):
-    # Register + login to get token
-    client.post('/api/v1/auth/register', json={'email': 'test@test.com', 'password': 'Test123!@#'})
-    res = client.post('/api/v1/auth/login', json={'email': 'test@test.com', 'password': 'Test123!@#'})
-    token = res.json['token']
-    return {'Authorization': f'Bearer {token}'}
+class ProductionConfig(Config):
+    DEBUG = False
 
-# tests/test_users.py
-def test_get_users(client, auth_headers):
-    res = client.get('/api/v1/users/', headers=auth_headers)
-    assert res.status_code == 200
-    assert res.json['success'] is True
+class TestingConfig(Config):
+    TESTING = True
+    SQLALCHEMY_DATABASE_URI = 'sqlite:///:memory:'
+
+config = {
+    'development': DevelopmentConfig,
+    'production': ProductionConfig,
+    'testing': TestingConfig,
+    'default': DevelopmentConfig,
+}
 ```
 
+---
+
+## Models
+
+```python
+# app/models/user.py
+import uuid
+from werkzeug.security import generate_password_hash, check_password_hash
+from app import db
+
+class User(db.Model):
+    __tablename__ = 'users'
+
+    id = db.Column(db.String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    email = db.Column(db.String(255), unique=True, nullable=False, index=True)
+    password_hash = db.Column(db.String(255), nullable=False)
+    name = db.Column(db.String(100), nullable=False)
+    role = db.Column(db.String(20), nullable=False, default='user')
+    created_at = db.Column(db.DateTime, server_default=db.func.now())
+    updated_at = db.Column(db.DateTime, server_default=db.func.now(), onupdate=db.func.now())
+
+    orders = db.relationship('Order', backref='user', lazy='dynamic')
+
+    def set_password(self, password):
+        self.password_hash = generate_password_hash(password)
+
+    def check_password(self, password):
+        return check_password_hash(self.password_hash, password)
+
+    def to_dict(self):
+        return {'id': self.id, 'email': self.email, 'name': self.name, 'role': self.role, 'created_at': self.created_at.isoformat()}
+
+
+# app/models/product.py
+class Category(db.Model):
+    __tablename__ = 'categories'
+
+    id = db.Column(db.String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    name = db.Column(db.String(100), nullable=False)
+    slug = db.Column(db.String(100), unique=True, nullable=False)
+    products = db.relationship('Product', backref='category', lazy='dynamic')
+
+class Product(db.Model):
+    __tablename__ = 'products'
+
+    id = db.Column(db.String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+    name = db.Column(db.String(200), nullable=False)
+    slug = db.Column(db.String(200), unique=True, nullable=False)
+    description = db.Column(db.Text)
+    price = db.Column(db.Integer, nullable=False, default=0)
+    stock = db.Column(db.Integer, nullable=False, default=0)
+    category_id = db.Column(db.String(36), db.ForeignKey('categories.id'), nullable=False)
+    status = db.Column(db.String(10), nullable=False, default='draft', index=True)
+    rating = db.Column(db.Float, default=0)
+    rating_count = db.Column(db.Integer, default=0)
+    created_at = db.Column(db.DateTime, server_default=db.func.now())
+    updated_at = db.Column(db.DateTime, server_default=db.func.now(), onupdate=db.func.now())
+
+    __table_args__ = (
+        db.Index('idx_products_status_category', 'status', 'category_id'),
+    )
+
+    def to_dict(self):
+        return {
+            'id': self.id, 'name': self.name, 'slug': self.slug,
+            'description': self.description, 'price': self.price,
+            'stock': self.stock, 'status': self.status,
+            'category': {'id': self.category.id, 'name': self.category.name} if self.category else None,
+            'rating': self.rating, 'rating_count': self.rating_count,
+            'created_at': self.created_at.isoformat(),
+        }
+```
+
+---
+
+## Auth Blueprint
+
+```python
+# app/api/auth.py
+from flask import Blueprint, request, jsonify
+from flask_jwt_extended import create_access_token, create_refresh_token, jwt_required, get_jwt_identity
+from app import db
+from app.models.user import User
+
+auth_bp = Blueprint('auth', __name__)
+
+@auth_bp.route('/register', methods=['POST'])
+def register():
+    data = request.get_json()
+    if User.query.filter_by(email=data['email']).first():
+        return jsonify({'error': 'Email already exists'}), 409
+
+    user = User(email=data['email'], name=data['name'])
+    user.set_password(data['password'])
+    db.session.add(user)
+    db.session.commit()
+
+    return jsonify({'user': user.to_dict()}), 201
+
+@auth_bp.route('/login', methods=['POST'])
+def login():
+    data = request.get_json()
+    user = User.query.filter_by(email=data['email']).first()
+    if not user or not user.check_password(data['password']):
+        return jsonify({'error': 'Invalid credentials'}), 401
+
+    access_token = create_access_token(identity=user.id, additional_claims={'role': user.role})
+    refresh_token = create_refresh_token(identity=user.id)
+
+    return jsonify({'access_token': access_token, 'refresh_token': refresh_token, 'user': user.to_dict()})
+
+@auth_bp.route('/me', methods=['GET'])
+@jwt_required()
+def me():
+    user = User.query.get_or_404(get_jwt_identity())
+    return jsonify({'user': user.to_dict()})
+
+@auth_bp.route('/refresh', methods=['POST'])
+@jwt_required(refresh=True)
+def refresh():
+    identity = get_jwt_identity()
+    access_token = create_access_token(identity=identity)
+    return jsonify({'access_token': access_token})
+```
+
+---
+
+## Products Blueprint
+
+```python
+# app/api/products.py
+from flask import Blueprint, request, jsonify
+from flask_jwt_extended import jwt_required, get_jwt
+from app import db
+from app.models.product import Product
+
+products_bp = Blueprint('products', __name__)
+
+@products_bp.route('', methods=['GET'])
+def list_products():
+    page = request.args.get('page', 1, type=int)
+    limit = request.args.get('limit', 20, type=int)
+    search = request.args.get('search', '')
+    category = request.args.get('category', '')
+    sort_by = request.args.get('sort', 'newest')
+
+    query = Product.query.filter_by(status='active')
+
+    if search:
+        query = query.filter(Product.name.ilike(f'%{search}%'))
+    if category:
+        query = query.filter(Product.category.has(slug=category))
+
+    if sort_by == 'price_asc':
+        query = query.order_by(Product.price.asc())
+    elif sort_by == 'price_desc':
+        query = query.order_by(Product.price.desc())
+    elif sort_by == 'rating':
+        query = query.order_by(Product.rating.desc())
+    else:
+        query = query.order_by(Product.created_at.desc())
+
+    pagination = query.paginate(page=page, per_page=limit, error_out=False)
+
+    return jsonify({
+        'data': [p.to_dict() for p in pagination.items],
+        'total': pagination.total,
+        'page': page,
+        'total_pages': pagination.pages,
+    })
+
+@products_bp.route('/<slug>', methods=['GET'])
+def get_product(slug):
+    product = Product.query.filter_by(slug=slug).first_or_404()
+    return jsonify(product.to_dict())
+
+@products_bp.route('', methods=['POST'])
+@jwt_required()
+def create_product():
+    claims = get_jwt()
+    if claims.get('role') != 'admin':
+        return jsonify({'error': 'Forbidden'}), 403
+
+    data = request.get_json()
+    from app.utils import slugify
+    product = Product(
+        name=data['name'], slug=slugify(data['name']),
+        description=data.get('description', ''), price=data['price'],
+        stock=data.get('stock', 0), category_id=data['category_id'],
+    )
+    db.session.add(product)
+    db.session.commit()
+    return jsonify(product.to_dict()), 201
+```
+
+---
+
+## Commands
+
+```bash
+# Database
+flask db init
+flask db migrate -m "Initial migration"
+flask db upgrade
+
+# Run
+flask run --debug --port 5000
+
+# Shell
+flask shell
+```
+
+---
+
 ## Best Practices
-1. **Application factory** — always use `create_app()` pattern
-2. **Blueprints** for modularity — group related routes
-3. **Extensions in separate file** — avoid circular imports
-4. **Schemas for validation** — Marshmallow or Pydantic
-5. **Config from environment** — never hardcode secrets
-6. **Gunicorn for production** — `gunicorn -w 4 -b 0.0.0.0:5000 wsgi:app`
-7. **Alembic for migrations** — `flask db migrate`, `flask db upgrade`
+
+| Practice | Details |
+|----------|---------|
+| **App factory** | Use `create_app()` pattern for testability |
+| **Blueprints** | Organize related routes into blueprints |
+| **Config classes** | Separate dev/prod/test configurations |
+| **SQLAlchemy** | Use relationships, indexes, lazy loading |
+| **JWT** | Access + refresh tokens with role claims |
+| **Pagination** | Use `paginate()` for list endpoints |
+| **Error handlers** | Register global error handlers |
+| **to_dict()** | Model serialization method |
+| **Migrations** | Use Flask-Migrate for schema changes |
+| **Security** | Hash passwords, validate input, check roles |
+
+---
+
+## Rules Integration
+- **Factory**: create_app() with extensions and blueprints
+- **Models**: SQLAlchemy with UUID PKs, indexes, relationships
+- **Auth**: JWT with access/refresh tokens and role claims
+- **CRUD**: Blueprints with pagination, search, filtering
+- **Admin**: Role-based access control via JWT claims

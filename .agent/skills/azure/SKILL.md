@@ -6,76 +6,100 @@ description: Skill for Microsoft Azure cloud services — covering App Service, 
 # Microsoft Azure Skill
 
 ## Overview
-Microsoft Azure is a cloud computing platform providing services for building, deploying, and managing applications.
+Microsoft Azure is a cloud computing platform for building, deploying, and managing applications. Key services include App Service (web hosting), Azure Functions (serverless), Blob Storage (files), Cosmos DB (NoSQL), Azure SQL, Key Vault (secrets), and Azure AD (identity).
 
-**Reference**: [Azure Documentation](https://learn.microsoft.com/en-us/azure/)
+**References**:
+- [Azure Documentation](https://learn.microsoft.com/en-us/azure/)
+- [Azure SDK for JavaScript](https://github.com/Azure/azure-sdk-for-js)
 
-## Azure CLI
-```bash
-az login
-az account set --subscription "My Subscription"
-az group create --name myapp-rg --location southeastasia
+---
+
+## Blob Storage
+
+```typescript
+import { BlobServiceClient } from '@azure/storage-blob';
+
+const blobService = BlobServiceClient.fromConnectionString(process.env.AZURE_STORAGE_CONNECTION_STRING!);
+const container = blobService.getContainerClient('uploads');
+
+export async function uploadBlob(name: string, data: Buffer, contentType: string) {
+  const blob = container.getBlockBlobClient(name);
+  await blob.upload(data, data.length, { blobHTTPHeaders: { blobContentType: contentType } });
+  return blob.url;
+}
+
+export async function deleteBlob(name: string) {
+  await container.getBlockBlobClient(name).delete();
+}
+
+export async function generateSasUrl(name: string, expiresMinutes = 60) {
+  const blob = container.getBlockBlobClient(name);
+  const { BlobSASPermissions, generateBlobSASQueryParameters, StorageSharedKeyCredential } = await import('@azure/storage-blob');
+  // Generate SAS token for temporary access
+  return blob.url + '?' + generateBlobSASQueryParameters({
+    containerName: 'uploads', blobName: name,
+    permissions: BlobSASPermissions.parse('r'),
+    expiresOn: new Date(Date.now() + expiresMinutes * 60 * 1000),
+  }, blobService.credential as StorageSharedKeyCredential).toString();
+}
 ```
 
-## App Service (Web Apps)
-```bash
-az webapp create --resource-group myapp-rg --plan myapp-plan --name myapp-web --runtime "NODE:20-lts"
-az webapp config appsettings set --resource-group myapp-rg --name myapp-web --settings NODE_ENV=production DB_HOST=mydb.database.azure.com
-az webapp deploy --resource-group myapp-rg --name myapp-web --src-path ./dist.zip --type zip
-```
+---
 
 ## Azure Functions
-```typescript
-import { app, HttpRequest, HttpResponseInit } from "@azure/functions";
 
-app.http("getUsers", {
-  methods: ["GET"],
-  authLevel: "anonymous",
-  handler: async (request: HttpRequest): Promise<HttpResponseInit> => {
-    const users = await db.users.findMany();
-    return { status: 200, jsonBody: { data: users } };
+```typescript
+import { app, HttpRequest, HttpResponseInit, InvocationContext } from '@azure/functions';
+
+app.http('getProducts', {
+  methods: ['GET'],
+  authLevel: 'anonymous',
+  route: 'products',
+  handler: async (request: HttpRequest, context: InvocationContext): Promise<HttpResponseInit> => {
+    const products = await db.product.findMany({ where: { status: 'active' } });
+    return { status: 200, jsonBody: { data: products } };
   },
 });
 ```
 
-## Blob Storage
+---
+
+## Key Vault
+
 ```typescript
-import { BlobServiceClient } from "@azure/storage-blob";
-const blobService = BlobServiceClient.fromConnectionString(process.env.AZURE_STORAGE_CONNECTION!);
-const container = blobService.getContainerClient("uploads");
+import { SecretClient } from '@azure/keyvault-secrets';
+import { DefaultAzureCredential } from '@azure/identity';
 
-// Upload
-const blockBlob = container.getBlockBlobClient(`${Date.now()}-${filename}`);
-await blockBlob.uploadData(buffer, { blobHTTPHeaders: { blobContentType: "image/png" } });
+const credential = new DefaultAzureCredential();
+const vault = new SecretClient(`https://${process.env.KEY_VAULT_NAME}.vault.azure.net`, credential);
 
-// SAS URL
-const sasUrl = await blockBlob.generateSasUrl({ permissions: "r", expiresOn: new Date(Date.now() + 3600000) });
+export async function getSecret(name: string): Promise<string> {
+  const secret = await vault.getSecret(name);
+  return secret.value!;
+}
 ```
 
-## Common Services
-
-| Service | Purpose |
-|---------|---------|
-| **App Service** | Web app hosting (PaaS) |
-| **Azure Functions** | Serverless compute |
-| **Blob Storage** | Object/file storage |
-| **Cosmos DB** | Multi-model NoSQL |
-| **Azure SQL** | Managed SQL Server |
-| **Key Vault** | Secrets management |
-| **Azure AD / Entra ID** | Identity & auth |
-| **Service Bus** | Message queue |
-| **Container Apps** | Serverless containers |
-| **Azure DevOps** | CI/CD pipelines |
+---
 
 ## Best Practices
 
-| Practice | Description |
-|----------|-------------|
-| **Managed Identity** | Use over connection strings |
-| **Key Vault** | Store all secrets and certificates |
-| **Resource Groups** | Organize by application/environment |
-| **RBAC** | Use role-based access control |
-| **Monitoring** | Application Insights for APM |
-| **Availability Zones** | Multi-zone for high availability |
+| Practice | Details |
+|----------|---------|
+| **Managed Identity** | Use DefaultAzureCredential, avoid keys |
+| **Blob Storage** | SAS tokens for temporary access |
+| **Key Vault** | Store secrets, certificates, keys |
+| **App Service** | Deployment slots for zero-downtime |
+| **Functions** | Serverless with HTTP/timer/queue triggers |
+| **Cosmos DB** | Partition key design for scalability |
+| **Azure AD** | OIDC for authentication |
+| **Resource Groups** | Organize related resources |
 | **Tags** | Tag resources for cost management |
-| **Bicep/Terraform** | Infrastructure as Code |
+| **Azure CLI** | `az` commands for automation |
+
+---
+
+## Rules Integration
+- **Storage**: Blob upload/download with SAS tokens
+- **Compute**: Azure Functions with HTTP triggers
+- **Secrets**: Key Vault with managed identity
+- **Security**: DefaultAzureCredential, Azure AD

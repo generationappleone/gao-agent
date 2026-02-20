@@ -6,94 +6,295 @@ description: Skill for building cross-platform desktop applications — covering
 # Electron / Tauri Skill
 
 ## Overview
-Electron and Tauri are frameworks for building cross-platform desktop applications using web technologies. Tauri is the modern, lighter alternative.
+Electron and Tauri are frameworks for building cross-platform desktop applications using web technologies. Electron bundles Chromium + Node.js (larger but more mature), while Tauri uses the system webview + Rust backend (smaller, more secure, faster).
+
+**References**:
+- [Electron Documentation](https://www.electronjs.org/docs)
+- [Tauri Documentation](https://tauri.app/start/)
+
+---
+
+## When to Choose
+
+| Feature | Electron | Tauri |
+|---------|----------|-------|
+| **Bundle size** | ~150MB+ | ~3-10MB |
+| **Memory usage** | High (Chromium) | Low (system webview) |
+| **Backend** | Node.js (JavaScript) | Rust |
+| **Webview** | Bundled Chromium | System (WebView2/WebKit) |
+| **Maturity** | Very mature, huge ecosystem | Growing, production-ready |
+| **Node.js access** | Full | Via Rust commands |
+| **Best for** | Complex apps, Node.js ecosystem | Lightweight, performance-critical |
+
+---
+
+## Tauri (Recommended for New Projects)
+
+### Setup
+```bash
+npm create tauri-app@latest myapp
+cd myapp
+npm install
+npm run tauri dev
+```
+
+### Project Structure
+```
+myapp/
+├── src/                          # Frontend (React/Vue/Svelte)
+│   ├── App.tsx
+│   ├── main.tsx
+│   └── lib/
+│       └── tauri.ts             # Tauri API wrappers
+├── src-tauri/                    # Rust backend
+│   ├── src/
+│   │   ├── main.rs              # Entry point
+│   │   ├── lib.rs               # Commands
+│   │   └── db.rs                # Database logic
+│   ├── Cargo.toml
+│   ├── tauri.conf.json          # App configuration
+│   └── icons/
+├── package.json
+└── vite.config.ts
+```
+
+### Tauri Commands (Rust → Frontend)
+```rust
+// src-tauri/src/lib.rs
+use serde::{Deserialize, Serialize};
+use tauri::Manager;
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct User {
+    pub id: String,
+    pub name: String,
+    pub email: String,
+}
+
+#[tauri::command]
+async fn get_users(db: tauri::State<'_, Database>) -> Result<Vec<User>, String> {
+    db.get_all_users().await.map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+async fn create_user(name: String, email: String, db: tauri::State<'_, Database>) -> Result<User, String> {
+    db.create_user(&name, &email).await.map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+fn greet(name: &str) -> String {
+    format!("Hello, {}! Welcome to Tauri.", name)
+}
+
+pub fn run() {
+    tauri::Builder::default()
+        .invoke_handler(tauri::generate_handler![get_users, create_user, greet])
+        .setup(|app| {
+            let db = Database::new("myapp.db")?;
+            app.manage(db);
+            Ok(())
+        })
+        .run(tauri::generate_context!())
+        .expect("error while running tauri application");
+}
+```
+
+### Frontend — Invoke Commands
+```typescript
+// src/lib/tauri.ts
+import { invoke } from '@tauri-apps/api/core';
+
+interface User {
+  id: string;
+  name: string;
+  email: string;
+}
+
+export async function getUsers(): Promise<User[]> {
+  return invoke('get_users');
+}
+
+export async function createUser(name: string, email: string): Promise<User> {
+  return invoke('create_user', { name, email });
+}
+
+// Usage in React
+function UsersPage() {
+  const [users, setUsers] = useState<User[]>([]);
+
+  useEffect(() => {
+    getUsers().then(setUsers);
+  }, []);
+
+  const handleCreate = async (name: string, email: string) => {
+    const user = await createUser(name, email);
+    setUsers((prev) => [...prev, user]);
+  };
+
+  return (/* render users */);
+}
+```
+
+### Tauri Events (Backend → Frontend)
+```rust
+// Emit event from Rust
+app.emit("download-progress", DownloadProgress { percent: 75, file: "update.zip".into() })?;
+
+// Listen in frontend
+import { listen } from '@tauri-apps/api/event';
+
+const unlisten = await listen<{ percent: number; file: string }>('download-progress', (event) => {
+  console.log(`Download: ${event.payload.percent}%`);
+});
+// Cleanup: unlisten();
+```
+
+### Tauri Configuration
+```json
+// src-tauri/tauri.conf.json
+{
+  "productName": "MyApp",
+  "version": "1.0.0",
+  "identifier": "com.myapp.desktop",
+  "build": {
+    "frontendDist": "../dist"
+  },
+  "app": {
+    "windows": [
+      {
+        "title": "MyApp",
+        "width": 1200,
+        "height": 800,
+        "minWidth": 800,
+        "minHeight": 600,
+        "resizable": true,
+        "center": true
+      }
+    ],
+    "security": {
+      "csp": "default-src 'self'; style-src 'self' 'unsafe-inline'"
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": "all",
+    "icon": ["icons/icon.png"]
+  }
+}
+```
+
+---
 
 ## Electron
-**Reference**: [Electron Documentation](https://www.electronjs.org/docs)
 
-### Main Process
+### Setup
+```bash
+npm init electron-app@latest myapp -- --template=vite-react-ts
+cd myapp
+npm start
+```
+
+### Main Process (main.ts)
 ```typescript
-// main.ts
-import { app, BrowserWindow, ipcMain } from "electron";
-import path from "path";
+// src/main.ts
+import { app, BrowserWindow, ipcMain } from 'electron';
+import path from 'path';
 
 let mainWindow: BrowserWindow;
 
 function createWindow() {
   mainWindow = new BrowserWindow({
-    width: 1200, height: 800,
+    width: 1200,
+    height: 800,
+    minWidth: 800,
+    minHeight: 600,
     webPreferences: {
-      preload: path.join(__dirname, "preload.js"),
-      contextIsolation: true,
-      nodeIntegration: false, // ✅ Security: always false
+      preload: path.join(__dirname, 'preload.js'),
+      contextIsolation: true,           // Security: isolate renderer
+      nodeIntegration: false,            // Security: no Node in renderer
     },
+    titleBarStyle: 'hiddenInset',        // macOS-style titlebar
   });
-  mainWindow.loadFile("index.html");
+
+  if (process.env.NODE_ENV === 'development') {
+    mainWindow.loadURL('http://localhost:5173');
+    mainWindow.webContents.openDevTools();
+  } else {
+    mainWindow.loadFile(path.join(__dirname, '../dist/index.html'));
+  }
 }
 
 app.whenReady().then(createWindow);
+app.on('window-all-closed', () => { if (process.platform !== 'darwin') app.quit(); });
 
-// IPC handlers
-ipcMain.handle("read-file", async (_, filePath: string) => {
-  return fs.readFileSync(filePath, "utf-8");
+// IPC Handlers
+ipcMain.handle('get-users', async () => {
+  return db.getUsers();
+});
+
+ipcMain.handle('create-user', async (event, { name, email }) => {
+  return db.createUser(name, email);
 });
 ```
 
-### Preload (Context Bridge)
+### Preload Script
 ```typescript
-// preload.ts
-import { contextBridge, ipcRenderer } from "electron";
+// src/preload.ts
+import { contextBridge, ipcRenderer } from 'electron';
 
-contextBridge.exposeInMainWorld("electronAPI", {
-  readFile: (path: string) => ipcRenderer.invoke("read-file", path),
-  onUpdate: (cb: (msg: string) => void) => ipcRenderer.on("update", (_, msg) => cb(msg)),
+contextBridge.exposeInMainWorld('api', {
+  getUsers: () => ipcRenderer.invoke('get-users'),
+  createUser: (name: string, email: string) => ipcRenderer.invoke('create-user', { name, email }),
+  onProgress: (callback: (data: any) => void) => {
+    ipcRenderer.on('progress', (_, data) => callback(data));
+  },
 });
-```
 
-## Tauri (Recommended)
-**Reference**: [Tauri Documentation](https://tauri.app/v2/guide/)
-
-### Rust Backend
-```rust
-// src-tauri/src/main.rs
-#[tauri::command]
-async fn greet(name: &str) -> Result<String, String> {
-    Ok(format!("Hello, {}!", name))
-}
-
-fn main() {
-    tauri::Builder::default()
-        .invoke_handler(tauri::generate_handler![greet])
-        .run(tauri::generate_context!())
-        .expect("error running tauri");
+// TypeScript: declare global type
+declare global {
+  interface Window {
+    api: {
+      getUsers: () => Promise<User[]>;
+      createUser: (name: string, email: string) => Promise<User>;
+      onProgress: (callback: (data: any) => void) => void;
+    };
+  }
 }
 ```
 
-### Frontend Invocation
+### Renderer (React)
 ```typescript
-import { invoke } from "@tauri-apps/api/core";
-const greeting = await invoke<string>("greet", { name: "World" });
+function UsersPage() {
+  const [users, setUsers] = useState<User[]>([]);
+
+  useEffect(() => {
+    window.api.getUsers().then(setUsers);
+  }, []);
+
+  return (/* render users */);
+}
 ```
 
-## Comparison
-
-| Feature | Electron | Tauri |
-|---------|----------|-------|
-| **Bundle size** | ~150MB | ~3-10MB |
-| **Memory** | High (Chromium) | Low (system webview) |
-| **Backend** | Node.js | Rust |
-| **Language** | JavaScript | Rust + JS |
-| **Auto-update** | electron-updater | Built-in |
-| **Security** | contextBridge | Strong by default |
+---
 
 ## Best Practices
 
-| Practice | Description |
-|----------|-------------|
-| **Tauri for new projects** | Smaller, faster, more secure |
-| **Context isolation** | Always `contextIsolation: true` in Electron |
-| **No nodeIntegration** | Always `false` in renderer |
-| **IPC** | All main↔renderer via IPC, never direct |
-| **Auto-update** | Implement for production apps |
-| **Code signing** | Sign for macOS/Windows distribution |
-| **CSP headers** | Set Content-Security-Policy |
+| Practice | Details |
+|----------|---------|
+| **Tauri for new apps** | Smaller bundles, better security, Rust performance |
+| **Context isolation** | Always enable in Electron (contextIsolation: true) |
+| **No nodeIntegration** | Never enable nodeIntegration in renderer |
+| **IPC for communication** | Frontend ↔ Backend via IPC, never expose Node directly |
+| **CSP** | Set strict Content Security Policy |
+| **Auto-updates** | Tauri: built-in updater / Electron: electron-updater |
+| **Code signing** | Sign apps for distribution (Apple notarization, Windows signing) |
+| **State management** | Use Tauri `State` or Electron `ipcMain.handle` for shared state |
+
+---
+
+## Rules Integration
+- **Architecture**: Frontend (React/Vue) + Backend (Rust/Node.js), IPC bridge
+- **Security**: Context isolation, no Node in renderer, strict CSP
+- **Tauri**: Rust commands with `#[tauri::command]`, event system, managed state
+- **Electron**: Preload scripts for IPC, `contextBridge`, `ipcMain.handle`
+- **Distribution**: Code signing, auto-updates, platform-specific builds

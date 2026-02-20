@@ -3,353 +3,385 @@ name: DOKU Payment Gateway
 description: Skill for DOKU — Indonesia's pioneer payment gateway covering Checkout API, Direct API, virtual accounts, e-wallets, QRIS, credit cards, convenience stores, SNAP BI compliance, and webhook notification handling.
 ---
 
-# DOKU — Payment Gateway Indonesia
+# DOKU Payment Gateway Skill
 
 ## Overview
-DOKU (founded 2007) is Indonesia's pioneer payment gateway, licensed by Bank Indonesia as a Payment System Service Provider (PJSP) and PCI DSS Level 1 certified. It supports credit/debit cards, bank transfers (VA), e-wallets, QRIS, and convenience store payments.
+DOKU is Indonesia's pioneer digital payment platform, providing a comprehensive payment gateway with virtual accounts, e-wallets (OVO, DANA, ShopeePay, LinkAja, GoPay), QRIS, credit/debit cards, and convenience store payments. It supports both Checkout (hosted) and Direct (API) integration methods, with SNAP BI compliance.
 
-## Architecture
-```
-┌──────────────────────────────────────────────┐
-│              Your Application                │
-├──────────────┬───────────────────────────────┤
-│   Frontend   │         Backend               │
-│(DOKU Checkout│  (DOKU API + Signature)        │
-│  or Custom)  │                               │
-├──────────────┴───────────────────────────────┤
-│              DOKU API Layer                  │
-├──────────┬──────────┬─────────┬─────────────┤
-│ Checkout │ Direct   │e-Invoice│ SNAP BI     │
-│   API    │   API    │   API   │ Compliance  │
-├──────────┴──────────┴─────────┴─────────────┤
-│         Payment Channels                     │
-│ Cards│ VA │ OVO│ DANA│ QRIS│ Alfamart│ etc  │
-└──────────────────────────────────────────────┘
-```
+**References**:
+- [DOKU API Documentation](https://developers.doku.com/)
+- [DOKU Dashboard](https://dashboard.doku.com/)
+- [SNAP BI Standard](https://apidevportal.bi.go.id/)
 
-## Authentication & Signature
+---
 
-### Generate Request Signature
-```javascript
-const crypto = require('crypto');
+## Setup
 
-function generateSignature(clientId, requestId, requestTimestamp, requestTarget, body, secretKey) {
-    // Component signature
-    const digest = crypto.createHash('sha256')
-        .update(JSON.stringify(body))
-        .digest('base64');
+```typescript
+// src/lib/doku.ts
+import crypto from 'crypto';
 
-    const componentSignature = `Client-Id:${clientId}\n` +
-        `Request-Id:${requestId}\n` +
-        `Request-Timestamp:${requestTimestamp}\n` +
-        `Request-Target:${requestTarget}\n` +
-        `Digest:${digest}`;
+const DOKU_CLIENT_ID = process.env.DOKU_CLIENT_ID!;
+const DOKU_SECRET_KEY = process.env.DOKU_SECRET_KEY!;
+const DOKU_BASE_URL = process.env.DOKU_BASE_URL || 'https://api-sandbox.doku.com'; // or https://api.doku.com
 
-    const signature = crypto.createHmac('sha256', secretKey)
-        .update(componentSignature)
-        .digest('base64');
+// ── Generate signature ──
+function generateSignature(
+  clientId: string,
+  requestId: string,
+  timestamp: string,
+  requestTarget: string,
+  body: string,
+  secretKey: string,
+): string {
+  // Digest body
+  const digest = crypto.createHash('sha256').update(body).digest('base64');
 
-    return `HMACSHA256=${signature}`;
+  // Component signature
+  const componentSignature = `Client-Id:${clientId}\nRequest-Id:${requestId}\nRequest-Timestamp:${timestamp}\nRequest-Target:${requestTarget}\nDigest:${digest}`;
+
+  // HMAC-SHA256
+  const signature = crypto
+    .createHmac('sha256', secretKey)
+    .update(componentSignature)
+    .digest('base64');
+
+  return `HMACSHA256=${signature}`;
 }
 
-// Usage
-const clientId = 'YOUR_CLIENT_ID';
-const secretKey = 'YOUR_SECRET_KEY';
-const requestId = crypto.randomUUID();
-const timestamp = new Date().toISOString();
+// ── DOKU API client ──
+async function dokuApi(
+  method: string,
+  path: string,
+  body: object,
+): Promise<any> {
+  const requestId = crypto.randomUUID();
+  const timestamp = new Date().toISOString();
+  const bodyString = JSON.stringify(body);
+
+  const signature = generateSignature(
+    DOKU_CLIENT_ID,
+    requestId,
+    timestamp,
+    path,
+    bodyString,
+    DOKU_SECRET_KEY,
+  );
+
+  const res = await fetch(`${DOKU_BASE_URL}${path}`, {
+    method,
+    headers: {
+      'Client-Id': DOKU_CLIENT_ID,
+      'Request-Id': requestId,
+      'Request-Timestamp': timestamp,
+      'Signature': signature,
+      'Content-Type': 'application/json',
+    },
+    body: bodyString,
+  });
+
+  const data = await res.json();
+
+  if (!res.ok) {
+    throw new Error(`DOKU API error: ${data.message?.en || JSON.stringify(data)}`);
+  }
+
+  return data;
+}
 ```
 
-### Request Headers
-```javascript
-const headers = {
-    'Client-Id': clientId,
-    'Request-Id': requestId,
-    'Request-Timestamp': timestamp,
-    'Signature': generateSignature(clientId, requestId, timestamp, '/checkout/v1/payment', body, secretKey),
-    'Content-Type': 'application/json'
-};
-```
+---
 
-## Integration Methods
+## Checkout API (Hosted Payment Page)
 
-### 1. Checkout API (Built-in Payment Page)
-
-```javascript
-// Backend: Generate payment URL
-const body = {
+```typescript
+// ── Create Checkout ──
+async function createCheckout(order: Order, customer: Customer) {
+  const response = await dokuApi('POST', '/checkout/v1/payment', {
     order: {
-        amount: 150000,
-        invoice_number: `INV-${Date.now()}`,
-        currency: 'IDR',
-        callback_url: 'https://yoursite.com/api/doku/callback',
-        line_items: [
-            { name: 'Premium Plan', price: 100000, quantity: 1 },
-            { name: 'Setup Fee', price: 50000, quantity: 1 }
-        ]
+      invoice_number: order.orderNumber,
+      amount: order.totalAmount,
+      currency: 'IDR',
+      callback_url: `${process.env.API_URL}/webhooks/doku`,
+      callback_url_cancel: `${process.env.FRONTEND_URL}/orders/${order.id}/cancelled`,
+      language: 'ID',
+      auto_redirect: true,
+      disable_retry_payment: false,
+      line_items: order.items.map(item => ({
+        name: item.name,
+        quantity: item.quantity,
+        price: item.price,
+      })),
     },
     payment: {
-        payment_due_date: 60  // minutes
+      payment_due_date: 60,  // minutes
+      payment_method_types: [
+        'VIRTUAL_ACCOUNT_BCA',
+        'VIRTUAL_ACCOUNT_BNI',
+        'VIRTUAL_ACCOUNT_BRI',
+        'VIRTUAL_ACCOUNT_MANDIRI',
+        'VIRTUAL_ACCOUNT_PERMATA',
+        'EMONEY_OVO',
+        'EMONEY_DANA',
+        'EMONEY_SHOPEE_PAY',
+        'EMONEY_LINK_AJA',
+        'QRIS',
+        'CREDIT_CARD',
+        'ALFAMART',
+        'INDOMARET',
+      ],
     },
     customer: {
-        id: 'CUST-001',
-        name: 'John Doe',
-        email: 'john@example.com',
-        phone: '081234567890',
-        country: 'ID'
-    }
-};
+      id: customer.id,
+      name: `${customer.firstName} ${customer.lastName}`,
+      email: customer.email,
+      phone: customer.phone,
+      country: 'ID',
+    },
+    additional_info: {
+      allow_tenor: [0, 3, 6, 12],  // Credit card installment options
+      close_redirect: `${process.env.FRONTEND_URL}/orders/${order.id}`,
+    },
+  });
 
-const response = await fetch('https://api-sandbox.doku.com/checkout/v1/payment', {
-    method: 'POST',
-    headers: headers,
-    body: JSON.stringify(body)
-});
+  // Save payment URL
+  await db.order.update({
+    where: { id: order.id },
+    data: {
+      dokuInvoiceNumber: order.orderNumber,
+      paymentUrl: response.response.payment.url,
+      paymentStatus: 'PENDING',
+    },
+  });
 
-const result = await response.json();
-// Redirect customer to result.response.payment.url
+  return {
+    paymentUrl: response.response.payment.url,
+    invoiceNumber: order.orderNumber,
+    expiredAt: response.response.payment.expired_date,
+  };
+}
 ```
 
-### 2. Direct API (Custom Payment Page)
+---
 
-#### Virtual Account
-```javascript
-const vaBody = {
+## Direct API — Virtual Account
+
+```typescript
+// ── Create Virtual Account ──
+async function createVirtualAccount(order: Order, bankCode: string) {
+  // Map bank code to path
+  const bankPaths: Record<string, string> = {
+    BCA: '/bca-virtual-account/v2/payment-code',
+    BNI: '/bni-virtual-account/v2/payment-code',
+    BRI: '/bri-virtual-account/v2/payment-code',
+    MANDIRI: '/mandiri-virtual-account/v2/payment-code',
+    PERMATA: '/permata-virtual-account/v2/payment-code',
+    CIMB: '/cimb-virtual-account/v2/payment-code',
+    BSI: '/bsi-virtual-account/v2/payment-code',
+  };
+
+  const response = await dokuApi('POST', bankPaths[bankCode], {
     order: {
-        amount: 500000,
-        invoice_number: `VA-${Date.now()}`
+      invoice_number: order.orderNumber,
+      amount: order.totalAmount,
     },
     virtual_account_info: {
-        billing_type: 'FIX_BILL',
-        expired_time: 60,  // minutes
-        reusable_status: false,
-        info1: 'Pembayaran Order',
-        info2: 'Premium Subscription'
+      expired_time: 60,       // minutes
+      reusable_status: false,  // Single-use
+      info1: `Order ${order.orderNumber}`,
     },
     customer: {
-        name: 'John Doe',
-        email: 'john@example.com'
-    }
-};
-
-// BCA VA
-const bcaVA = await fetch('https://api-sandbox.doku.com/bca-virtual-account/v2/payment-code', {
-    method: 'POST', headers, body: JSON.stringify(vaBody)
-});
-
-// BNI VA
-const bniVA = await fetch('https://api-sandbox.doku.com/bni-virtual-account/v2/payment-code', {
-    method: 'POST', headers, body: JSON.stringify(vaBody)
-});
-
-// BRI VA
-const briVA = await fetch('https://api-sandbox.doku.com/bri-virtual-account/v2/payment-code', {
-    method: 'POST', headers, body: JSON.stringify(vaBody)
-});
-
-// Mandiri VA
-const mandiriVA = await fetch('https://api-sandbox.doku.com/mandiri-virtual-account/v2/payment-code', {
-    method: 'POST', headers, body: JSON.stringify(vaBody)
-});
-```
-
-#### E-Wallet
-```javascript
-// OVO
-const ovoBody = {
-    order: { amount: 75000, invoice_number: `OVO-${Date.now()}` },
-    ovo_info: { ovo_id: '081234567890' },
-    customer: { name: 'John Doe', email: 'john@example.com' }
-};
-const ovo = await fetch('https://api-sandbox.doku.com/ovo-emoney/v1/payment', {
-    method: 'POST', headers, body: JSON.stringify(ovoBody)
-});
-
-// DANA
-const danaBody = {
-    order: { amount: 75000, invoice_number: `DANA-${Date.now()}` },
-    dana_info: { callback_url: 'https://yoursite.com/callback', redirect_url: 'https://yoursite.com/redirect' },
-    customer: { name: 'John Doe', email: 'john@example.com' }
-};
-const dana = await fetch('https://api-sandbox.doku.com/dana-emoney/v1/payment', {
-    method: 'POST', headers, body: JSON.stringify(danaBody)
-});
-
-// ShopeePay
-const shopee = await fetch('https://api-sandbox.doku.com/shopeepay-emoney/v1/payment', {
-    method: 'POST', headers, body: JSON.stringify({
-        order: { amount: 50000, invoice_number: `SPAY-${Date.now()}` },
-        shopeepay_info: { redirect_url: 'https://yoursite.com/redirect' },
-        customer: { name: 'John Doe', email: 'john@example.com' }
-    })
-});
-```
-
-#### Credit Card
-```javascript
-const ccBody = {
-    order: { amount: 250000, invoice_number: `CC-${Date.now()}` },
-    credit_card_info: {
-        payment_type: 'SALE',
-        support_3d_secure: true,  // Enable 3DS
-        callback_url: 'https://yoursite.com/api/doku/cc-callback'
+      name: order.customerName,
+      email: order.customerEmail,
     },
-    customer: { name: 'John Doe', email: 'john@example.com' }
-};
-const cc = await fetch('https://api-sandbox.doku.com/credit-card/v1/payment', {
-    method: 'POST', headers, body: JSON.stringify(ccBody)
+  });
+
+  return {
+    vaNumber: response.virtual_account_info.virtual_account_number,
+    bankCode,
+    amount: order.totalAmount,
+    expiredAt: response.virtual_account_info.expired_date,
+    howToPay: response.virtual_account_info.how_to_pay_api,
+  };
+}
+```
+
+---
+
+## Direct API — E-Wallet
+
+```typescript
+// ── Create E-Wallet Payment ──
+async function createEwalletPayment(order: Order, walletType: string) {
+  const walletPaths: Record<string, string> = {
+    OVO: '/ovo-emoney/v1/payment',
+    DANA: '/dana-emoney/v1/payment',
+    SHOPEE_PAY: '/shopee-pay-emoney/v1/payment',
+    LINK_AJA: '/linkaja-emoney/v1/payment',
+  };
+
+  const payload: any = {
+    order: {
+      invoice_number: order.orderNumber,
+      amount: order.totalAmount,
+    },
+    customer: {
+      name: order.customerName,
+      email: order.customerEmail,
+    },
+  };
+
+  // OVO requires phone number
+  if (walletType === 'OVO') {
+    payload.ovo_info = {
+      ovo_id: order.customerPhone,  // OVO registered phone
+    };
+  } else {
+    payload.additional_info = {
+      success_payment_url: `${process.env.FRONTEND_URL}/orders/${order.id}/success`,
+      failed_payment_url: `${process.env.FRONTEND_URL}/orders/${order.id}/failed`,
+    };
+  }
+
+  const response = await dokuApi('POST', walletPaths[walletType], payload);
+
+  return {
+    paymentUrl: response.response?.payment?.url,     // For DANA/ShopeePay/LinkAja
+    status: response.response?.order?.status || 'PENDING',
+  };
+}
+```
+
+---
+
+## Direct API — QRIS
+
+```typescript
+// ── Create QRIS Payment ──
+async function createQrisPayment(order: Order) {
+  const response = await dokuApi('POST', '/qris/v1/payment-code', {
+    order: {
+      invoice_number: order.orderNumber,
+      amount: order.totalAmount,
+    },
+    customer: {
+      name: order.customerName,
+      email: order.customerEmail,
+    },
+    qris_info: {
+      expired_time: 30,  // minutes
+    },
+  });
+
+  return {
+    qrContent: response.qris_info.qris_content,  // QR string for rendering
+    qrUrl: response.qris_info.qris_url,           // QR image URL
+    expiredAt: response.qris_info.expired_date,
+  };
+}
+```
+
+---
+
+## Webhooks (Notification)
+
+```typescript
+// src/webhooks/doku.ts
+
+// ── Verify DOKU notification signature ──
+function verifyDokuSignature(req: Request): boolean {
+  const clientId = req.headers['client-id'] as string;
+  const requestId = req.headers['request-id'] as string;
+  const timestamp = req.headers['request-timestamp'] as string;
+  const signature = req.headers['signature'] as string;
+  const requestTarget = req.path;
+  const body = JSON.stringify(req.body);
+
+  const expectedSignature = generateSignature(
+    DOKU_CLIENT_ID,
+    requestId,
+    timestamp,
+    requestTarget,
+    body,
+    DOKU_SECRET_KEY,
+  );
+
+  return signature === expectedSignature;
+}
+
+// ── Notification handler ──
+// POST /webhooks/doku
+app.post('/webhooks/doku', async (req, res) => {
+  // Verify signature
+  if (!verifyDokuSignature(req)) {
+    console.error('Invalid DOKU webhook signature');
+    return res.status(403).json({ error: 'Invalid signature' });
+  }
+
+  const { order, transaction, channel } = req.body;
+  const invoiceNumber = order?.invoice_number;
+  const transactionStatus = transaction?.status;
+  const amount = transaction?.amount;
+
+  console.log(`DOKU notification: ${invoiceNumber} → ${transactionStatus} (${channel?.id})`);
+
+  switch (transactionStatus) {
+    case 'SUCCESS':
+      await db.order.update({
+        where: { orderNumber: invoiceNumber },
+        data: {
+          paymentStatus: 'PAID',
+          paidAmount: parseInt(amount),
+          paymentChannel: channel?.id,
+          paidAt: new Date(),
+        },
+      });
+      await sendPaymentConfirmation(invoiceNumber);
+      break;
+
+    case 'FAILED':
+      await db.order.update({
+        where: { orderNumber: invoiceNumber },
+        data: { paymentStatus: 'FAILED' },
+      });
+      break;
+
+    case 'EXPIRED':
+      await db.order.update({
+        where: { orderNumber: invoiceNumber },
+        data: { paymentStatus: 'EXPIRED' },
+      });
+      await restoreStock(invoiceNumber);
+      break;
+  }
+
+  // DOKU expects 200 OK response
+  res.status(200).json({ message: 'Notification received' });
 });
 ```
 
-#### QRIS
-```javascript
-const qris = await fetch('https://api-sandbox.doku.com/qris/v1/payment', {
-    method: 'POST', headers,
-    body: JSON.stringify({
-        order: { amount: 100000, invoice_number: `QRIS-${Date.now()}` },
-        customer: { name: 'John Doe', email: 'john@example.com' }
-    })
-});
-// Response: qris_url (QR code image)
-```
-
-## Webhook Notification Handler
-
-### Node.js / Express
-```javascript
-app.post('/api/doku/notification', (req, res) => {
-    const notification = req.body;
-
-    // Verify signature from DOKU
-    const receivedSignature = req.headers['signature'];
-    const expectedSignature = generateNotificationSignature(
-        req.headers['client-id'],
-        req.headers['request-id'],
-        req.headers['request-timestamp'],
-        '/api/doku/notification',
-        notification,
-        process.env.DOKU_SECRET_KEY
-    );
-
-    if (receivedSignature !== expectedSignature) {
-        return res.status(403).json({ error: 'Invalid signature' });
-    }
-
-    const { service, acquirer, order, transaction } = notification;
-    const invoiceNumber = order.invoice_number;
-    const transactionStatus = transaction.status;
-
-    switch (transactionStatus) {
-        case 'SUCCESS':
-            updateOrderStatus(invoiceNumber, 'paid');
-            break;
-        case 'FAILED':
-            updateOrderStatus(invoiceNumber, 'failed');
-            break;
-        case 'VOIDED':
-            updateOrderStatus(invoiceNumber, 'voided');
-            break;
-    }
-
-    res.status(200).json({ status: 'ok' });
-});
-```
-
-### Laravel / PHP
-```php
-Route::post('/doku/notification', function (Request $request) {
-    // Verify DOKU signature
-    $signature = $request->header('Signature');
-    $expectedSignature = generateDokuSignature(
-        $request->header('Client-Id'),
-        $request->header('Request-Id'),
-        $request->header('Request-Timestamp'),
-        '/doku/notification',
-        $request->getContent(),
-        config('doku.secret_key')
-    );
-
-    if ($signature !== $expectedSignature) {
-        return response()->json(['error' => 'Unauthorized'], 403);
-    }
-
-    $data = $request->all();
-    $invoiceNumber = $data['order']['invoice_number'];
-    $status = $data['transaction']['status'];
-
-    if ($status === 'SUCCESS') {
-        Order::where('invoice_number', $invoiceNumber)
-            ->update(['status' => 'paid', 'paid_at' => now()]);
-    }
-
-    return response()->json(['status' => 'ok']);
-});
-```
-
-## SNAP BI Compliance
-DOKU supports Bank Indonesia's SNAP (Standar Nasional Open API Pembayaran) standard:
-
-```javascript
-// SNAP SDK simplifies BI-compliant integration
-const DokuSnap = require('doku-nodejs-library');
-
-const snap = new DokuSnap({
-    isProduction: false,
-    clientId: 'YOUR_CLIENT_ID',
-    secretKey: 'YOUR_SECRET_KEY',
-    privateKey: 'YOUR_PRIVATE_KEY'  // RSA private key for SNAP
-});
-
-// Generate B2B access token (SNAP standard)
-const token = await snap.generateB2BAccessToken();
-
-// Create VA with SNAP standard
-const vaResult = await snap.createVirtualAccount({
-    partnerServiceId: '   12345',
-    customerNo: '67890',
-    virtualAccountNo: '   1234567890',
-    totalAmount: { value: '500000.00', currency: 'IDR' },
-    virtualAccountName: 'John Doe'
-});
-```
-
-## Payment Channels
-| Channel | Type | API Endpoint |
-|---------|------|-------------|
-| BCA VA | Virtual Account | `/bca-virtual-account/v2/payment-code` |
-| BNI VA | Virtual Account | `/bni-virtual-account/v2/payment-code` |
-| BRI VA | Virtual Account | `/bri-virtual-account/v2/payment-code` |
-| Mandiri VA | Virtual Account | `/mandiri-virtual-account/v2/payment-code` |
-| OVO | E-Wallet | `/ovo-emoney/v1/payment` |
-| DANA | E-Wallet | `/dana-emoney/v1/payment` |
-| ShopeePay | E-Wallet | `/shopeepay-emoney/v1/payment` |
-| LinkAja | E-Wallet | `/linkaja-emoney/v1/payment` |
-| Credit Card | Card | `/credit-card/v1/payment` |
-| QRIS | QR Payment | `/qris/v1/payment` |
-| Alfamart | Store | `/alfamart/v1/payment-code` |
-
-## SDKs
-| Language | Package |
-|----------|---------|
-| Node.js | `npm install doku-nodejs-library` |
-| PHP | `composer require doku/doku-php-library` |
-| Python | `pip install doku-python-library` |
-| Java | Maven: `com.doku:doku-java-library` |
-| Ruby | `gem install doku-ruby-library` |
-
-## Configuration
-```env
-DOKU_CLIENT_ID=YOUR_CLIENT_ID
-DOKU_SECRET_KEY=YOUR_SECRET_KEY
-DOKU_IS_PRODUCTION=false
-# Sandbox: https://api-sandbox.doku.com
-# Production: https://api.doku.com
-```
+---
 
 ## Best Practices
-- Always **verify notification signatures** (HMAC-SHA256)
-- Enable **3D Secure** for all credit card transactions
-- Use **SNAP BI SDK** for Bank Indonesia compliance
-- Implement **idempotent** order processing for duplicate notifications
-- Test with **Sandbox** environment before going production
-- Store **invoice_number** as your primary order reference
-- Set appropriate **payment_due_date** for VA and checkout flows
+
+| Practice | Details |
+|----------|---------|
+| **Signature verification** | Always verify HMAC-SHA256 signature on webhooks |
+| **Checkout API** | Use Checkout for multi-channel (simplest integration) |
+| **Direct API** | Use Direct for custom UI and specific payment flows |
+| **Idempotency** | Unique `invoice_number` per order, handle duplicate callbacks |
+| **Expiration** | Set reasonable expiry (60min VA, 30min QRIS, 15min OVO) |
+| **Sandbox testing** | Use `api-sandbox.doku.com` for development |
+| **Error handling** | Handle timeout, insufficient balance, channel unavailable |
+| **Logging** | Log all API calls and webhook notifications |
+| **SNAP compliance** | Follow SNAP BI standard for signature format |
+| **Retry** | DOKU retries notifications up to 5 times on failure |
+
+---
+
+## Rules Integration
+- **Checkout**: Hosted payment page supporting all channels
+- **Direct**: VA (BCA/BNI/BRI/Mandiri), E-wallet (OVO/DANA/ShopeePay), QRIS, Cards
+- **Signature**: HMAC-SHA256 with Client-Id, Request-Id, timestamp, digest
+- **Webhooks**: Signature verification, idempotent processing, status updates
+- **SNAP BI**: Compliance with Bank Indonesia API standard

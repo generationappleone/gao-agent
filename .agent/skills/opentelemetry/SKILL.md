@@ -6,110 +6,70 @@ description: Skill for observability with OpenTelemetry (OTel) — covering trac
 # OpenTelemetry Skill
 
 ## Overview
-**OpenTelemetry (OTel)** is the vendor-neutral observability standard for generating, collecting, and exporting **traces**, **metrics**, and **logs**. It replaces OpenTracing and OpenCensus as the industry standard.
+OpenTelemetry (OTel) is the standard for distributed tracing, metrics, and logging. It provides vendor-neutral APIs, SDKs, and auto-instrumentation for Node.js, Python, Java, and Go. OTel collects telemetry data and exports to backends like Jaeger, Zipkin, Grafana Tempo, and Datadog.
 
-```
-┌──────────────────────────────────────────────────────────────┐
-│                  OPENTELEMETRY ARCHITECTURE                   │
-├──────────────────────────────────────────────────────────────┤
-│                                                              │
-│  App (SDK)                 Collector              Backend    │
-│  ┌────────┐              ┌──────────┐          ┌──────────┐ │
-│  │Traces  │─── OTLP ────│ Receive  │── Jaeger │ Jaeger   │ │
-│  │Metrics │─────────────│ Process  │── Prom   │ Grafana  │ │
-│  │Logs    │              │ Export   │── Loki   │ Tempo    │ │
-│  └────────┘              └──────────┘          └──────────┘ │
-│                                                              │
-│  3 Signals: Traces + Metrics + Logs                         │
-│  Protocol: OTLP (OpenTelemetry Protocol)                    │
-│  Export: gRPC or HTTP                                        │
-│                                                              │
-└──────────────────────────────────────────────────────────────┘
-```
+**References**:
+- [OpenTelemetry Documentation](https://opentelemetry.io/docs/)
+- [OTel Node.js](https://opentelemetry.io/docs/languages/js/)
 
 ---
 
-## Node.js Setup
-
-```bash
-npm install @opentelemetry/api @opentelemetry/sdk-node \
-  @opentelemetry/auto-instrumentations-node \
-  @opentelemetry/exporter-trace-otlp-http \
-  @opentelemetry/exporter-metrics-otlp-http
-```
+## Setup (Node.js)
 
 ```typescript
-// tracing.ts — Initialize BEFORE any imports
+// src/instrumentation.ts
 import { NodeSDK } from '@opentelemetry/sdk-node';
-import { getNodeAutoInstrumentations } from '@opentelemetry/auto-instrumentations-node';
 import { OTLPTraceExporter } from '@opentelemetry/exporter-trace-otlp-http';
 import { OTLPMetricExporter } from '@opentelemetry/exporter-metrics-otlp-http';
-import { PeriodicExportingMetricReader } from '@opentelemetry/sdk-metrics';
+import { getNodeAutoInstrumentations } from '@opentelemetry/auto-instrumentations-node';
 import { Resource } from '@opentelemetry/resources';
 import { ATTR_SERVICE_NAME, ATTR_SERVICE_VERSION } from '@opentelemetry/semantic-conventions';
+import { PeriodicExportingMetricReader } from '@opentelemetry/sdk-metrics';
 
 const sdk = new NodeSDK({
   resource: new Resource({
-    [ATTR_SERVICE_NAME]: process.env.SERVICE_NAME || 'my-api',
-    [ATTR_SERVICE_VERSION]: process.env.APP_VERSION || '1.0.0',
-    'deployment.environment': process.env.NODE_ENV || 'development',
+    [ATTR_SERVICE_NAME]: 'myapp-api',
+    [ATTR_SERVICE_VERSION]: '1.0.0',
   }),
-  
-  traceExporter: new OTLPTraceExporter({
-    url: process.env.OTEL_EXPORTER_OTLP_ENDPOINT || 'http://localhost:4318/v1/traces',
-  }),
-  
+  traceExporter: new OTLPTraceExporter({ url: process.env.OTEL_EXPORTER_OTLP_ENDPOINT + '/v1/traces' }),
   metricReader: new PeriodicExportingMetricReader({
-    exporter: new OTLPMetricExporter({
-      url: process.env.OTEL_EXPORTER_OTLP_ENDPOINT || 'http://localhost:4318/v1/metrics',
-    }),
-    exportIntervalMillis: 15000,
+    exporter: new OTLPMetricExporter({ url: process.env.OTEL_EXPORTER_OTLP_ENDPOINT + '/v1/metrics' }),
+    exportIntervalMillis: 30000,
   }),
-  
-  instrumentations: [
-    getNodeAutoInstrumentations({
-      '@opentelemetry/instrumentation-http': { enabled: true },
-      '@opentelemetry/instrumentation-express': { enabled: true },
-      '@opentelemetry/instrumentation-pg': { enabled: true },
-      '@opentelemetry/instrumentation-redis': { enabled: true },
-    }),
-  ],
+  instrumentations: [getNodeAutoInstrumentations({
+    '@opentelemetry/instrumentation-http': { ignoreIncomingPaths: ['/health'] },
+    '@opentelemetry/instrumentation-express': { enabled: true },
+  })],
 });
 
 sdk.start();
 process.on('SIGTERM', () => sdk.shutdown());
-
-// ✅ Auto-instruments: HTTP, Express, pg, Redis, fetch, etc.
 ```
 
-### Custom Spans
+---
+
+## Custom Spans
+
 ```typescript
 import { trace, SpanStatusCode } from '@opentelemetry/api';
 
-const tracer = trace.getTracer('my-service');
+const tracer = trace.getTracer('myapp');
 
-async function processOrder(orderId: string) {
-  return tracer.startActiveSpan('process_order', async (span) => {
+export async function processOrder(orderId: string) {
+  return tracer.startActiveSpan('processOrder', async (span) => {
+    span.setAttribute('order.id', orderId);
     try {
-      span.setAttribute('order.id', orderId);
-      
-      // Child span for payment
-      await tracer.startActiveSpan('process_payment', async (paymentSpan) => {
-        paymentSpan.setAttribute('payment.method', 'credit_card');
-        await chargeCustomer(orderId);
-        paymentSpan.end();
+      const order = await tracer.startActiveSpan('fetchOrder', async (childSpan) => {
+        const result = await db.order.findUnique({ where: { id: orderId } });
+        childSpan.setAttribute('order.total', result?.total || 0);
+        childSpan.end();
+        return result;
       });
-      
-      // Child span for notification
-      await tracer.startActiveSpan('send_notification', async (notifSpan) => {
-        await sendEmail(orderId);
-        notifSpan.end();
-      });
-      
       span.setStatus({ code: SpanStatusCode.OK });
+      return order;
     } catch (error) {
-      span.setStatus({ code: SpanStatusCode.ERROR, message: error.message });
-      span.recordException(error);
+      span.setStatus({ code: SpanStatusCode.ERROR, message: (error as Error).message });
+      span.recordException(error as Error);
       throw error;
     } finally {
       span.end();
@@ -120,128 +80,44 @@ async function processOrder(orderId: string) {
 
 ---
 
-## Python Setup
+## Custom Metrics
 
-```bash
-pip install opentelemetry-api opentelemetry-sdk \
-  opentelemetry-exporter-otlp \
-  opentelemetry-instrumentation-fastapi \
-  opentelemetry-instrumentation-sqlalchemy \
-  opentelemetry-instrumentation-redis
-```
+```typescript
+import { metrics } from '@opentelemetry/api';
 
-```python
-# tracing.py
-from opentelemetry import trace
-from opentelemetry.sdk.trace import TracerProvider
-from opentelemetry.sdk.trace.export import BatchSpanProcessor
-from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import OTLPSpanExporter
-from opentelemetry.sdk.resources import Resource
-from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
+const meter = metrics.getMeter('myapp');
+const orderCounter = meter.createCounter('orders.created', { description: 'Total orders created' });
+const orderDuration = meter.createHistogram('orders.duration_ms', { description: 'Order processing duration' });
+const activeUsers = meter.createUpDownCounter('users.active', { description: 'Active users' });
 
-resource = Resource.create({
-    "service.name": "my-api",
-    "service.version": "1.0.0",
-    "deployment.environment": os.getenv("ENV", "development"),
-})
-
-provider = TracerProvider(resource=resource)
-processor = BatchSpanProcessor(OTLPSpanExporter(endpoint="http://localhost:4317"))
-provider.add_span_processor(processor)
-trace.set_tracer_provider(provider)
-
-# Auto-instrument FastAPI
-FastAPIInstrumentor.instrument_app(app)
-
-# Custom spans
-tracer = trace.get_tracer(__name__)
-
-@app.post("/orders")
-async def create_order(data: OrderInput):
-    with tracer.start_as_current_span("create_order") as span:
-        span.set_attribute("order.amount", data.amount)
-        result = await order_service.create(data)
-        return result
+// Usage
+orderCounter.add(1, { status: 'success', channel: 'web' });
+orderDuration.record(235, { status: 'success' });
+activeUsers.add(1); // on login
+activeUsers.add(-1); // on logout
 ```
 
 ---
-
-## OpenTelemetry Collector
-
-```yaml
-# otel-collector-config.yaml
-receivers:
-  otlp:
-    protocols:
-      grpc:
-        endpoint: 0.0.0.0:4317
-      http:
-        endpoint: 0.0.0.0:4318
-
-processors:
-  batch:
-    timeout: 5s
-    send_batch_size: 1024
-  
-  attributes:
-    actions:
-      - key: "password"
-        action: delete
-      - key: "token"
-        action: delete
-
-exporters:
-  # Traces
-  otlp/jaeger:
-    endpoint: jaeger:4317
-    tls:
-      insecure: true
-  
-  # Metrics
-  prometheusremotewrite:
-    endpoint: "http://prometheus:9090/api/v1/write"
-  
-  # Logs
-  loki:
-    endpoint: "http://loki:3100/loki/api/v1/push"
-
-service:
-  pipelines:
-    traces:
-      receivers: [otlp]
-      processors: [batch, attributes]
-      exporters: [otlp/jaeger]
-    metrics:
-      receivers: [otlp]
-      processors: [batch]
-      exporters: [prometheusremotewrite]
-    logs:
-      receivers: [otlp]
-      processors: [batch]
-      exporters: [loki]
-```
-
----
-
-## Context Propagation (W3C Trace Context)
-
-```
-Request Header:
-traceparent: 00-0af7651916cd43dd8448eb211c80319c-b7ad6b7169203331-01
-             ├──┤├────────────────────────────────┤├──────────────┤├─┤
-           version          trace-id                  span-id     flags
-
-Propagated automatically:
-Service A → Service B → Service C
-  span-1      span-2      span-3
-  └── Same trace-id across all services
-```
 
 ## Best Practices
-1. **Auto-instrumentation first** — instrument HTTP, DB, cache automatically
-2. **Custom spans for business logic** — order processing, payment, etc.
-3. **Use Collector** — don't export directly from app to backend
-4. **W3C Trace Context** — standard header propagation
-5. **Set resource attributes** — service.name, service.version, environment
-6. **Sample in production** — 100% tracing is expensive, sample 10-100%
-7. **3 signals** — traces + metrics + logs correlated by traceId
+
+| Practice | Details |
+|----------|---------|
+| **Auto-instrumentation** | Use for HTTP, Express, DB, Redis |
+| **Service name** | Set via ATTR_SERVICE_NAME |
+| **Custom spans** | Add for business logic operations |
+| **Attributes** | Add relevant context (order.id, user.id) |
+| **Error recording** | recordException + SpanStatusCode.ERROR |
+| **Metrics** | Counter, Histogram, UpDownCounter |
+| **Context propagation** | W3C Trace Context for distributed tracing |
+| **Sampling** | Configure head/tail sampling in production |
+| **Health endpoint** | Exclude from tracing |
+| **OTLP** | Use OTLP protocol for vendor-neutral export |
+
+---
+
+## Rules Integration
+- **SDK**: Auto-instrumentation + custom spans/metrics
+- **Tracing**: Distributed traces across services
+- **Metrics**: Counters, histograms for business metrics
+- **Export**: OTLP to Jaeger, Tempo, Datadog, New Relic

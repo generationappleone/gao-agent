@@ -6,408 +6,259 @@ description: Skill for conducting comprehensive security code reviews using OWAS
 # Security Code Review Skill
 
 ## Overview
-This skill guides comprehensive security code reviews combining the **OWASP Top 10**, **SAST/DAST analysis patterns**, and **Hack23 ISMS secure development policy** to systematically identify, classify, and remediate security vulnerabilities in code.
+Security code review goes beyond functional correctness to identify vulnerabilities, insecure patterns, and compliance gaps. This skill provides structured checklists organized by vulnerability category, with patterns for both manual review and automated tooling.
+
+**References**:
+- [OWASP Code Review Guide](https://owasp.org/www-project-code-review-guide/)
+- [OWASP Secure Coding Practices](https://owasp.org/www-project-secure-coding-practices-quick-reference-guide/)
+- [CWE/SANS Top 25](https://cwe.mitre.org/top25/)
 
 ---
 
-## 1. OWASP Top 10 (2021) — Review Checklist
+## Review Checklist by Category
 
-### A01: Broken Access Control
+### Authentication & Session
+```markdown
+# Auth Review Points
+- [ ] Passwords hashed with bcrypt/argon2 (not MD5/SHA1)
+- [ ] Password complexity enforced (min 8 chars, mixed case)
+- [ ] Brute force protection (rate limiting + lockout)
+- [ ] Session tokens regenerated after authentication
+- [ ] Logout invalidates session server-side
+- [ ] JWT: short expiry (15min), RS256 not HS256 with weak secret
+- [ ] JWT: refresh token rotation with reuse detection
+- [ ] MFA implementation for admin/sensitive operations
+- [ ] Password reset tokens single-use and time-limited
+- [ ] No credentials in URLs, logs, or error messages
+```
 
-#### ✅ Review For:
+```typescript
+// ❌ VULNERABLE: Weak password hashing
+const hash = crypto.createHash('md5').update(password).digest('hex');
+
+// ✅ SECURE: bcrypt with proper rounds
+import bcrypt from 'bcrypt';
+const hash = await bcrypt.hash(password, 12);
+const valid = await bcrypt.compare(password, hash);
+
+// ❌ VULNERABLE: JWT with weak secret
+jwt.sign(payload, 'secret123', { expiresIn: '30d' });
+
+// ✅ SECURE: Strong secret, short expiry
+jwt.sign(payload, process.env.JWT_SECRET, { // 64+ byte random string
+  expiresIn: '15m',
+  algorithm: 'RS256',
+  issuer: 'myapp.com',
+});
+```
+
+### Input Validation
+```markdown
+- [ ] All inputs validated server-side (not just client)
+- [ ] Schema validation (Zod/Joi) on request body
+- [ ] Path parameters validated (type, range)
+- [ ] Query parameters sanitized
+- [ ] File uploads: type, size, name validation
+- [ ] No reliance on Content-Type header for security
+- [ ] Array/object depth limits to prevent DoS
+```
+
+```typescript
+// ❌ VULNERABLE: No validation
+app.post('/api/users', (req, res) => {
+  db.user.create({ data: req.body });  // Accepts anything
+});
+
+// ✅ SECURE: Schema validation
+import { z } from 'zod';
+
+const CreateUserSchema = z.object({
+  email: z.string().email().max(255),
+  name: z.string().min(1).max(100).trim(),
+  role: z.enum(['user', 'admin']),
+}).strict();  // Reject unknown fields
+
+app.post('/api/users', (req, res) => {
+  const data = CreateUserSchema.parse(req.body);
+  db.user.create({ data });
+});
+```
+
+### SQL Injection
+```markdown
+- [ ] Parameterized queries everywhere
+- [ ] No string concatenation/interpolation in SQL
+- [ ] ORM used correctly (no raw queries with user input)
+- [ ] Stored procedures use parameterized inputs
+- [ ] Database user has minimal required permissions
+```
+
+```typescript
+// ❌ VULNERABLE: String interpolation
+const users = await db.$queryRawUnsafe(`SELECT * FROM users WHERE email = '${email}'`);
+
+// ✅ SECURE: Parameterized query
+const users = await db.$queryRaw`SELECT * FROM users WHERE email = ${email}`;
+
+// ❌ VULNERABLE: Dynamic column name
+const orderBy = req.query.sort;  // Could be: "name; DROP TABLE users--"
+const users = await db.$queryRawUnsafe(`SELECT * FROM users ORDER BY ${orderBy}`);
+
+// ✅ SECURE: Allowlist for dynamic values
+const allowedSort = ['name', 'email', 'created_at'];
+const orderBy = allowedSort.includes(req.query.sort) ? req.query.sort : 'created_at';
+```
+
+### XSS (Cross-Site Scripting)
+```markdown
+- [ ] Output encoding in HTML context
+- [ ] React: no dangerouslySetInnerHTML with user data
+- [ ] CSP header configured (no unsafe-inline/eval)
+- [ ] URL validation (block javascript: protocol)
+- [ ] Cookie flags: HttpOnly, Secure, SameSite
+- [ ] Rich text sanitized with DOMPurify (strict allowlist)
+```
+
+### Authorization
+```markdown
+- [ ] Authorization checked on every API endpoint
+- [ ] Server-side checks (not just UI hiding)
+- [ ] Resource ownership verified (IDOR prevention)
+- [ ] Horizontal privilege escalation prevented
+- [ ] Vertical privilege escalation prevented
+- [ ] Admin endpoints properly protected
+- [ ] File access restricted to authorized users
+```
+
 ```typescript
 // ❌ VULNERABLE: No ownership check (IDOR)
-app.get('/api/users/:id', async (req, res) => {
-  const user = await db.users.findById(req.params.id);  // Any user can access any profile
-  res.json(user);
+app.get('/api/orders/:id', async (req, res) => {
+  const order = await db.order.findUnique({ where: { id: req.params.id } });
+  res.json(order);  // Any user can access any order!
 });
 
 // ✅ SECURE: Ownership verification
-app.get('/api/users/:id', authMiddleware, async (req, res) => {
-  const user = await db.users.findById(req.params.id);
-  if (!user) return res.status(404).json({ error: 'Not found' });
-  if (user.id !== req.user.id && req.user.role !== 'admin') {
-    return res.status(403).json({ error: 'Forbidden' });
-  }
-  res.json(user);
+app.get('/api/orders/:id', authenticate, async (req, res) => {
+  const order = await db.order.findFirst({
+    where: { id: req.params.id, userId: req.user.id },  // Scope to user
+  });
+  if (!order) return res.status(404).json({ error: 'Not found' });
+  res.json(order);
 });
 ```
 
-**Checklist:**
-- [ ] Every endpoint verifies user identity AND authorization
-- [ ] IDOR prevented — users cannot access other users' data by changing IDs
-- [ ] CORS configured correctly (deny by default)
-- [ ] Directory listing disabled
-- [ ] JWT/session tokens validated on every request
-- [ ] Rate limiting on sensitive endpoints
-- [ ] Principle of least privilege enforced
-
-### A02: Cryptographic Failures
-
-**Checklist:**
-- [ ] No hardcoded secrets, keys, or passwords in code
-- [ ] Passwords hashed with bcrypt/Argon2 (cost factor ≥ 12)
-- [ ] AES-256-GCM for symmetric encryption (NOT AES-ECB, DES, 3DES)
-- [ ] RSA ≥ 2048-bit or ECDSA ≥ P-256 for asymmetric
-- [ ] TLS 1.2+ enforced (TLS 1.3 preferred)
-- [ ] No MD5 or SHA-1 for security purposes
-- [ ] Sensitive data encrypted at rest AND in transit
-- [ ] Key rotation mechanism exists
-- [ ] Secrets stored in vault (not environment variables in production)
-
-### A03: Injection
-
-```typescript
-// ❌ VULNERABLE: SQL Injection
-const query = `SELECT * FROM users WHERE email = '${email}'`;
-
-// ✅ SECURE: Parameterized query
-const query = 'SELECT * FROM users WHERE email = $1';
-const result = await db.query(query, [email]);
-
-// ❌ VULNERABLE: NoSQL Injection
-db.users.find({ email: req.body.email });  // If email = { $gt: "" }
-
-// ✅ SECURE: Type validation
-const email = z.string().email().parse(req.body.email);
-db.users.find({ email });
-
-// ❌ VULNERABLE: Command Injection
-exec(`ping ${userInput}`);
-
-// ✅ SECURE: Use specific APIs, never shell commands with user input
-import { execFile } from 'child_process';
-execFile('ping', ['-c', '4', validatedHost]);
+### Secrets Management
+```markdown
+- [ ] No hardcoded secrets in source code
+- [ ] .env files in .gitignore
+- [ ] Secrets loaded from environment variables
+- [ ] API keys not logged or exposed in errors
+- [ ] Secrets not passed in URLs (query parameters)
+- [ ] Log redaction for sensitive fields
 ```
 
-**Checklist:**
-- [ ] All SQL uses parameterized queries or ORM
-- [ ] All user input validated and sanitized
-- [ ] No `eval()`, `exec()`, or template literals with user input
-- [ ] GraphQL depth/complexity limits set
-- [ ] NoSQL query operators blocked from user input
-
-### A04: Insecure Design
-
-**Checklist:**
-- [ ] Threat modeling performed for critical flows
-- [ ] Business logic abuse scenarios considered
-- [ ] Rate limiting on authentication, registration, password reset
-- [ ] Account lockout after failed attempts
-- [ ] Anti-automation controls on forms (CAPTCHA where appropriate)
-- [ ] Separation of duties for sensitive operations
-
-### A05: Security Misconfiguration
-
-**Checklist:**
-- [ ] Default credentials changed
-- [ ] Debug mode disabled in production
-- [ ] Stack traces not exposed to users
-- [ ] Unnecessary HTTP methods disabled
-- [ ] Security headers set (CSP, X-Frame-Options, HSTS, etc.)
-- [ ] CORS origin whitelist (not `*`)
-- [ ] Directory listing disabled
-- [ ] Unused features/endpoints removed
-
-### A06: Vulnerable and Outdated Components
-
-**Checklist:**
-- [ ] All dependencies have known version (no `latest` or `*`)
-- [ ] `npm audit` / `pip audit` / `dotnet list package --vulnerable` run in CI
-- [ ] No dependencies with known CVEs (Critical/High)
-- [ ] Base Docker images scanned and pinned
-- [ ] License compatibility verified
-- [ ] Unused dependencies removed
-
-### A07: Identification and Authentication Failures
-
-```typescript
-// ✅ SECURE: Password policy enforcement
-const passwordSchema = z.string()
-  .min(12, 'Minimum 12 characters')
-  .regex(/[A-Z]/, 'Requires uppercase')
-  .regex(/[a-z]/, 'Requires lowercase')
-  .regex(/[0-9]/, 'Requires digit')
-  .regex(/[^A-Za-z0-9]/, 'Requires special character');
-
-// ✅ SECURE: Account lockout
-if (loginAttempts >= 5) {
-  await lockAccount(userId, 15 * 60 * 1000); // 15 min lockout
-  throw new AppError('Account locked. Try again later.', 429);
-}
+### Error Handling
+```markdown
+- [ ] Generic error messages to users (no stack traces)
+- [ ] Detailed errors logged server-side only
+- [ ] No sensitive data in error responses
+- [ ] Global error handler catches all unexpected errors
+- [ ] Async errors properly caught (try/catch, error middleware)
 ```
 
-**Checklist:**
-- [ ] Password minimum 12 characters, complexity enforced
-- [ ] Account lockout after 5 failed attempts
-- [ ] MFA available for sensitive accounts
-- [ ] Session tokens regenerated after login
-- [ ] Sessions expire (idle timeout 15-30 min)
-- [ ] Passwords stored with bcrypt/Argon2
-- [ ] Password reset tokens single-use, time-limited
-
-### A08: Software and Data Integrity Failures
-
-**Checklist:**
-- [ ] Dependency integrity verified (lockfiles committed)
-- [ ] CI/CD pipeline secured (no arbitrary code execution)
-- [ ] Subresource Integrity (SRI) for CDN scripts
-- [ ] Signed commits/releases where applicable
-- [ ] Deserialization of untrusted data protected
-
-### A09: Security Logging and Monitoring Failures
-
-**Checklist:**
-- [ ] Authentication events logged (login, logout, failed attempts)
-- [ ] Authorization failures logged
-- [ ] Input validation failures logged
-- [ ] High-value transactions logged with audit trail
-- [ ] Logs contain timestamp, user ID, IP address, action
-- [ ] Logs do NOT contain passwords, tokens, PII in plain text
-- [ ] Alerting configured for anomalous patterns
-
-### A10: Server-Side Request Forgery (SSRF)
-
 ```typescript
-// ❌ VULNERABLE: Unvalidated URL fetch
-app.get('/fetch', async (req, res) => {
-  const response = await fetch(req.query.url);  // Can access internal services!
-  res.json(await response.json());
+// ❌ VULNERABLE: Stack trace exposed
+app.use((err, req, res, next) => {
+  res.status(500).json({ error: err.message, stack: err.stack });
 });
 
-// ✅ SECURE: URL validation + allowlist
-const ALLOWED_DOMAINS = ['api.github.com', 'api.stripe.com'];
-app.get('/fetch', async (req, res) => {
-  const url = new URL(req.query.url);
-  if (!ALLOWED_DOMAINS.includes(url.hostname)) {
-    return res.status(400).json({ error: 'Domain not allowed' });
-  }
-  if (url.protocol !== 'https:') {
-    return res.status(400).json({ error: 'HTTPS required' });
-  }
-  // Also block internal IPs (10.x, 172.16.x, 192.168.x, 127.x, 169.254.x)
-  const response = await fetch(url.toString());
-  res.json(await response.json());
+// ✅ SECURE: Generic response, detailed logging
+app.use((err, req, res, next) => {
+  logger.error({ err, requestId: req.id, url: req.url });
+  res.status(500).json({ error: 'Internal server error', requestId: req.id });
 });
+```
+
+### File Operations
+```markdown
+- [ ] File uploads validated (MIME type, extension, size)
+- [ ] Files stored outside web root
+- [ ] Filenames sanitized (no path traversal)
+- [ ] No execution of uploaded files
+- [ ] Virus scanning for uploads (if applicable)
+- [ ] Path traversal prevention (no ../ in paths)
 ```
 
 ---
 
-## 2. SAST/DAST Patterns
-
-### SAST (Static Application Security Testing)
-
-SAST scans source code **before runtime**. Look for these patterns:
-
-#### Taint Analysis Patterns
-```
-Source (user input) → Propagation → Sink (dangerous function)
-
-Sources:          req.body, req.params, req.query, req.headers, process.env, file reads
-Propagation:      string concatenation, template literals, object spread
-Sinks:            db.query(), exec(), eval(), fs.write(), res.send(), redirect(), innerHTML
-```
-
-#### Regex for Dangerous Patterns (Grep/SAST Rules)
-```bash
-# Hardcoded secrets
-grep -rn "password\s*=\s*['\"]" --include="*.{ts,js,py,cs,java}"
-grep -rn "api[_-]?key\s*=\s*['\"]" --include="*.{ts,js,py,cs,java}"
-grep -rn "secret\s*=\s*['\"]" --include="*.{ts,js,py,cs,java}"
-
-# SQL Injection risk
-grep -rn "query.*\$\{" --include="*.{ts,js}"           # Template literals in SQL
-grep -rn "f\".*SELECT" --include="*.py"                  # f-strings in SQL
-grep -rn "\"SELECT.*\" \+" --include="*.{java,cs}"       # String concat in SQL
-
-# Command injection
-grep -rn "exec\(.*req\." --include="*.{ts,js}"
-grep -rn "os\.system\(" --include="*.py"
-grep -rn "subprocess\.call.*shell=True" --include="*.py"
-
-# XSS risk
-grep -rn "innerHTML\s*=" --include="*.{ts,js,tsx,jsx}"
-grep -rn "dangerouslySetInnerHTML" --include="*.{tsx,jsx}"
-grep -rn "\| safe" --include="*.html"                    # Django/Jinja2
-grep -rn "Html\.Raw\(" --include="*.cshtml"              # ASP.NET
-
-# Insecure crypto
-grep -rn "createHash.*md5\|sha1" --include="*.{ts,js}"
-grep -rn "hashlib\.md5\|hashlib\.sha1" --include="*.py"
-grep -rn "DES\|3DES\|RC4\|ECB" --include="*.{ts,js,py,cs,java}"
-```
-
-### DAST (Dynamic Application Security Testing)
-
-DAST tests the **running application**. Key test areas:
-
-| Test | Method |
-|------|--------|
-| **Authentication bypass** | Test endpoints without auth token |
-| **IDOR** | Change resource IDs in URLs |
-| **SQL Injection** | Send `' OR 1=1 --` in inputs |
-| **XSS** | Send `<script>alert(1)</script>` in inputs |
-| **CSRF** | Remove CSRF token from POST requests |
-| **SSRF** | Send `http://169.254.169.254/` as URL parameter |
-| **Header injection** | Send `\r\nX-Injected: true` in headers |
-| **Rate limit bypass** | Send 100+ requests rapidly |
-| **Directory traversal** | Send `../../etc/passwd` in file paths |
-| **HTTP verb tampering** | Try DELETE/PUT on GET-only endpoints |
-
-### Recommended SAST/DAST Tools
-| Type | Tool | Languages |
-|------|------|-----------|
-| **SAST** | SonarQube / SonarCloud | Multi-language |
-| **SAST** | Semgrep | Multi-language |
-| **SAST** | CodeQL (GitHub) | Multi-language |
-| **SAST** | Bandit | Python |
-| **SAST** | ESLint Security Plugin | JavaScript/TypeScript |
-| **SAST** | SpotBugs + FindSecBugs | Java |
-| **DAST** | OWASP ZAP | Any web app |
-| **DAST** | Burp Suite | Any web app |
-| **SCA** | Snyk | Dependencies |
-| **SCA** | npm audit / pip audit | npm / Python |
-| **Container** | Trivy / Docker Scout | Docker images |
-
----
-
-## 3. Hack23 ISMS Secure Development Policy
-
-### Secure Development Lifecycle (SDL)
-
-The Hack23 ISMS policy requires integrating security at every stage of development:
-
-#### Phase 1: Requirements & Design
-- [ ] **Threat modeling** performed (STRIDE methodology)
-  - **S**poofing, **T**ampering, **R**epudiation, **I**nformation disclosure, **D**oS, **E**levation of privilege
-- [ ] Security requirements documented alongside functional requirements
-- [ ] Data classification applied (Public, Internal, Confidential, Restricted)
-- [ ] Privacy Impact Assessment (PIA) if PII is involved
-- [ ] Architecture reviewed for attack surface minimization
-
-#### Phase 2: Implementation
-- [ ] Secure coding guidelines followed (OWASP)
-- [ ] Input validation on ALL external inputs
-- [ ] Output encoding applied (context-dependent: HTML, URL, JS, CSS, SQL)
-- [ ] Least privilege applied to service accounts and roles
-- [ ] Secrets management via vault (not in code or env vars)
-- [ ] Error handling does not expose internal details
-- [ ] Logging includes security events without sensitive data
-
-#### Phase 3: Verification
-- [ ] SAST scan passed (zero Critical/High findings)
-- [ ] DAST scan passed on staging environment
-- [ ] Dependency scan passed (no known Critical CVEs)
-- [ ] Peer security code review completed
-- [ ] Penetration testing for critical applications
-- [ ] Security regression tests in CI/CD
-
-#### Phase 4: Release & Operations
-- [ ] Security configuration reviewed (production hardening)
-- [ ] Monitoring and alerting configured
-- [ ] Incident response plan documented
-- [ ] Vulnerability disclosure process defined
-- [ ] Patch management SLA defined (Critical: 24h, High: 7d, Medium: 30d, Low: 90d)
-
-### Security Review Report Template
+## Review Process
 
 ```markdown
-# Security Code Review Report
+# Security Code Review Steps
 
-## Summary
-- **Project:** [Name]
-- **Reviewer:** [Name]
-- **Date:** [Date]
-- **Scope:** [Files/modules reviewed]
-- **Risk Rating:** Critical | High | Medium | Low
+## 1. Preparation
+- Understand the application architecture
+- Identify sensitive data flows
+- Review authentication and authorization model
+- Check dependency versions for known CVEs
 
-## Findings
+## 2. Automated Scanning
+- Run Semgrep: `semgrep --config p/security-audit .`
+- Run npm audit: `npm audit --production`
+- Run Gitleaks: `gitleaks detect --source .`
+- Run ESLint security: `eslint --plugin security src/`
 
-### Finding #1: [Title]
-- **Severity:** Critical | High | Medium | Low
-- **OWASP Category:** A01-A10
-- **CWE:** CWE-XXX
-- **Location:** `file.ts:123`
-- **Description:** [What the vulnerability is]
-- **Impact:** [What an attacker could do]
-- **Proof of Concept:** [Reproduction steps]
-- **Remediation:** [How to fix it]
-- **Code Fix:**
-  ```diff
-  - vulnerable code
-  + secure code
-  ```
+## 3. Manual Review
+- Authentication flows (login, register, reset)
+- Authorization checks on all endpoints
+- Input validation on all user-controlled data
+- Database queries for injection patterns
+- File handling for upload/download
+- Error handling for information leakage
+- Secrets management (.env, hardcoded values)
+- Logging for sensitive data exposure
 
-## Statistics
-| Severity | Count |
-|----------|-------|
-| Critical | 0     |
-| High     | 0     |
-| Medium   | 0     |
-| Low      | 0     |
-| Info     | 0     |
-
-## Recommendations
-1. [Recommendation 1]
-2. [Recommendation 2]
-
-## Sign-off
-- [ ] All Critical/High findings remediated
-- [ ] SAST scan passed
-- [ ] Ready for deployment
+## 4. Reporting
+- Classify by severity (Critical/High/Medium/Low)
+- Include CWE references for each finding
+- Provide specific remediation code examples
+- Prioritize by risk and exploitability
 ```
 
 ---
 
-## 4. CI/CD Security Gate
+## Severity Classification
 
-```yaml
-# .github/workflows/security.yml
-name: Security Scan
+| Severity | Criteria | Response Time |
+|----------|----------|---------------|
+| **🔴 Critical** | RCE, SQLi, authentication bypass, data breach | Fix immediately |
+| **🟠 High** | Stored XSS, IDOR, privilege escalation, SSRF | Fix within 24h |
+| **🟡 Medium** | Reflected XSS, missing headers, weak crypto | Fix within sprint |
+| **🔵 Low** | Info disclosure, verbose errors, missing rate limit | Fix in backlog |
+| **ℹ️ Info** | Best practice, code quality, defense in depth | Improve over time |
 
-on: [push, pull_request]
+---
 
-jobs:
-  sast:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
+## Best Practices
 
-      - name: SonarCloud Scan
-        uses: SonarSource/sonarcloud-github-action@master
-        env:
-          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+| Practice | Details |
+|----------|---------|
+| **Checklist-driven** | Systematic review covering all OWASP categories |
+| **Both automated + manual** | SAST finds patterns, humans find logic flaws |
+| **Code examples** | Show vulnerable AND secure versions in findings |
+| **CWE references** | Map findings to CWE for standard classification |
+| **Severity + priority** | Distinguish severity (impact) from priority (urgency) |
+| **Defense in depth** | Multiple security layers, not single point of failure |
+| **Shift left** | Review early in development, not just before release |
+| **Knowledge sharing** | Document patterns so team learns from findings |
+| **Track findings** | Use issue tracker, verify remediation |
+| **Regular cadence** | Review happens for every PR + periodic deep review |
 
-      - name: Semgrep SAST
-        uses: returntocorp/semgrep-action@v1
-        with:
-          config: >-
-            p/owasp-top-ten
-            p/javascript
-            p/typescript
-
-  dependency-scan:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - run: npm audit --audit-level=high
-      - uses: snyk/actions/node@master
-        env:
-          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
-
-  container-scan:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - run: docker build -t myapp:scan .
-      - uses: aquasecurity/trivy-action@master
-        with:
-          image-ref: 'myapp:scan'
-          severity: 'CRITICAL,HIGH'
-          exit-code: '1'
-```
+---
 
 ## Rules Integration
-- **ISO 27001/A.14**: Secure development policy aligns with ISMS requirements
-- **Developer Security**: Extends the 4-layer security model with formal review process
-- **Dependencies**: SCA scanning validates the dependency management rule
+- **Checklist**: Auth, input validation, SQLi, XSS, authorization, secrets, errors, files
+- **Process**: Preparation → Automated scanning → Manual review → Reporting
+- **Severity**: Critical/High/Medium/Low with response time SLAs
+- **Code examples**: Vulnerable and secure patterns for each category
+- **Tools**: Semgrep, npm audit, Gitleaks, ESLint security plugin

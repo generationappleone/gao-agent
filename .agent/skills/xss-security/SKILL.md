@@ -6,136 +6,114 @@ description: Skill for preventing Cross-Site Scripting (XSS) attacks — coverin
 # XSS Security Skill
 
 ## Overview
-**Cross-Site Scripting (XSS)** is the #1 web vulnerability (OWASP Top 10). Attackers inject malicious scripts into web pages viewed by other users. This skill covers prevention techniques for all 3 types of XSS.
+Cross-Site Scripting (XSS) is a vulnerability that allows attackers to inject malicious scripts into web pages viewed by other users. It's consistently ranked in OWASP Top 10. This skill covers all XSS types, prevention techniques, and security headers.
+
+**References**:
+- [OWASP XSS Prevention](https://cheatsheetseries.owasp.org/cheatsheets/Cross-Site_Scripting_Prevention_Cheat_Sheet.html)
+- [OWASP DOM XSS Prevention](https://cheatsheetseries.owasp.org/cheatsheets/DOM_based_XSS_Prevention_Cheat_Sheet.html)
+- [MDN Content Security Policy](https://developer.mozilla.org/en-US/docs/Web/HTTP/CSP)
 
 ---
 
 ## XSS Types
 
-| Type | Vector | Example |
-|------|--------|---------|
-| **Reflected** | URL parameters rendered in page | `?search=<script>alert('xss')</script>` |
-| **Stored** | User input saved in DB, rendered to others | Comment with `<img onerror=...>` |
-| **DOM-Based** | Client-side JS manipulates DOM unsafely | `document.innerHTML = location.hash` |
+| Type | Description | Vector | Example |
+|------|-------------|--------|---------|
+| **Reflected** | Input reflected in response | URL parameters, search | `?q=<script>alert(1)</script>` |
+| **Stored** | Malicious data persisted in DB | Comments, profiles, messages | Comment with `<script>` tag |
+| **DOM-based** | Client-side JS manipulates DOM unsafely | `innerHTML`, `document.write` | `element.innerHTML = userInput` |
 
 ---
 
-## 1. Content Security Policy (CSP) — Primary Defense
+## Output Encoding (Primary Defense)
 
 ```typescript
-// ✅ REQUIRED: Set CSP header on ALL responses
-// middleware/securityHeaders.ts
+// ── HTML context encoding ──
+import { encode } from 'html-entities';
 
-function getCSPHeader(): string {
-  const directives = [
-    "default-src 'self'",
-    "script-src 'self' 'nonce-{NONCE}'",          // No inline scripts without nonce
-    "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
-    "img-src 'self' data: https: blob:",
-    "font-src 'self' https://fonts.gstatic.com",
-    "connect-src 'self' https://api.yourdomain.com wss://ws.yourdomain.com",
-    "frame-src 'none'",                             // No iframes
-    "object-src 'none'",                            // No Flash/Java
-    "base-uri 'self'",                              // Prevent <base> tag injection
-    "form-action 'self'",                           // Forms submit only to self
-    "frame-ancestors 'none'",                       // Cannot be iframed (clickjacking)
-    "upgrade-insecure-requests",                    // Force HTTPS
-  ];
-  return directives.join('; ');
-}
+// Server-side: encode before inserting into HTML
+const safeHtml = encode(userInput);
+// Input: <script>alert('XSS')</script>
+// Output: &lt;script&gt;alert(&#39;XSS&#39;)&lt;/script&gt;
 
-// Express middleware
-app.use((req, res, next) => {
-  const nonce = crypto.randomBytes(16).toString('base64');
-  res.locals.nonce = nonce;
-  
-  res.setHeader('Content-Security-Policy', getCSPHeader().replace('{NONCE}', nonce));
-  res.setHeader('X-Content-Type-Options', 'nosniff');
-  res.setHeader('X-Frame-Options', 'DENY');
-  res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
-  res.setHeader('Permissions-Policy', 'camera=(), microphone=(), geolocation=()');
-  
-  next();
-});
-```
+// ── JavaScript context encoding ──
+// NEVER insert user input into <script> blocks
+// ❌ BAD:  <script>var name = "${userInput}";</script>
+// ✅ GOOD: Use data attributes + DOM API
+// <div id="container" data-name="${encode(userInput)}"></div>
+// <script>const name = document.getElementById('container').dataset.name;</script>
 
-### Meta Tag CSP (for static sites)
-```html
-<meta http-equiv="Content-Security-Policy" 
-  content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' data: https:; font-src 'self' https://fonts.gstatic.com;">
+// ── URL context encoding ──
+const safeUrl = encodeURIComponent(userInput);
+// <a href="/search?q=${safeUrl}">Search</a>
+
+// ── CSS context encoding ──
+// NEVER insert user input into CSS
+// ❌ BAD:  <div style="color: ${userInput}">
+// ✅ GOOD: Use allowlists
+const allowedColors = ['red', 'blue', 'green', 'black'];
+const safeColor = allowedColors.includes(userInput) ? userInput : 'black';
 ```
 
 ---
 
-## 2. Output Encoding — Context-Aware
-
-```typescript
-// ✅ REQUIRED: Encode output based on context
-
-// HTML context — encode HTML entities
-function encodeHTML(input: string): string {
-  return input
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#x27;');
-}
-
-// Attribute context
-function encodeAttribute(input: string): string {
-  return input.replace(/[^a-zA-Z0-9,.\-_ ]/g, (char) => {
-    return `&#x${char.charCodeAt(0).toString(16).padStart(2, '0')};`;
-  });
-}
-
-// JavaScript context — JSON encode
-function encodeJS(input: string): string {
-  return JSON.stringify(input); // Built-in escaping
-}
-
-// URL context
-function encodeURL(input: string): string {
-  return encodeURIComponent(input);
-}
-
-// CSS context
-function encodeCSS(input: string): string {
-  return input.replace(/[^a-zA-Z0-9]/g, (char) => {
-    return `\\${char.charCodeAt(0).toString(16).padStart(6, '0')} `;
-  });
-}
-```
-
----
-
-## 3. React — Built-in XSS Protection
+## React/JSX (Safe by Default)
 
 ```tsx
-// ✅ React auto-escapes expressions — SAFE by default
-<p>{userInput}</p>          // ← React escapes this automatically
-<p>{comment.body}</p>       // ← Safe, HTML entities encoded
-
-// ❌ DANGEROUS: dangerouslySetInnerHTML bypasses React's protection
-<div dangerouslySetInnerHTML={{ __html: userInput }} />  // XSS VULNERABILITY!
-
-// ✅ If you MUST render HTML, sanitize first with DOMPurify
-import DOMPurify from 'dompurify';
-
-function SafeHTML({ html }: { html: string }) {
-  const sanitized = DOMPurify.sanitize(html, {
-    ALLOWED_TAGS: ['b', 'i', 'em', 'strong', 'a', 'p', 'br', 'ul', 'ol', 'li', 'h1', 'h2', 'h3'],
-    ALLOWED_ATTR: ['href', 'target', 'rel'],
-    ALLOW_DATA_ATTR: false,
-  });
-  return <div dangerouslySetInnerHTML={{ __html: sanitized }} />;
+// ✅ SAFE — JSX auto-escapes expressions
+function UserProfile({ user }: { user: User }) {
+  return (
+    <div>
+      <h1>{user.name}</h1>           {/* Auto-escaped */}
+      <p>{user.bio}</p>              {/* Auto-escaped */}
+      <a href={user.website}>{user.website}</a>
+    </div>
+  );
 }
 
-// ❌ NEVER do this
-<a href={userUrl}>Link</a>  // XSS if userUrl = "javascript:alert('xss')"
+// ❌ DANGEROUS — dangerouslySetInnerHTML bypasses escaping
+function UnsafeComponent({ htmlContent }: { htmlContent: string }) {
+  // NEVER do this with user input
+  return <div dangerouslySetInnerHTML={{ __html: htmlContent }} />;
+}
 
-// ✅ Validate URL protocol
-function isSafeUrl(url: string): boolean {
+// ✅ SAFE with sanitization — if rich text is needed
+import DOMPurify from 'dompurify';
+
+function SafeRichText({ htmlContent }: { htmlContent: string }) {
+  const cleanHtml = DOMPurify.sanitize(htmlContent, {
+    ALLOWED_TAGS: ['p', 'br', 'strong', 'em', 'ul', 'ol', 'li', 'a', 'blockquote', 'code'],
+    ALLOWED_ATTR: ['href', 'target', 'rel'],
+    ADD_ATTR: ['target'],            // Allow target attribute
+    FORBID_TAGS: ['script', 'style', 'iframe', 'form', 'input'],
+    FORBID_ATTR: ['onerror', 'onclick', 'onload', 'onmouseover'],
+  });
+
+  return <div dangerouslySetInnerHTML={{ __html: cleanHtml }} />;
+}
+
+// ❌ DANGEROUS DOM patterns to avoid
+// document.getElementById('x').innerHTML = userInput;
+// document.write(userInput);
+// element.outerHTML = userInput;
+// element.insertAdjacentHTML('beforeend', userInput);
+// eval(userInput);
+// new Function(userInput);
+// setTimeout(userInput, 100);
+// location.href = userInput;   // javascript: protocol XSS
+
+// ✅ SAFE DOM alternatives
+// element.textContent = userInput;      // Safe, no parsing
+// element.setAttribute('value', userInput);  // Safe for most attrs
+```
+
+---
+
+## URL Validation (Prevent javascript: XSS)
+
+```typescript
+// ── Validate URLs to prevent javascript: protocol ──
+function isValidUrl(url: string): boolean {
   try {
     const parsed = new URL(url);
     return ['http:', 'https:', 'mailto:'].includes(parsed.protocol);
@@ -144,111 +122,177 @@ function isSafeUrl(url: string): boolean {
   }
 }
 
-<a href={isSafeUrl(userUrl) ? userUrl : '#'}>Link</a>
+// ✅ SAFE link rendering
+function SafeLink({ url, children }: { url: string; children: React.ReactNode }) {
+  if (!isValidUrl(url)) {
+    return <span>{children}</span>;  // Fallback to plain text
+  }
+  return (
+    <a href={url} target="_blank" rel="noopener noreferrer">
+      {children}
+    </a>
+  );
+}
+
+// ❌ BAD: <a href={userInput}>Click</a>
+// Attack: userInput = "javascript:alert(document.cookie)"
 ```
 
 ---
 
-## 4. Server-Side Input Sanitization
+## Content Security Policy (CSP)
 
 ```typescript
-// ✅ Sanitize on INPUT (defense-in-depth, not primary defense)
-import DOMPurify from 'isomorphic-dompurify';
+// ── Express CSP middleware ──
+import helmet from 'helmet';
 
-// For rich text editors (Quill, TipTap, CKEditor)
-function sanitizeRichText(html: string): string {
-  return DOMPurify.sanitize(html, {
-    ALLOWED_TAGS: ['p', 'br', 'b', 'i', 'em', 'strong', 'u', 'a', 'ul', 'ol', 'li',
-                   'h1', 'h2', 'h3', 'blockquote', 'pre', 'code', 'img'],
-    ALLOWED_ATTR: ['href', 'src', 'alt', 'class', 'target', 'rel'],
-    FORBID_TAGS: ['script', 'style', 'iframe', 'form', 'input', 'object', 'embed'],
-    FORBID_ATTR: ['onerror', 'onload', 'onclick', 'onmouseover', 'onfocus',
-                  'style', 'srcset', 'data-*'],
-  });
-}
+app.use(helmet.contentSecurityPolicy({
+  directives: {
+    defaultSrc: ["'self'"],
+    scriptSrc: [
+      "'self'",
+      // "'nonce-${nonce}'"     // For inline scripts (generate per-request)
+      // "'strict-dynamic'"     // Trust scripts loaded by trusted scripts
+    ],
+    styleSrc: [
+      "'self'",
+      "'unsafe-inline'",        // Required for most CSS-in-JS
+      "https://fonts.googleapis.com",
+    ],
+    imgSrc: ["'self'", "data:", "https:"],
+    fontSrc: ["'self'", "https://fonts.gstatic.com"],
+    connectSrc: [
+      "'self'",
+      "https://api.myapp.com",
+      "wss://myapp.com",
+    ],
+    frameSrc: ["'none'"],                // No iframes
+    objectSrc: ["'none'"],               // No Flash/Java
+    baseUri: ["'self'"],                 // Prevent base tag injection
+    formAction: ["'self'"],              // Forms only submit to self
+    upgradeInsecureRequests: [],
+  },
+}));
 
-// For plain text fields — strip ALL HTML
-function sanitizePlainText(input: string): string {
-  return DOMPurify.sanitize(input, { ALLOWED_TAGS: [], ALLOWED_ATTR: [] });
-}
+// ── CSP with nonce (for inline scripts) ──
+import crypto from 'crypto';
+
+app.use((req, res, next) => {
+  const nonce = crypto.randomBytes(16).toString('base64');
+  res.locals.cspNonce = nonce;
+  res.setHeader('Content-Security-Policy',
+    `default-src 'self'; script-src 'self' 'nonce-${nonce}'; style-src 'self' 'unsafe-inline'`
+  );
+  next();
+});
+
+// In HTML template: <script nonce="${nonce}">...</script>
 ```
 
 ---
 
-## 5. DOM-Based XSS Prevention
+## Cookie Security
 
 ```typescript
-// ❌ DANGEROUS: Direct DOM manipulation with user input
-document.getElementById('output')!.innerHTML = userInput;
-element.outerHTML = userInput;
-document.write(userInput);
-eval(userInput);
-setTimeout(userInput, 0);
-new Function(userInput);
-location.href = userInput;
-element.setAttribute('onclick', userInput);
+// ── Secure cookie settings ──
+app.use(session({
+  cookie: {
+    httpOnly: true,          // ✅ Prevent XSS access to cookies
+    secure: true,            // ✅ HTTPS only
+    sameSite: 'lax',         // ✅ CSRF protection
+    maxAge: 24 * 60 * 60 * 1000,
+    domain: '.myapp.com',
+    path: '/',
+  },
+}));
 
-// ✅ SAFE alternatives
-document.getElementById('output')!.textContent = userInput;  // textContent is safe
-element.setAttribute('data-value', encodeAttribute(userInput));
-
-// ✅ For URLs from user input
-const url = new URL(userInput);
-if (['http:', 'https:'].includes(url.protocol)) {
-  window.location.href = url.toString();
-}
-```
-
----
-
-## 6. Cookie Security (Session Hijacking Prevention)
-
-```typescript
-// ✅ Secure cookie settings prevent XSS-based session theft
-res.cookie('session', token, {
-  httpOnly: true,       // Cannot be accessed by JavaScript
-  secure: true,         // Only sent over HTTPS
-  sameSite: 'strict',   // Not sent in cross-site requests
-  maxAge: 30 * 60 * 1000, // 30 minutes
-  path: '/',
+// Set cookies with security flags
+res.cookie('token', value, {
+  httpOnly: true,
+  secure: process.env.NODE_ENV === 'production',
+  sameSite: 'strict',
+  maxAge: 900000,  // 15 min
 });
 ```
 
 ---
 
-## XSS Prevention Checklist
+## Security Headers
 
+```typescript
+// ── All security headers via Helmet ──
+import helmet from 'helmet';
+
+app.use(helmet());  // Enables all headers below
+
+// Or individually:
+app.use(helmet.xContentTypeOptions());       // X-Content-Type-Options: nosniff
+app.use(helmet.xFrameOptions({ action: 'deny' }));  // X-Frame-Options: DENY
+app.use(helmet.referrerPolicy({ policy: 'strict-origin-when-cross-origin' }));
+app.use(helmet.hsts({ maxAge: 31536000, includeSubDomains: true, preload: true }));
+app.use(helmet.permittedCrossDomainPolicies());
+app.use(helmet.noSniff());
 ```
-Headers
-□ Content-Security-Policy header set (no 'unsafe-eval', minimal 'unsafe-inline')
-□ X-Content-Type-Options: nosniff
-□ X-Frame-Options: DENY
-□ Referrer-Policy set
 
-Output
-□ All user data HTML-encoded in templates
-□ Context-aware encoding (HTML, attribute, JS, URL, CSS)
-□ React: No dangerouslySetInnerHTML without DOMPurify
-□ URLs validated (protocol whitelist: http, https, mailto)
+---
 
-Input
-□ Rich text sanitized with DOMPurify + allowlist
-□ File uploads validated (type, content, size)
-□ JSON responses use application/json Content-Type
+## Testing for XSS
 
-DOM
-□ No innerHTML with user data (use textContent)
-□ No eval(), new Function(), setTimeout(string)
-□ No document.write() with user data
+```typescript
+// Common XSS test payloads (for security testing)
+const xssPayloads = [
+  '<script>alert("XSS")</script>',
+  '<img src=x onerror=alert("XSS")>',
+  '<svg onload=alert("XSS")>',
+  '"><script>alert("XSS")</script>',
+  "' onclick=alert('XSS') '",
+  'javascript:alert("XSS")',
+  '<iframe src="javascript:alert(1)">',
+  '<a href="javascript:alert(1)">click</a>',
+  '{{constructor.constructor("alert(1)")()}}',  // Template injection
+  '${alert(1)}',                                  // Template literal
+];
 
-Cookies
-□ HttpOnly flag set
-□ Secure flag set
-□ SameSite=Strict or Lax
+// Automated XSS test
+describe('XSS Prevention', () => {
+  for (const payload of xssPayloads) {
+    it(`should sanitize: ${payload.substring(0, 30)}...`, async () => {
+      const res = await request(app)
+        .post('/api/comments')
+        .send({ content: payload })
+        .expect(201);
+
+      // Verify stored content is safe
+      expect(res.body.content).not.toContain('<script');
+      expect(res.body.content).not.toContain('onerror');
+      expect(res.body.content).not.toContain('javascript:');
+    });
+  }
+});
 ```
+
+---
+
+## Best Practices
+
+| Practice | Details |
+|----------|---------|
+| **Output encoding** | HTML-encode all user data before rendering |
+| **CSP** | Strict Content-Security-Policy header |
+| **React default** | JSX auto-escapes; never use dangerouslySetInnerHTML |
+| **DOMPurify** | Sanitize if rich HTML is required |
+| **HttpOnly cookies** | Prevent XSS from stealing session cookies |
+| **URL validation** | Check protocol (http/https only), block javascript: |
+| **No eval()** | Never eval(), new Function(), or setTimeout(string) |
+| **textContent** | Use textContent instead of innerHTML |
+| **Helmet** | helmet.js for all security headers |
+| **Test payloads** | Automated tests with common XSS vectors |
+
+---
 
 ## Rules Integration
-- **Developer Security**: XSS prevention in `rules/developer-security.md`
-- **CSP**: Part of `skills/waf/` security headers
-- **ISO 27001**: A.8.28 secure coding in `skills/iso-27001/`
-- **CIS Controls**: Control 16 app security in `skills/cis-controls/`
+- **Output**: HTML encoding (html-entities), React auto-escaping
+- **Sanitization**: DOMPurify for rich text with strict allowlists
+- **CSP**: Strict policy with nonces for inline scripts
+- **Cookies**: HttpOnly, Secure, SameSite flags
+- **Testing**: Automated XSS payload testing in integration tests

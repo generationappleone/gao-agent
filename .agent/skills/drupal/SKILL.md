@@ -6,149 +6,210 @@ description: Skill for Drupal CMS development, covering custom module creation, 
 # Drupal Skill
 
 ## Overview
-Drupal is an enterprise CMS framework for complex content architectures. This skill covers Drupal 10/11 custom module development, entity API, Form API, routing, and Twig theming.
+Drupal is an enterprise-grade PHP CMS with powerful content modeling. Development uses a modular architecture with hooks, routing (YAML), services (DI container), plugins, forms (Form API), entities, and Twig theming. Drupal 10+ requires PHP 8.1+ and follows Symfony conventions.
+
+**References**:
+- [Drupal Developer Docs](https://www.drupal.org/docs/develop)
+- [Drupal API Reference](https://api.drupal.org/)
+- [Drupal Coding Standards](https://www.drupal.org/docs/develop/standards)
+
+---
 
 ## Module Structure
+
 ```
 modules/custom/my_module/
-├── my_module.info.yml         # Module metadata
-├── my_module.module           # Hooks implementation
-├── my_module.routing.yml      # Route definitions
-├── my_module.services.yml     # Service container
-├── my_module.permissions.yml  # Custom permissions
-├── my_module.links.menu.yml   # Menu links
-├── my_module.install          # Install/update hooks
+├── my_module.info.yml           # Module definition
+├── my_module.module             # Hook implementations
+├── my_module.routing.yml        # URL routes
+├── my_module.services.yml       # Service definitions (DI)
+├── my_module.permissions.yml    # Custom permissions
+├── my_module.links.menu.yml     # Menu links
+├── my_module.install            # Install/update hooks
 ├── config/
-│   └── install/               # Default configuration
+│   └── install/                 # Default config
+│       └── my_module.settings.yml
 ├── src/
 │   ├── Controller/
-│   │   └── MyController.php
+│   │   └── MyModuleController.php
 │   ├── Form/
 │   │   └── SettingsForm.php
 │   ├── Plugin/
 │   │   └── Block/
-│   │       └── MyBlock.php
+│   │       └── CustomBlock.php
 │   └── Service/
-│       └── MyService.php
-└── templates/
-    └── my-template.html.twig
+│       └── MyModuleService.php
+├── templates/
+│   └── my-custom-block.html.twig
+└── tests/
+    └── src/
+        └── Functional/
+            └── MyModuleTest.php
 ```
 
-## Module Info
+---
+
+## Module Declaration
+
 ```yaml
 # my_module.info.yml
-name: 'My Module'
+name: 'My Custom Module'
 type: module
-description: 'Custom module for site functionality'
-core_version_requirement: ^10 || ^11
+description: 'Custom functionality for MyApp'
 package: Custom
+core_version_requirement: ^10 || ^11
+php: 8.1
 dependencies:
   - drupal:node
-  - drupal:user
+  - drupal:views
+configure: my_module.settings
 ```
 
+---
+
 ## Routing
+
 ```yaml
 # my_module.routing.yml
 my_module.dashboard:
   path: '/my-module/dashboard'
   defaults:
-    _controller: '\Drupal\my_module\Controller\MyController::dashboard'
-    _title: 'Dashboard'
+    _controller: '\Drupal\my_module\Controller\MyModuleController::dashboard'
+    _title: 'Module Dashboard'
   requirements:
-    _permission: 'access my_module'
+    _permission: 'access my module'
 
-my_module.api.items:
+my_module.api_list:
   path: '/api/my-module/items'
   defaults:
-    _controller: '\Drupal\my_module\Controller\ApiController::getItems'
+    _controller: '\Drupal\my_module\Controller\MyModuleController::apiList'
   requirements:
     _permission: 'access content'
-  methods: [GET]
   options:
     _format: json
+    no_cache: TRUE
+
+my_module.settings:
+  path: '/admin/config/my-module/settings'
+  defaults:
+    _form: '\Drupal\my_module\Form\SettingsForm'
+    _title: 'My Module Settings'
+  requirements:
+    _permission: 'administer my module'
 ```
 
+---
+
 ## Controller
+
 ```php
 <?php
-// src/Controller/MyController.php
+// src/Controller/MyModuleController.php
 namespace Drupal\my_module\Controller;
 
 use Drupal\Core\Controller\ControllerBase;
-use Drupal\my_module\Service\MyService;
+use Drupal\my_module\Service\MyModuleService;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 use Symfony\Component\HttpFoundation\JsonResponse;
 
-class MyController extends ControllerBase
+class MyModuleController extends ControllerBase
 {
     public function __construct(
-        private readonly MyService $myService,
+        protected MyModuleService $myModuleService,
     ) {}
 
     public static function create(ContainerInterface $container): static
     {
         return new static(
-            $container->get('my_module.my_service'),
+            $container->get('my_module.service'),
         );
     }
 
     public function dashboard(): array
     {
-        $items = $this->myService->getRecentItems(10);
+        $items = $this->myModuleService->getRecentItems(10);
 
         return [
-            '#theme' => 'my_template',
+            '#theme' => 'my_custom_block',
             '#items' => $items,
-            '#cache' => ['max-age' => 3600],
+            '#cache' => [
+                'max-age' => 3600,
+                'tags' => ['node_list'],
+            ],
         ];
+    }
+
+    public function apiList(): JsonResponse
+    {
+        $items = $this->myModuleService->getRecentItems(50);
+
+        return new JsonResponse([
+            'data' => $items,
+            'count' => count($items),
+        ]);
     }
 }
 ```
 
-## Service
+---
+
+## Services (DI)
+
+```yaml
+# my_module.services.yml
+services:
+  my_module.service:
+    class: Drupal\my_module\Service\MyModuleService
+    arguments:
+      - '@entity_type.manager'
+      - '@database'
+      - '@logger.factory'
+```
+
 ```php
 <?php
-// src/Service/MyService.php
+// src/Service/MyModuleService.php
 namespace Drupal\my_module\Service;
 
 use Drupal\Core\Entity\EntityTypeManagerInterface;
-use Drupal\Core\Session\AccountProxyInterface;
+use Drupal\Core\Database\Connection;
+use Drupal\Core\Logger\LoggerChannelFactoryInterface;
 
-class MyService
+class MyModuleService
 {
     public function __construct(
-        private readonly EntityTypeManagerInterface $entityTypeManager,
-        private readonly AccountProxyInterface $currentUser,
+        protected EntityTypeManagerInterface $entityTypeManager,
+        protected Connection $database,
+        protected LoggerChannelFactoryInterface $loggerFactory,
     ) {}
 
     public function getRecentItems(int $limit = 10): array
     {
         $storage = $this->entityTypeManager->getStorage('node');
         $query = $storage->getQuery()
+            ->accessCheck(TRUE)
             ->condition('type', 'article')
             ->condition('status', 1)
             ->sort('created', 'DESC')
-            ->range(0, $limit)
-            ->accessCheck(TRUE);
+            ->range(0, $limit);
 
         $nids = $query->execute();
-        return $storage->loadMultiple($nids);
+        $nodes = $storage->loadMultiple($nids);
+
+        return array_map(fn($node) => [
+            'id'      => $node->id(),
+            'title'   => $node->getTitle(),
+            'created' => $node->getCreatedTime(),
+            'url'     => $node->toUrl()->toString(),
+        ], $nodes);
     }
 }
 ```
 
-```yaml
-# my_module.services.yml
-services:
-  my_module.my_service:
-    class: Drupal\my_module\Service\MyService
-    arguments:
-      - '@entity_type.manager'
-      - '@current_user'
-```
+---
 
 ## Form API
+
 ```php
 <?php
 // src/Form/SettingsForm.php
@@ -166,7 +227,7 @@ class SettingsForm extends ConfigFormBase
 
     public function getFormId(): string
     {
-        return 'my_module_settings';
+        return 'my_module_settings_form';
     }
 
     public function buildForm(array $form, FormStateInterface $form_state): array
@@ -174,28 +235,43 @@ class SettingsForm extends ConfigFormBase
         $config = $this->config('my_module.settings');
 
         $form['api_key'] = [
-            '#type' => 'textfield',
-            '#title' => $this->t('API Key'),
+            '#type'          => 'textfield',
+            '#title'         => $this->t('API Key'),
             '#default_value' => $config->get('api_key'),
-            '#required' => TRUE,
+            '#required'      => TRUE,
         ];
 
-        $form['max_items'] = [
-            '#type' => 'number',
-            '#title' => $this->t('Max Items'),
-            '#default_value' => $config->get('max_items') ?? 10,
-            '#min' => 1,
-            '#max' => 100,
+        $form['items_per_page'] = [
+            '#type'          => 'number',
+            '#title'         => $this->t('Items per page'),
+            '#default_value' => $config->get('items_per_page') ?? 10,
+            '#min'           => 1,
+            '#max'           => 100,
+        ];
+
+        $form['enable_cache'] = [
+            '#type'          => 'checkbox',
+            '#title'         => $this->t('Enable caching'),
+            '#default_value' => $config->get('enable_cache') ?? TRUE,
         ];
 
         return parent::buildForm($form, $form_state);
+    }
+
+    public function validateForm(array &$form, FormStateInterface $form_state): void
+    {
+        $apiKey = $form_state->getValue('api_key');
+        if (strlen($apiKey) < 10) {
+            $form_state->setErrorByName('api_key', $this->t('API Key must be at least 10 characters.'));
+        }
     }
 
     public function submitForm(array &$form, FormStateInterface $form_state): void
     {
         $this->config('my_module.settings')
             ->set('api_key', $form_state->getValue('api_key'))
-            ->set('max_items', $form_state->getValue('max_items'))
+            ->set('items_per_page', $form_state->getValue('items_per_page'))
+            ->set('enable_cache', $form_state->getValue('enable_cache'))
             ->save();
 
         parent::submitForm($form, $form_state);
@@ -203,114 +279,131 @@ class SettingsForm extends ConfigFormBase
 }
 ```
 
+---
+
 ## Custom Block Plugin
+
 ```php
 <?php
-// src/Plugin/Block/MyBlock.php
+// src/Plugin/Block/CustomBlock.php
 namespace Drupal\my_module\Plugin\Block;
 
 use Drupal\Core\Block\BlockBase;
-use Drupal\Core\Plugin\ContainerFactoryPluginInterface;
-use Symfony\Component\DependencyInjection\ContainerInterface;
+use Drupal\Core\Block\Attribute\Block;
+use Drupal\Core\StringTranslation\TranslatableMarkup;
 
-/**
- * Provides a 'My Block' block.
- *
- * @Block(
- *   id = "my_module_my_block",
- *   admin_label = @Translation("My Custom Block"),
- *   category = @Translation("Custom"),
- * )
- */
-class MyBlock extends BlockBase implements ContainerFactoryPluginInterface
+#[Block(
+    id: 'my_module_custom_block',
+    admin_label: new TranslatableMarkup('My Custom Block'),
+    category: new TranslatableMarkup('Custom'),
+)]
+class CustomBlock extends BlockBase
 {
-    public static function create(ContainerInterface $container, array $configuration, $plugin_id, $plugin_definition): static
-    {
-        return new static($configuration, $plugin_id, $plugin_definition);
-    }
-
     public function build(): array
     {
         return [
-            '#markup' => $this->t('Hello from My Block!'),
+            '#theme' => 'my_custom_block',
+            '#items' => $this->getItems(),
             '#cache' => ['max-age' => 3600],
         ];
+    }
+
+    private function getItems(): array
+    {
+        return \Drupal::service('my_module.service')->getRecentItems(5);
     }
 }
 ```
 
+---
+
 ## Twig Template
+
 ```twig
-{# templates/my-template.html.twig #}
-<div class="my-module-dashboard">
+{# templates/my-custom-block.html.twig #}
+<div class="my-module-block">
   <h2>{{ 'Recent Items'|t }}</h2>
 
   {% if items %}
-    <div class="items-grid">
+    <ul class="item-list">
       {% for item in items %}
-        <article class="item-card">
-          <h3>{{ item.label }}</h3>
-          <p>{{ item.get('body').value|striptags|slice(0, 150) }}...</p>
-          <a href="{{ path('entity.node.canonical', {'node': item.id}) }}" class="btn">
-            {{ 'Read More'|t }}
-          </a>
-        </article>
+        <li class="item-list__item">
+          <a href="{{ item.url }}">{{ item.title }}</a>
+          <span class="item-date">{{ item.created|date('M d, Y') }}</span>
+        </li>
       {% endfor %}
-    </div>
+    </ul>
   {% else %}
     <p>{{ 'No items found.'|t }}</p>
   {% endif %}
 </div>
 ```
 
-## Hooks
 ```php
 <?php
-// my_module.module
-
-use Drupal\Core\Entity\EntityInterface;
-
-/**
- * Implements hook_theme().
- */
+// my_module.module — Register template
 function my_module_theme(): array
 {
     return [
-        'my_template' => [
-            'variables' => ['items' => []],
-            'template' => 'my-template',
+        'my_custom_block' => [
+            'variables' => [
+                'items' => [],
+            ],
+            'template' => 'my-custom-block',
         ],
     ];
 }
-
-/**
- * Implements hook_entity_presave().
- */
-function my_module_entity_presave(EntityInterface $entity): void
-{
-    if ($entity->getEntityTypeId() === 'node' && $entity->bundle() === 'article') {
-        // Auto-generate slug from title
-        if (empty($entity->get('field_slug')->value)) {
-            $entity->set('field_slug', \Drupal::service('pathauto.alias_cleaner')->cleanString($entity->label()));
-        }
-    }
-}
 ```
 
-## Drush (CLI)
+---
+
+## Drush Commands
+
 ```bash
-drush cr                           # Clear cache (rebuild)
-drush en my_module                 # Enable module
-drush pm:uninstall my_module       # Uninstall module
-drush cex                          # Export configuration
-drush cim                          # Import configuration
-drush updb                         # Run database updates
-drush uli                          # Generate admin login link
-drush sql:dump > backup.sql        # Database dump
-drush watchdog:show                # View logs
+# Module management
+drush en my_module           # Enable module
+drush pmu my_module          # Uninstall module
+
+# Cache
+drush cr                     # Clear all caches
+drush cc render              # Clear render cache
+
+# Config
+drush cex                    # Export config
+drush cim                    # Import config
+drush cget my_module.settings  # View config
+
+# Database
+drush sql-dump > backup.sql  # Database backup
+drush updb                   # Run database updates
+
+# User
+drush uli                    # Generate one-time login link
+drush user:create admin --mail=admin@myapp.com --password=admin123
 ```
+
+---
+
+## Best Practices
+
+| Practice | Details |
+|----------|---------|
+| **Custom modules** | All code in `modules/custom/`, never hack core/contrib |
+| **Dependency injection** | Services via `*.services.yml`, constructor injection |
+| **Entity API** | Use Entity API (getQuery, loadMultiple) not raw SQL |
+| **accessCheck** | Always `->accessCheck(TRUE)` in entity queries |
+| **Config API** | Store settings in config, not database |
+| **Twig** | Auto-escaping enabled; use `|raw` sparingly |
+| **Cache tags** | Use cache tags for proper invalidation |
+| **Coding standards** | Run `phpcs --standard=Drupal` |
+| **Attributes** | Use PHP 8 attributes for plugins (Drupal 10+) |
+| **Drush** | Use Drush for CLI operations, deployment, debugging |
+
+---
 
 ## Rules Integration
-- **SOLID**: DI container, service-based architecture, plugin system (OCP)
-- **Security**: Entity access checks, Form API CSRF protection, render API auto-escaping
-- **SEO**: Pathauto for clean URLs, Metatag module, structured data
+- **Module**: info.yml + routing.yml + services.yml + hooks
+- **Controller**: Symfony-style with DI via create() factory
+- **Forms**: ConfigFormBase for settings, validation + submission
+- **Plugins**: Block plugins with PHP 8 attributes
+- **Theming**: Twig templates registered via hook_theme()

@@ -6,174 +6,77 @@ description: Skill for designing and implementing Data Lake architectures — co
 # Data Lake Skill
 
 ## Overview
-A **Data Lake** stores raw, unstructured, and semi-structured data at any scale. Unlike a data warehouse (structured, schema-on-write), a data lake uses **schema-on-read** — data is stored as-is and structured when queried.
+A data lake stores raw, semi-structured, and structured data at scale. The medallion architecture (Bronze/Silver/Gold) organizes data by quality level. Modern data lakes use Parquet/Delta Lake/Iceberg formats for efficient storage and querying.
+
+**References**:
+- [Delta Lake](https://delta.io/)
+- [Apache Iceberg](https://iceberg.apache.org/)
+- [Medallion Architecture](https://www.databricks.com/glossary/medallion-architecture)
 
 ---
 
-## Medallion Architecture (Bronze → Silver → Gold)
+## Medallion Architecture
 
 ```
-┌──────────────────────────────────────────────────────────────┐
-│                    DATA LAKE LAYERS                           │
-├──────────────────────────────────────────────────────────────┤
-│                                                              │
-│  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐          │
-│  │   BRONZE    │→ │   SILVER    │→ │    GOLD     │          │
-│  │  (Raw/Land) │  │ (Cleansed)  │  │ (Business)  │          │
-│  ├─────────────┤  ├─────────────┤  ├─────────────┤          │
-│  │ Raw ingestion│  │ Deduplicated│  │ Aggregated  │          │
-│  │ As-is from  │  │ Validated   │  │ Business    │          │
-│  │ source      │  │ Standardized│  │ ready       │          │
-│  │ Append-only │  │ Conformed   │  │ Optimized   │          │
-│  │ Immutable   │  │ Enriched    │  │ for queries │          │
-│  └─────────────┘  └─────────────┘  └─────────────┘          │
-│                                                              │
-│  Format: JSON,CSV  Format: Parquet  Format: Parquet/Delta    │
-│  Schema: None       Schema: Inferred Schema: Enforced        │
-│  Quality: Raw       Quality: Clean   Quality: Business-ready │
-│                                                              │
-└──────────────────────────────────────────────────────────────┘
+Bronze (Raw)         → Silver (Cleaned)         → Gold (Business-Ready)
+─────────────────    ─────────────────────────    ────────────────────────
+Raw ingested data    Deduplicated, validated      Aggregated, enriched
+JSON, CSV, logs      Typed columns, normalized    Business metrics
+Append-only          Schema enforcement           Star schema / KPIs
+Full fidelity        Data quality rules           Dashboard-ready
 ```
 
 ---
 
-## Directory Structure
-
-```
-data-lake/
-├── bronze/                          # Raw data (landing zone)
-│   ├── transactions/
-│   │   ├── year=2025/month=01/day=15/
-│   │   │   ├── batch_001.json
-│   │   │   └── batch_002.json
-│   │   └── year=2025/month=01/day=16/
-│   ├── user_events/
-│   │   └── year=2025/month=01/
-│   └── external_apis/
-│       └── exchange_rates/
-├── silver/                          # Cleansed & conformed
-│   ├── transactions/
-│   │   └── year=2025/month=01/
-│   │       └── part-00000.parquet
-│   ├── users/
-│   └── products/
-├── gold/                            # Business aggregates
-│   ├── daily_sales_summary/
-│   ├── customer_360/
-│   ├── product_performance/
-│   └── revenue_by_region/
-└── _metadata/
-    ├── schemas/                     # Schema definitions
-    ├── lineage/                     # Data lineage tracking
-    └── quality/                     # Quality check results
-```
-
----
-
-## File Formats
-
-| Format | Use Case | Pros | Cons |
-|--------|----------|------|------|
-| **JSON/CSV** | Bronze (raw ingestion) | Human-readable, universal | Slow queries, no schema |
-| **Parquet** | Silver/Gold (analytics) | Columnar, compressed, fast | Not human-readable |
-| **Delta Lake** | All layers (Databricks) | ACID transactions, time travel | Requires Delta runtime |
-| **Apache Iceberg** | All layers (open) | Schema evolution, partition evolution | Newer ecosystem |
-| **ORC** | Hive ecosystem | Good compression, fast reads | Less universal than Parquet |
-
----
-
-## Partitioning Strategy
+## Data Pipeline (Python)
 
 ```python
-# ✅ Partition by common query dimensions
-# Time-based (most common)
-s3://data-lake/silver/transactions/year=2025/month=01/day=15/
+# Bronze: Ingest raw data
+def ingest_bronze(source_path: str, bronze_path: str):
+    df = spark.read.json(source_path)
+    df = df.withColumn("_ingested_at", current_timestamp())
+    df = df.withColumn("_source_file", input_file_name())
+    df.write.mode("append").partitionBy("_ingested_date").parquet(bronze_path)
 
-# Category-based
-s3://data-lake/gold/sales/region=java/category=electronics/
+# Silver: Clean and validate
+def process_silver(bronze_path: str, silver_path: str):
+    df = spark.read.parquet(bronze_path)
+    df = df.dropDuplicates(["id"])
+    df = df.filter(col("email").rlike("^[a-zA-Z0-9+_.-]+@[a-zA-Z0-9.-]+$"))
+    df = df.withColumn("price", col("price").cast("decimal(10,2)"))
+    df = df.withColumn("_processed_at", current_timestamp())
+    df.write.mode("overwrite").partitionBy("category").parquet(silver_path)
 
-# Rules:
-# 1. Partition on frequently filtered columns
-# 2. Avoid too many partitions (>10K = overhead)
-# 3. Avoid too few partitions (1 partition = no benefit)
-# 4. Target 100MB-1GB per partition file
-# 5. Use Hive-style partitioning: key=value/
+# Gold: Business aggregations
+def build_gold_metrics(silver_path: str, gold_path: str):
+    df = spark.read.parquet(silver_path)
+    monthly = df.groupBy(year("created_at").alias("year"), month("created_at").alias("month")).agg(
+        count("id").alias("total_orders"), sum("total").alias("revenue"), avg("total").alias("avg_order_value")
+    )
+    monthly.write.mode("overwrite").parquet(f"{gold_path}/monthly_revenue")
 ```
 
 ---
-
-## Cloud Implementations
-
-### AWS (S3 + Glue + Athena)
-```
-Storage:    Amazon S3
-Catalog:    AWS Glue Data Catalog
-Query:      Amazon Athena (serverless SQL)
-ETL:        AWS Glue (Spark-based)
-Governance: AWS Lake Formation
-```
-
-### GCP (GCS + BigQuery)
-```
-Storage:    Google Cloud Storage
-Catalog:    BigQuery + Data Catalog
-Query:      BigQuery (serverless)
-ETL:        Dataflow / Dataproc
-Governance: Dataplex
-```
-
-### Azure (ADLS + Synapse)
-```
-Storage:    Azure Data Lake Storage Gen2
-Catalog:    Azure Purview
-Query:      Azure Synapse Analytics
-ETL:        Azure Data Factory
-Governance: Microsoft Purview
-```
-
----
-
-## Data Quality Checks
-
-```python
-# ✅ Quality checks at each layer transition
-class DataQualityCheck:
-    def check_bronze_to_silver(self, df):
-        """Validate before promoting to Silver"""
-        checks = {
-            'no_nulls_in_keys': df[self.key_columns].notna().all().all(),
-            'valid_dates': pd.to_datetime(df['created_at'], errors='coerce').notna().all(),
-            'no_duplicates': not df.duplicated(subset=self.key_columns).any(),
-            'row_count_reasonable': len(df) > 0 and len(df) < 10_000_000,
-            'schema_matches': set(df.columns) == set(self.expected_columns),
-        }
-        
-        failed = [k for k, v in checks.items() if not v]
-        if failed:
-            raise DataQualityError(f"Quality checks failed: {failed}")
-        
-        return True
-```
-
----
-
-## Data Governance
-
-```
-1. Data Catalog     → Register all datasets with metadata
-2. Data Lineage     → Track data flow from source to gold
-3. Access Control   → RBAC on lake zones (who can read bronze? gold?)
-4. Data Quality     → Automated checks at each layer
-5. Retention Policy → Auto-archive/delete per policy
-6. PII Management   → Tag PII fields, encrypt, mask
-7. Audit Trail      → Log all data access and transformations
-```
 
 ## Best Practices
-1. **Immutable bronze** — never modify raw data, append-only
-2. **Parquet for analytics** — columnar format for fast queries
-3. **Partition wisely** — by date is almost always correct
-4. **Schema evolution** — use Delta/Iceberg for schema changes
-5. **Separate compute from storage** — scale independently
-6. **Data quality gates** — validate before promoting layers
-7. **Metadata first** — catalog everything before it becomes a data swamp
+
+| Practice | Details |
+|----------|---------|
+| **Medallion** | Bronze (raw) → Silver (clean) → Gold (business) |
+| **Parquet** | Columnar format for analytics |
+| **Partitioning** | Partition by date, category |
+| **Schema evolution** | Delta Lake for schema changes |
+| **Data quality** | Validate at Silver layer |
+| **Deduplication** | Remove duplicates at Silver |
+| **Lineage** | Track data transformations |
+| **Governance** | Catalog, access control, encryption |
+| **Retention** | Archive/delete old Bronze data |
+| **Incremental** | Process only new data |
+
+---
+
+## Rules Integration
+- **Architecture**: Medallion (Bronze/Silver/Gold)
+- **Pipeline**: Ingest → clean → aggregate
+- **Format**: Parquet for columnar storage
+- **Quality**: Validation and deduplication at Silver

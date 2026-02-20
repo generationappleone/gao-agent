@@ -6,104 +6,292 @@ description: Skill for server-side image processing — covering Sharp (Node.js)
 # Image Processing Skill
 
 ## Overview
-Server-side image processing for resizing, cropping, watermarking, format conversion, and optimization.
+Server-side image processing is essential for user uploads, thumbnails, avatars, watermarking, and format optimization. Sharp (Node.js) and Pillow (Python) are the most popular libraries, offering high-performance image manipulation.
 
-## Sharp (Node.js — Recommended)
+**References**:
+- [Sharp Documentation](https://sharp.pixelplumbing.com/)
+- [Pillow Documentation](https://pillow.readthedocs.io/)
+
+---
+
+## Sharp (Node.js)
+
+### Setup
+```bash
+npm install sharp
+```
+
+### Resize & Optimize
 ```typescript
-import sharp from "sharp";
+// src/lib/image-processor.ts
+import sharp from 'sharp';
+import path from 'path';
+import crypto from 'crypto';
 
-// Resize
-await sharp("input.jpg")
-  .resize(800, 600, { fit: "cover", position: "center" })
-  .jpeg({ quality: 85, progressive: true })
-  .toFile("output.jpg");
-
-// Thumbnail
-await sharp(inputBuffer)
-  .resize(200, 200, { fit: "cover" })
-  .webp({ quality: 80 })
-  .toBuffer();
-
-// Watermark
-const watermark = await sharp("watermark.png").resize(200).toBuffer();
-await sharp("photo.jpg")
-  .composite([{ input: watermark, gravity: "southeast", blend: "over" }])
-  .toFile("watermarked.jpg");
-
-// Format conversion
-await sharp("photo.png").webp({ quality: 85 }).toFile("photo.webp");
-await sharp("photo.jpg").avif({ quality: 60 }).toFile("photo.avif");
-
-// Get metadata
-const metadata = await sharp("photo.jpg").metadata();
-console.log(metadata.width, metadata.height, metadata.format);
-
-// Batch processing
-async function processUpload(buffer: Buffer, filename: string) {
-  const variants = [
-    { name: "thumb", width: 150, height: 150 },
-    { name: "medium", width: 800, height: 600 },
-    { name: "large", width: 1920, height: 1080 },
-  ];
-
-  return Promise.all(variants.map(async (v) => {
-    const output = await sharp(buffer)
-      .resize(v.width, v.height, { fit: "inside", withoutEnlargement: true })
-      .webp({ quality: 85 })
-      .toBuffer();
-    return { name: `${v.name}-${filename}.webp`, buffer: output, size: output.length };
-  }));
+interface ProcessedImage {
+  filename: string;
+  path: string;
+  width: number;
+  height: number;
+  size: number;
+  format: string;
 }
 
-// Express upload middleware
-import multer from "multer";
-const upload = multer({ limits: { fileSize: 10 * 1024 * 1024 }, fileFilter: (_, file, cb) => {
-  if (file.mimetype.startsWith("image/")) cb(null, true);
-  else cb(new Error("Only images allowed"));
-}});
+// ── Resize and optimize uploaded image ──
+async function processUpload(
+  buffer: Buffer,
+  originalName: string,
+): Promise<ProcessedImage> {
+  const hash = crypto.randomBytes(8).toString('hex');
+  const filename = `${hash}.webp`;
+  const outputPath = path.join(process.env.UPLOAD_DIR!, filename);
 
-app.post("/upload", upload.single("image"), async (req, res) => {
-  if (!req.file) return res.status(400).json({ error: "No file" });
-  const variants = await processUpload(req.file.buffer, req.file.originalname);
-  // Upload variants to S3/storage...
-  res.json({ images: variants.map(v => ({ name: v.name, size: v.size })) });
+  const result = await sharp(buffer)
+    .resize(1200, 1200, {
+      fit: 'inside',            // Maintain aspect ratio, fit within bounds
+      withoutEnlargement: true, // Don't upscale small images
+    })
+    .webp({ quality: 80 })     // Convert to WebP for smaller size
+    .toFile(outputPath);
+
+  return {
+    filename,
+    path: outputPath,
+    width: result.width,
+    height: result.height,
+    size: result.size,
+    format: 'webp',
+  };
+}
+
+// ── Generate thumbnails (multiple sizes) ──
+async function generateThumbnails(
+  buffer: Buffer,
+  baseName: string,
+): Promise<Record<string, ProcessedImage>> {
+  const sizes = {
+    sm: { width: 150, height: 150 },
+    md: { width: 400, height: 400 },
+    lg: { width: 800, height: 800 },
+  };
+
+  const results: Record<string, ProcessedImage> = {};
+
+  for (const [size, dimensions] of Object.entries(sizes)) {
+    const filename = `${baseName}_${size}.webp`;
+    const outputPath = path.join(process.env.UPLOAD_DIR!, filename);
+
+    const result = await sharp(buffer)
+      .resize(dimensions.width, dimensions.height, {
+        fit: 'cover',           // Crop to fill exact dimensions
+        position: 'centre',
+      })
+      .webp({ quality: size === 'sm' ? 60 : 80 })
+      .toFile(outputPath);
+
+    results[size] = {
+      filename,
+      path: outputPath,
+      width: result.width,
+      height: result.height,
+      size: result.size,
+      format: 'webp',
+    };
+  }
+
+  return results;
+}
+
+// ── Avatar processing (square crop + circle mask) ──
+async function processAvatar(buffer: Buffer, userId: string): Promise<ProcessedImage> {
+  const size = 200;
+  const filename = `avatar_${userId}.webp`;
+  const outputPath = path.join(process.env.UPLOAD_DIR!, 'avatars', filename);
+
+  // Create circular mask
+  const circleMask = Buffer.from(
+    `<svg width="${size}" height="${size}">
+      <circle cx="${size / 2}" cy="${size / 2}" r="${size / 2}" fill="white"/>
+    </svg>`
+  );
+
+  const result = await sharp(buffer)
+    .resize(size, size, { fit: 'cover', position: 'centre' })
+    .composite([{
+      input: circleMask,
+      blend: 'dest-in',
+    }])
+    .webp({ quality: 80 })
+    .toFile(outputPath);
+
+  return {
+    filename,
+    path: outputPath,
+    width: size,
+    height: size,
+    size: result.size,
+    format: 'webp',
+  };
+}
+
+// ── Watermark ──
+async function addWatermark(
+  inputBuffer: Buffer,
+  watermarkPath: string,
+): Promise<Buffer> {
+  const image = sharp(inputBuffer);
+  const metadata = await image.metadata();
+
+  // Resize watermark to 20% of image width
+  const watermarkWidth = Math.round((metadata.width || 800) * 0.2);
+  const watermark = await sharp(watermarkPath)
+    .resize(watermarkWidth)
+    .ensureAlpha(0.5)  // 50% opacity
+    .toBuffer();
+
+  return image
+    .composite([{
+      input: watermark,
+      gravity: 'southeast',  // Bottom-right corner
+      blend: 'over',
+    }])
+    .toBuffer();
+}
+
+// ── Format conversion ──
+async function convertFormat(
+  buffer: Buffer,
+  format: 'webp' | 'jpeg' | 'png' | 'avif',
+  quality: number = 80,
+): Promise<Buffer> {
+  let pipeline = sharp(buffer);
+
+  switch (format) {
+    case 'webp':
+      pipeline = pipeline.webp({ quality });
+      break;
+    case 'jpeg':
+      pipeline = pipeline.jpeg({ quality, mozjpeg: true });
+      break;
+    case 'png':
+      pipeline = pipeline.png({ compressionLevel: 9 });
+      break;
+    case 'avif':
+      pipeline = pipeline.avif({ quality });
+      break;
+  }
+
+  return pipeline.toBuffer();
+}
+
+// ── Get image metadata ──
+async function getMetadata(buffer: Buffer) {
+  const metadata = await sharp(buffer).metadata();
+  return {
+    width: metadata.width,
+    height: metadata.height,
+    format: metadata.format,
+    size: metadata.size,
+    hasAlpha: metadata.hasAlpha,
+    orientation: metadata.orientation,
+  };
+}
+```
+
+### Upload Handler (Express)
+```typescript
+// src/routes/upload.ts
+import multer from 'multer';
+
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 10 * 1024 * 1024 },  // 10MB
+  fileFilter: (req, file, cb) => {
+    const allowed = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
+    if (allowed.includes(file.mimetype)) {
+      cb(null, true);
+    } else {
+      cb(new Error(`File type ${file.mimetype} not allowed`));
+    }
+  },
+});
+
+app.post('/api/upload/image', upload.single('image'), async (req, res) => {
+  if (!req.file) {
+    return res.status(400).json({ error: 'No image provided' });
+  }
+
+  const processed = await processUpload(req.file.buffer, req.file.originalname);
+  const thumbnails = await generateThumbnails(req.file.buffer, processed.filename.replace('.webp', ''));
+
+  res.json({
+    original: processed,
+    thumbnails,
+  });
+});
+
+app.post('/api/upload/avatar', upload.single('avatar'), async (req, res) => {
+  if (!req.file) {
+    return res.status(400).json({ error: 'No image provided' });
+  }
+
+  const avatar = await processAvatar(req.file.buffer, req.user.id);
+
+  await db.user.update({
+    where: { id: req.user.id },
+    data: { avatarUrl: `/uploads/avatars/${avatar.filename}` },
+  });
+
+  res.json({ avatar });
 });
 ```
 
-## Pillow (Python)
-```python
-from PIL import Image, ImageDraw, ImageFont, ImageFilter
+### S3 Upload Integration
+```typescript
+// Upload processed image to S3
+import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
 
-# Resize
-img = Image.open("input.jpg")
-img = img.resize((800, 600), Image.LANCZOS)
-img.save("output.jpg", quality=85, optimize=True)
+const s3 = new S3Client({ region: process.env.AWS_REGION });
 
-# Thumbnail (preserves aspect ratio)
-img.thumbnail((200, 200), Image.LANCZOS)
+async function uploadToS3(buffer: Buffer, key: string, contentType: string): Promise<string> {
+  await s3.send(new PutObjectCommand({
+    Bucket: process.env.AWS_S3_BUCKET!,
+    Key: key,
+    Body: buffer,
+    ContentType: contentType,
+    CacheControl: 'public, max-age=31536000, immutable',
+  }));
 
-# Crop
-img = img.crop((left, top, right, bottom))
+  return `https://${process.env.AWS_S3_BUCKET}.s3.amazonaws.com/${key}`;
+}
 
-# Watermark
-base = Image.open("photo.jpg")
-watermark = Image.open("watermark.png").resize((200, 50))
-base.paste(watermark, (base.width - 210, base.height - 60), watermark)
-base.save("watermarked.jpg")
-
-# Format conversion
-Image.open("photo.png").save("photo.webp", "webp", quality=85)
+// Process and upload
+const optimized = await sharp(buffer).resize(1200, 1200, { fit: 'inside' }).webp({ quality: 80 }).toBuffer();
+const url = await uploadToS3(optimized, `images/${filename}`, 'image/webp');
 ```
+
+---
 
 ## Best Practices
 
-| Practice | Description |
-|----------|-------------|
-| **Sharp** | Fastest Node.js option (libvips-based) |
-| **WebP/AVIF** | Prefer modern formats for web |
-| **Progressive JPEG** | Enable for better perceived loading |
-| **Variants** | Generate thumb, medium, large on upload |
-| **Streaming** | Process as streams/buffers, not files |
-| **Validation** | Validate MIME type and file size |
-| **EXIF orientation** | Sharp auto-rotates by default |
-| **Lazy loading** | Serve appropriate size per viewport |
+| Practice | Details |
+|----------|---------|
+| **WebP format** | Convert to WebP for 25-35% smaller files vs JPEG |
+| **Memory buffer** | Use `multer.memoryStorage()` for processing before disk |
+| **Size limits** | Max 10MB upload, validate in multer |
+| **MIME validation** | Check file type in multer fileFilter |
+| **Thumbnails** | Generate sm/md/lg on upload, serve appropriate size |
+| **Lazy processing** | For high traffic, queue image processing (BullMQ) |
+| **CDN caching** | Upload to S3/CloudFront with immutable Cache-Control |
+| **No enlargement** | `withoutEnlargement: true` to prevent upscaling |
+| **Metadata strip** | Sharp strips EXIF metadata by default (privacy) |
+| **Error handling** | Catch corrupt/invalid image errors gracefully |
+
+---
+
+## Rules Integration
+- **Processing**: Sharp for resize, crop, convert, watermark, metadata
+- **Formats**: WebP (recommended), JPEG (mozjpeg), PNG, AVIF
+- **Uploads**: Multer memory storage, MIME validation, size limits
+- **Storage**: Local filesystem or S3 with CDN caching
+- **Thumbnails**: Generate multiple sizes on upload

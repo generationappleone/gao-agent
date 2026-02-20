@@ -6,182 +6,134 @@ description: Skill for E2E browser testing with Playwright, covering page intera
 # Playwright Skill
 
 ## Overview
-Playwright is a modern E2E testing framework by Microsoft supporting Chromium, Firefox, and WebKit with auto-wait, network interception, and parallel execution.
+Playwright is a modern E2E testing framework by Microsoft supporting Chromium, Firefox, and WebKit. It provides auto-waiting, network interception, API testing, visual regression, and multi-browser parallel execution.
 
-## Installation
+**References**:
+- [Playwright Documentation](https://playwright.dev/)
+- [Playwright API](https://playwright.dev/docs/api/class-page)
+
+---
+
+## Setup
+
 ```bash
 npm init playwright@latest
-# or add to existing project
-npm install -D @playwright/test
-npx playwright install          # install browsers
-npx playwright install --with-deps  # + system dependencies
 ```
 
-## Configuration — `playwright.config.ts`
 ```typescript
-import { defineConfig, devices } from '@playwright/test';
+// playwright.config.ts
+import { defineConfig } from '@playwright/test';
 
 export default defineConfig({
-  testDir: './tests/e2e',
+  testDir: './tests',
   fullyParallel: true,
-  forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 0,
   workers: process.env.CI ? 1 : undefined,
-  reporter: [
-    ['html', { open: 'never' }],
-    ['json', { outputFile: 'test-results/results.json' }],
-    ['list'],
-  ],
+  reporter: [['html'], ['list']],
   use: {
-    baseURL: process.env.BASE_URL || 'http://localhost:3000',
+    baseURL: 'http://localhost:3000',
     trace: 'on-first-retry',
     screenshot: 'only-on-failure',
-    video: 'retain-on-failure',
   },
   projects: [
-    { name: 'chromium', use: { ...devices['Desktop Chrome'] } },
-    { name: 'firefox', use: { ...devices['Desktop Firefox'] } },
-    { name: 'webkit', use: { ...devices['Desktop Safari'] } },
-    { name: 'mobile-chrome', use: { ...devices['Pixel 5'] } },
-    { name: 'mobile-safari', use: { ...devices['iPhone 13'] } },
+    { name: 'chromium', use: { browserName: 'chromium' } },
+    { name: 'firefox', use: { browserName: 'firefox' } },
+    { name: 'webkit', use: { browserName: 'webkit' } },
   ],
-  webServer: {
-    command: 'npm run dev',
-    url: 'http://localhost:3000',
-    reuseExistingServer: !process.env.CI,
-  },
+  webServer: { command: 'npm run dev', url: 'http://localhost:3000', reuseExistingServer: !process.env.CI },
 });
 ```
 
-## Core Patterns
+---
 
-### Basic Test
+## Page Tests
+
 ```typescript
 import { test, expect } from '@playwright/test';
 
-test.describe('Login Feature', () => {
-  test.beforeEach(async ({ page }) => {
+test.describe('Products', () => {
+  test('should display product list', async ({ page }) => {
+    await page.goto('/products');
+    await expect(page.getByRole('heading', { name: 'Products' })).toBeVisible();
+    const products = page.locator('[data-testid="product-card"]');
+    await expect(products).toHaveCount(20);
+  });
+
+  test('should search products', async ({ page }) => {
+    await page.goto('/products');
+    await page.getByPlaceholder('Search products').fill('laptop');
+    await page.getByRole('button', { name: 'Search' }).click();
+    await expect(page.locator('[data-testid="product-card"]')).toHaveCount(5);
+  });
+
+  test('should add product to cart', async ({ page }) => {
+    await page.goto('/products');
+    await page.locator('[data-testid="product-card"]').first().getByRole('button', { name: 'Add to Cart' }).click();
+    await expect(page.getByTestId('cart-count')).toHaveText('1');
+  });
+});
+
+test.describe('Authentication', () => {
+  test('should login successfully', async ({ page }) => {
     await page.goto('/login');
-  });
-
-  test('successful login', async ({ page }) => {
-    await page.fill('[data-testid="email"]', 'user@example.com');
-    await page.fill('[data-testid="password"]', 'SecurePass123!');
-    await page.click('[data-testid="login-button"]');
+    await page.getByLabel('Email').fill('user@example.com');
+    await page.getByLabel('Password').fill('password123');
+    await page.getByRole('button', { name: 'Sign In' }).click();
     await expect(page).toHaveURL('/dashboard');
-    await expect(page.locator('[data-testid="welcome"]')).toBeVisible();
-  });
-
-  test('failed login shows error', async ({ page }) => {
-    await page.fill('[data-testid="email"]', 'wrong@example.com');
-    await page.fill('[data-testid="password"]', 'wrong');
-    await page.click('[data-testid="login-button"]');
-    await expect(page.locator('.error-message')).toHaveText('Invalid credentials');
+    await expect(page.getByText('Welcome')).toBeVisible();
   });
 });
 ```
 
-### API Testing
+---
+
+## API Testing
+
 ```typescript
-import { test, expect } from '@playwright/test';
-
-test.describe('API Tests', () => {
-  let token: string;
-
-  test.beforeAll(async ({ request }) => {
-    const res = await request.post('/api/auth/login', {
-      data: { email: 'admin@test.com', password: 'password' },
-    });
-    token = (await res.json()).token;
+test('should create a product via API', async ({ request }) => {
+  const response = await request.post('/api/products', {
+    headers: { Authorization: `Bearer ${token}` },
+    data: { name: 'Test Product', price: 9999, categoryId: 'cat-1' },
   });
-
-  test('GET /api/users returns list', async ({ request }) => {
-    const res = await request.get('/api/users', {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-    expect(res.ok()).toBeTruthy();
-    const body = await res.json();
-    expect(body.data).toBeInstanceOf(Array);
-    expect(body.data.length).toBeGreaterThan(0);
-  });
-
-  test('POST /api/users validates input', async ({ request }) => {
-    const res = await request.post('/api/users', {
-      headers: { Authorization: `Bearer ${token}` },
-      data: { email: 'invalid' }, // missing required fields
-    });
-    expect(res.status()).toBe(400);
-  });
+  expect(response.status()).toBe(201);
+  const body = await response.json();
+  expect(body.name).toBe('Test Product');
 });
 ```
 
-### Visual Regression
-```typescript
-test('homepage visual regression', async ({ page }) => {
-  await page.goto('/');
-  await expect(page).toHaveScreenshot('homepage.png', {
-    maxDiffPixelRatio: 0.01,
-  });
-});
-```
+---
 
-### Accessibility Testing with axe-core
-```typescript
-import { test, expect } from '@playwright/test';
-import AxeBuilder from '@axe-core/playwright';
+## Commands
 
-test('page has no accessibility violations', async ({ page }) => {
-  await page.goto('/');
-  const results = await new AxeBuilder({ page })
-    .withTags(['wcag2a', 'wcag2aa'])
-    .analyze();
-  expect(results.violations).toEqual([]);
-});
-```
-
-### Network Interception
-```typescript
-test('handles API failure gracefully', async ({ page }) => {
-  await page.route('**/api/data', route =>
-    route.fulfill({ status: 500, body: 'Server Error' })
-  );
-  await page.goto('/dashboard');
-  await expect(page.locator('.error-fallback')).toBeVisible();
-});
-```
-
-### Authentication State Reuse
-```typescript
-// auth.setup.ts — run once, reuse state
-import { test as setup } from '@playwright/test';
-
-setup('authenticate', async ({ page }) => {
-  await page.goto('/login');
-  await page.fill('#email', 'admin@test.com');
-  await page.fill('#password', 'password');
-  await page.click('#login-btn');
-  await page.waitForURL('/dashboard');
-  await page.context().storageState({ path: '.auth/admin.json' });
-});
-
-// In config: { name: 'authed', use: { storageState: '.auth/admin.json' } }
-```
-
-## CLI Commands
 ```bash
-npx playwright test                      # run all tests
-npx playwright test --project=chromium   # specific browser
-npx playwright test --grep "login"       # filter tests
-npx playwright test --ui                 # interactive UI mode
-npx playwright show-report               # view HTML report
-npx playwright codegen http://localhost:3000  # record tests
-npx playwright test --update-snapshots   # update visual baselines
+npx playwright test              # Run all tests
+npx playwright test --ui         # Interactive UI mode
+npx playwright test --headed     # Show browser
+npx playwright show-report       # View HTML report
+npx playwright codegen           # Record tests
 ```
+
+---
 
 ## Best Practices
-- Use `data-testid` attributes for stable selectors
-- Prefer `await expect(locator).toBeVisible()` over `waitForSelector`
-- Use Page Object Model (POM) for large test suites
-- Isolate test data — each test should be independent
-- Use `test.describe.configure({ mode: 'serial' })` only when tests depend on order
-- Keep tests fast — mock external services when possible
+
+| Practice | Details |
+|----------|---------|
+| **Auto-wait** | Playwright auto-waits for elements |
+| **Locators** | Use getByRole, getByLabel, getByTestId |
+| **Page objects** | Abstract pages into reusable classes |
+| **Assertions** | Use web-first assertions (toBeVisible, toHaveText) |
+| **Parallel** | Run tests in parallel for speed |
+| **Traces** | Enable traces for debugging failures |
+| **API testing** | Test APIs alongside UI tests |
+| **CI** | Run in CI with retries and reporters |
+| **Screenshots** | Capture on failure for debugging |
+| **Codegen** | Use codegen to bootstrap tests |
+
+---
+
+## Rules Integration
+- **E2E**: Page interaction tests with auto-wait
+- **API**: Request API for backend testing
+- **Config**: Multi-browser, parallel, CI-optimized
+- **Locators**: Accessible selectors (role, label, testid)

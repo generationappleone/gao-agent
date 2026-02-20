@@ -6,115 +6,322 @@ description: Skill for building applications with Supabase — covering Auth, Da
 # Supabase Skill
 
 ## Overview
-Supabase is an open-source Firebase alternative built on PostgreSQL, providing Auth, Database, Realtime, Storage, and Edge Functions.
+Supabase is an open-source Firebase alternative built on PostgreSQL. It provides authentication, database with Row Level Security (RLS), realtime subscriptions, file storage, edge functions, and auto-generated REST/GraphQL APIs. Supabase gives you a full Postgres database with instant APIs.
 
-**Reference**: [Supabase Documentation](https://supabase.com/docs)
+**References**:
+- [Supabase Documentation](https://supabase.com/docs)
+- [Supabase JavaScript Client](https://supabase.com/docs/reference/javascript)
+- [Supabase Dashboard](https://supabase.com/dashboard)
+
+---
 
 ## Setup
+
 ```bash
 npm install @supabase/supabase-js
 ```
+
 ```typescript
-import { createClient } from "@supabase/supabase-js";
-const supabase = createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_ANON_KEY!);
+// src/lib/supabase.ts
+import { createClient } from '@supabase/supabase-js';
+import type { Database } from '@/types/database';
+
+export const supabase = createClient<Database>(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+);
+
+// Server-side client (with service role)
+export function createServerClient() {
+  return createClient<Database>(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!,
+    { auth: { persistSession: false } },
+  );
+}
 ```
+
+---
 
 ## Authentication
+
 ```typescript
-// Sign up
-const { data, error } = await supabase.auth.signUp({ email, password });
+// src/services/auth.service.ts
+import { supabase } from '@/lib/supabase';
 
-// Sign in
-await supabase.auth.signInWithPassword({ email, password });
+// Register
+export async function signUp(email: string, password: string, name: string) {
+  const { data, error } = await supabase.auth.signUp({
+    email,
+    password,
+    options: { data: { name, role: 'user' } },
+  });
+  if (error) throw error;
+  return data;
+}
 
-// OAuth
-await supabase.auth.signInWithOAuth({ provider: "google", options: { redirectTo: window.location.origin } });
+// Login
+export async function signIn(email: string, password: string) {
+  const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+  if (error) throw error;
+  return data;
+}
 
-// Session listener
-supabase.auth.onAuthStateChange((event, session) => {
-  if (event === "SIGNED_IN") console.log("User:", session?.user);
-});
+// OAuth (Google)
+export async function signInWithGoogle() {
+  const { data, error } = await supabase.auth.signInWithOAuth({
+    provider: 'google',
+    options: { redirectTo: `${window.location.origin}/auth/callback` },
+  });
+  if (error) throw error;
+  return data;
+}
 
-// Get current user
-const { data: { user } } = await supabase.auth.getUser();
+// Logout
+export async function signOut() {
+  await supabase.auth.signOut();
+}
+
+// Get session
+export async function getSession() {
+  const { data: { session } } = await supabase.auth.getSession();
+  return session;
+}
+
+// Auth state listener
+export function onAuthChange(callback: (event: string, session: any) => void) {
+  return supabase.auth.onAuthStateChange(callback);
+}
 ```
 
-## Database (PostgreSQL via Client)
+---
+
+## Database CRUD
+
 ```typescript
-// Select
-const { data: users } = await supabase.from("users").select("id, name, email, posts(title, content)").eq("role", "admin").order("created_at", { ascending: false }).range(0, 19);
+// src/services/product.service.ts
+import { supabase } from '@/lib/supabase';
 
-// Insert
-const { data } = await supabase.from("users").insert({ name, email }).select().single();
+// ── List with filters + pagination ──
+export async function listProducts(options: {
+  category?: string; search?: string; sortBy?: string;
+  page?: number; limit?: number;
+}) {
+  const { page = 1, limit = 20 } = options;
+  const from = (page - 1) * limit;
+  const to = from + limit - 1;
 
-// Update
-await supabase.from("users").update({ name: "New Name" }).eq("id", userId);
+  let query = supabase
+    .from('products')
+    .select('*, category:categories(name, slug)', { count: 'exact' })
+    .eq('status', 'active');
 
-// Delete
-await supabase.from("users").delete().eq("id", userId);
+  if (options.category) {
+    query = query.eq('categories.slug', options.category);
+  }
+  if (options.search) {
+    query = query.or(`name.ilike.%${options.search}%,description.ilike.%${options.search}%`);
+  }
 
-// RPC (stored procedures)
-const { data } = await supabase.rpc("get_user_stats", { user_id: userId });
+  switch (options.sortBy) {
+    case 'price_asc': query = query.order('price', { ascending: true }); break;
+    case 'price_desc': query = query.order('price', { ascending: false }); break;
+    case 'rating': query = query.order('rating', { ascending: false }); break;
+    default: query = query.order('created_at', { ascending: false });
+  }
+
+  const { data, count, error } = await query.range(from, to);
+  if (error) throw error;
+
+  return {
+    data: data || [],
+    total: count || 0,
+    page,
+    totalPages: Math.ceil((count || 0) / limit),
+  };
+}
+
+// ── Get single ──
+export async function getProduct(slug: string) {
+  const { data, error } = await supabase
+    .from('products')
+    .select('*, category:categories(name, slug), reviews(*, user:users(name, avatar_url))')
+    .eq('slug', slug)
+    .single();
+
+  if (error) throw error;
+  return data;
+}
+
+// ── Create ──
+export async function createProduct(input: CreateProductInput) {
+  const { data, error } = await supabase
+    .from('products')
+    .insert(input)
+    .select()
+    .single();
+
+  if (error) throw error;
+  return data;
+}
+
+// ── Update ──
+export async function updateProduct(id: string, input: Partial<Product>) {
+  const { data, error } = await supabase
+    .from('products')
+    .update({ ...input, updated_at: new Date().toISOString() })
+    .eq('id', id)
+    .select()
+    .single();
+
+  if (error) throw error;
+  return data;
+}
+
+// ── Delete ──
+export async function deleteProduct(id: string) {
+  const { error } = await supabase.from('products').delete().eq('id', id);
+  if (error) throw error;
+}
+
+// ── RPC (stored procedure) ──
+export async function getMonthlyRevenue() {
+  const { data, error } = await supabase.rpc('get_monthly_revenue', { months: 12 });
+  if (error) throw error;
+  return data;
+}
 ```
 
-## Realtime Subscriptions
-```typescript
-const channel = supabase.channel("messages").on("postgres_changes", {
-  event: "INSERT", schema: "public", table: "messages", filter: `room_id=eq.${roomId}`,
-}, (payload) => {
-  console.log("New message:", payload.new);
-}).subscribe();
-
-// Cleanup
-supabase.removeChannel(channel);
-```
-
-## Storage
-```typescript
-const { data } = await supabase.storage.from("avatars").upload(`${userId}/avatar.png`, file, { contentType: "image/png", upsert: true });
-const { data: { publicUrl } } = supabase.storage.from("avatars").getPublicUrl(`${userId}/avatar.png`);
-```
+---
 
 ## Row Level Security (RLS)
+
 ```sql
 -- Enable RLS
-ALTER TABLE users ENABLE ROW LEVEL SECURITY;
+ALTER TABLE products ENABLE ROW LEVEL SECURITY;
+ALTER TABLE orders ENABLE ROW LEVEL SECURITY;
 
--- Users can read their own data
-CREATE POLICY "Users read own data" ON users FOR SELECT USING (auth.uid() = id);
+-- Everyone can read active products
+CREATE POLICY "Public read products" ON products
+  FOR SELECT USING (status = 'active');
 
--- Users can update their own data
-CREATE POLICY "Users update own data" ON users FOR UPDATE USING (auth.uid() = id);
+-- Only admins can insert/update/delete products
+CREATE POLICY "Admin manage products" ON products
+  FOR ALL USING (
+    auth.jwt() ->> 'role' = 'admin'
+  );
 
--- Anyone can read public posts
-CREATE POLICY "Public posts readable" ON posts FOR SELECT USING (published = true);
+-- Users can only read their own orders
+CREATE POLICY "Users read own orders" ON orders
+  FOR SELECT USING (
+    auth.uid() = user_id
+  );
 
--- Authors can manage their posts
-CREATE POLICY "Authors manage posts" ON posts FOR ALL USING (auth.uid() = author_id);
+-- Users can create their own orders
+CREATE POLICY "Users create orders" ON orders
+  FOR INSERT WITH CHECK (
+    auth.uid() = user_id
+  );
+
+-- Admins can read all orders
+CREATE POLICY "Admin read all orders" ON orders
+  FOR SELECT USING (
+    auth.jwt() ->> 'role' = 'admin'
+  );
 ```
 
-## Edge Functions
+---
+
+## Realtime Subscriptions
+
 ```typescript
-// supabase/functions/hello/index.ts
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+// ── Subscribe to changes ──
+export function subscribeToOrders(userId: string, onUpdate: (order: any) => void) {
+  const channel = supabase
+    .channel('user-orders')
+    .on(
+      'postgres_changes',
+      {
+        event: '*',
+        schema: 'public',
+        table: 'orders',
+        filter: `user_id=eq.${userId}`,
+      },
+      (payload) => {
+        onUpdate(payload.new);
+      }
+    )
+    .subscribe();
 
-serve(async (req) => {
-  const { name } = await req.json();
-  return new Response(JSON.stringify({ message: `Hello, ${name}!` }), {
-    headers: { "Content-Type": "application/json" },
+  return () => { supabase.removeChannel(channel); };
+}
+
+// ── Presence (online users) ──
+export function trackPresence(userId: string) {
+  const channel = supabase.channel('online-users');
+  channel.on('presence', { event: 'sync' }, () => {
+    const state = channel.presenceState();
+    console.log('Online:', Object.keys(state).length);
   });
-});
+  channel.subscribe(async (status) => {
+    if (status === 'SUBSCRIBED') {
+      await channel.track({ userId, online_at: new Date().toISOString() });
+    }
+  });
+  return () => { supabase.removeChannel(channel); };
+}
 ```
+
+---
+
+## Storage
+
+```typescript
+// ── Upload file ──
+export async function uploadFile(bucket: string, path: string, file: File) {
+  const { data, error } = await supabase.storage
+    .from(bucket)
+    .upload(path, file, {
+      cacheControl: '3600',
+      upsert: false,
+      contentType: file.type,
+    });
+
+  if (error) throw error;
+
+  const { data: { publicUrl } } = supabase.storage.from(bucket).getPublicUrl(data.path);
+  return publicUrl;
+}
+
+// ── Delete file ──
+export async function deleteFile(bucket: string, path: string) {
+  const { error } = await supabase.storage.from(bucket).remove([path]);
+  if (error) throw error;
+}
+```
+
+---
 
 ## Best Practices
 
-| Practice | Description |
-|----------|-------------|
-| **RLS always on** | Never disable Row Level Security in production |
-| **Service role key** | Only use on server — never expose to client |
-| **Type generation** | Use `supabase gen types` for type-safe queries |
-| **Migrations** | Use `supabase db diff` for schema changes |
-| **Edge Functions** | Use for server-side logic with secrets |
-| **Realtime** | Unsubscribe channels on component unmount |
-| **Storage policies** | Set bucket policies for access control |
-| **Database functions** | Use `rpc()` for complex server-side queries |
+| Practice | Details |
+|----------|---------|
+| **RLS** | Always enable Row Level Security on all tables |
+| **Typed client** | Generate types with `supabase gen types typescript` |
+| **Service role** | Use service role key ONLY on server-side |
+| **Anon key** | Safe to expose in client (protected by RLS) |
+| **select()** | Select only needed columns and relations |
+| **count** | Use `{ count: 'exact' }` for pagination totals |
+| **Realtime** | Subscribe to specific table/filter, unsubscribe on cleanup |
+| **RPC** | Use stored procedures for complex queries |
+| **Storage policies** | Set bucket policies for upload/download access |
+| **Error handling** | Always check `error` from every Supabase call |
+
+---
+
+## Rules Integration
+- **Auth**: Email/password, OAuth, session management
+- **Database**: Type-safe CRUD with filters, pagination, relations
+- **RLS**: Row Level Security policies for access control
+- **Realtime**: Postgres changes subscriptions, presence
+- **Storage**: File upload/delete with public URLs

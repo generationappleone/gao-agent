@@ -6,144 +6,126 @@ description: Skill for E2E and component testing with Cypress, covering page int
 # Cypress Skill
 
 ## Overview
-Cypress is a JavaScript E2E testing framework with real-time reloading, time-travel debugging, automatic waiting, and built-in screenshot/video capture.
+Cypress is a JavaScript E2E testing framework that runs in the browser alongside your application. It provides automatic waiting, time-travel debugging, network stubbing, screenshots, and video recording. Cypress is ideal for web application testing.
 
-## Installation
-```bash
-npm install -D cypress
-npx cypress open    # interactive mode (first run initializes config)
-```
+**References**:
+- [Cypress Documentation](https://docs.cypress.io/)
+- [Cypress API](https://docs.cypress.io/api/table-of-contents)
 
-## Configuration — `cypress.config.ts`
+---
+
+## Configuration
+
 ```typescript
+// cypress.config.ts
 import { defineConfig } from 'cypress';
 
 export default defineConfig({
   e2e: {
     baseUrl: 'http://localhost:3000',
-    specPattern: 'cypress/e2e/**/*.cy.{ts,js}',
-    supportFile: 'cypress/support/e2e.ts',
     viewportWidth: 1280,
     viewportHeight: 720,
     video: true,
     screenshotOnRunFailure: true,
     retries: { runMode: 2, openMode: 0 },
-    defaultCommandTimeout: 10000,
-    env: {
-      apiUrl: 'http://localhost:3000/api',
-    },
-  },
-  component: {
-    devServer: {
-      framework: 'react',
-      bundler: 'vite',
-    },
-    specPattern: 'src/**/*.cy.{ts,tsx}',
   },
 });
 ```
 
-## Core Patterns
+---
 
-### Basic E2E Test
+## E2E Tests
+
 ```typescript
-describe('Login Page', () => {
-  beforeEach(() => {
-    cy.visit('/login');
+describe('Products', () => {
+  beforeEach(() => cy.visit('/products'));
+
+  it('should display product list', () => {
+    cy.get('[data-testid="product-card"]').should('have.length.greaterThan', 0);
+    cy.get('[data-testid="product-card"]').first().should('contain', 'Product');
   });
 
+  it('should search products', () => {
+    cy.get('[data-testid="search-input"]').type('laptop');
+    cy.get('[data-testid="search-button"]').click();
+    cy.get('[data-testid="product-card"]').should('have.length', 5);
+  });
+
+  it('should add product to cart', () => {
+    cy.get('[data-testid="add-to-cart"]').first().click();
+    cy.get('[data-testid="cart-count"]').should('contain', '1');
+    cy.get('[data-testid="toast"]').should('contain', 'Added to cart');
+  });
+});
+
+describe('Authentication', () => {
   it('should login successfully', () => {
-    cy.get('[data-testid="email"]').type('user@example.com');
-    cy.get('[data-testid="password"]').type('SecurePass123!');
-    cy.get('[data-testid="login-btn"]').click();
+    cy.visit('/login');
+    cy.get('#email').type('user@example.com');
+    cy.get('#password').type('password123');
+    cy.get('[data-testid="login-button"]').click();
     cy.url().should('include', '/dashboard');
     cy.get('[data-testid="welcome"]').should('be.visible');
   });
-
-  it('should show error for invalid credentials', () => {
-    cy.get('[data-testid="email"]').type('wrong@example.com');
-    cy.get('[data-testid="password"]').type('wrong');
-    cy.get('[data-testid="login-btn"]').click();
-    cy.get('.error-message').should('contain', 'Invalid credentials');
-  });
 });
 ```
 
-### API Testing
+---
+
+## API Testing
+
 ```typescript
-describe('API Tests', () => {
-  let token: string;
-
-  before(() => {
-    cy.request('POST', '/api/auth/login', {
-      email: 'admin@test.com',
-      password: 'password',
-    }).then((res) => {
-      token = res.body.token;
-    });
-  });
-
-  it('GET /api/users returns list', () => {
+describe('API', () => {
+  it('should create a product', () => {
     cy.request({
-      method: 'GET',
-      url: '/api/users',
-      headers: { Authorization: `Bearer ${token}` },
-    }).then((res) => {
-      expect(res.status).to.eq(200);
-      expect(res.body.data).to.be.an('array');
+      method: 'POST',
+      url: '/api/products',
+      headers: { Authorization: `Bearer ${Cypress.env('TOKEN')}` },
+      body: { name: 'Test Product', price: 9999 },
+    }).then((response) => {
+      expect(response.status).to.eq(201);
+      expect(response.body.name).to.eq('Test Product');
     });
   });
 });
 ```
 
-### Custom Commands — `cypress/support/commands.ts`
+---
+
+## Custom Commands
+
 ```typescript
-Cypress.Commands.add('login', (email: string, password: string) => {
-  cy.session([email, password], () => {
-    cy.request('POST', '/api/auth/login', { email, password }).then((res) => {
-      window.localStorage.setItem('token', res.body.token);
-    });
+// cypress/support/commands.ts
+Cypress.Commands.add('login', (email = 'user@example.com', password = 'password123') => {
+  cy.request('POST', '/api/auth/login', { email, password }).then((res) => {
+    window.localStorage.setItem('token', res.body.accessToken);
   });
 });
 
-// Usage: cy.login('admin@test.com', 'password');
+// Usage: cy.login();
 ```
 
-### Fixtures & Intercepts
-```typescript
-it('displays user data from API', () => {
-  cy.intercept('GET', '/api/users', { fixture: 'users.json' }).as('getUsers');
-  cy.visit('/users');
-  cy.wait('@getUsers');
-  cy.get('[data-testid="user-row"]').should('have.length', 3);
-});
-```
-
-### Network Stubbing
-```typescript
-it('handles server error gracefully', () => {
-  cy.intercept('GET', '/api/data', { statusCode: 500 }).as('serverError');
-  cy.visit('/dashboard');
-  cy.wait('@serverError');
-  cy.get('.error-fallback').should('be.visible');
-});
-```
-
-## CLI Commands
-```bash
-npx cypress open                       # interactive mode
-npx cypress run                        # headless mode
-npx cypress run --spec "cypress/e2e/login.cy.ts"  # specific test
-npx cypress run --browser chrome       # specific browser
-npx cypress run --reporter json        # JSON output
-npx cypress run --record --key <KEY>   # record to Cypress Cloud
-```
+---
 
 ## Best Practices
-- Use `data-testid` or `data-cy` for selectors (never CSS classes)
-- Use `cy.session()` for login state management
-- Use `cy.intercept()` for API mocking, not `cy.server()/cy.route()` (deprecated)
-- Keep tests independent — clean state in `beforeEach`
-- Use fixtures for test data, not hardcoded values
-- Avoid `cy.wait(ms)` — use `cy.wait('@alias')` instead
-- Use TypeScript for type safety
+
+| Practice | Details |
+|----------|---------|
+| **data-testid** | Use data attributes for test selectors |
+| **Custom commands** | Reusable login, setup actions |
+| **Fixtures** | Mock data in cypress/fixtures/ |
+| **Intercept** | cy.intercept() for network stubbing |
+| **Auto-wait** | Cypress auto-waits for elements |
+| **Assertions** | should('be.visible'), should('contain') |
+| **Videos** | Record test runs for debugging |
+| **Retries** | Configure retries for CI stability |
+| **API testing** | cy.request() for backend testing |
+| **Best selectors** | Prefer data-testid over CSS classes |
+
+---
+
+## Rules Integration
+- **E2E**: Page interaction with auto-wait
+- **API**: cy.request for backend testing
+- **Commands**: Custom reusable commands
+- **CI**: Video recording, retries, screenshots

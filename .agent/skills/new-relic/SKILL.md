@@ -3,43 +3,98 @@ name: New Relic
 description: Skill for New Relic — full-stack observability with APM, infrastructure monitoring, logs, browser monitoring, NRQL queries, and REST/NerdGraph API.
 ---
 
-# New Relic — Full-Stack Observability
+# New Relic Skill
 
 ## Overview
-New Relic provides full-stack observability including APM, infrastructure monitoring, log management, browser monitoring, and synthetics with NRQL query language.
+New Relic is a full-stack observability platform providing APM, infrastructure monitoring, log management, browser monitoring, synthetics, and NRQL for querying telemetry data. It supports auto-instrumentation for Node.js, Java, Python, and .NET.
 
-## NRQL (New Relic Query Language)
-```sql
--- Error rate by service
-SELECT percentage(count(*), WHERE error IS true) as 'Error Rate'
-FROM Transaction SINCE 1 hour ago FACET appName
+**References**:
+- [New Relic Documentation](https://docs.newrelic.com/)
+- [NRQL Reference](https://docs.newrelic.com/docs/nrql/get-started/introduction-nrql-new-relics-query-language/)
 
--- Slow transactions
-SELECT average(duration) FROM Transaction
-WHERE duration > 2 FACET name SINCE 1 hour ago LIMIT 20
+---
 
--- Infrastructure disk usage
-SELECT latest(diskUsedPercent) FROM StorageSample
-FACET hostname WHERE diskUsedPercent > 80
+## APM Setup (Node.js)
+
+```javascript
+// Must be first require
+require('newrelic');
+
+// newrelic.js config
+exports.config = {
+  app_name: ['MyApp API'],
+  license_key: process.env.NEW_RELIC_LICENSE_KEY,
+  distributed_tracing: { enabled: true },
+  logging: { level: 'info' },
+  allow_all_headers: true,
+  attributes: { exclude: ['request.headers.cookie', 'request.headers.authorization'] },
+};
 ```
 
-## NerdGraph API (GraphQL)
-```python
-import requests
-headers = {"Api-Key": "YOUR_API_KEY", "Content-Type": "application/json"}
+---
 
-query = """
-{ actor { account(id: YOUR_ACCOUNT_ID) {
-  nrql(query: "SELECT count(*) FROM Transaction SINCE 1 hour ago") {
-    results
+## Custom Instrumentation
+
+```javascript
+const newrelic = require('newrelic');
+
+// Custom transaction
+newrelic.startBackgroundTransaction('processOrder', async () => {
+  const transaction = newrelic.getTransaction();
+  newrelic.addCustomAttributes({ orderId: order.id, userId: user.id, total: order.total });
+  try {
+    await processOrder(order);
+  } catch (error) {
+    newrelic.noticeError(error);
+    throw error;
+  } finally {
+    transaction.end();
   }
-}}}
-"""
-result = requests.post("https://api.newrelic.com/graphql",
-    headers=headers, json={"query": query})
+});
+
+// Custom events
+newrelic.recordCustomEvent('OrderCreated', { orderId: order.id, total: order.total, channel: 'web' });
+
+// Custom metrics
+newrelic.recordMetric('Custom/OrderProcessingTime', durationMs);
 ```
+
+---
+
+## NRQL Queries
+
+```sql
+-- Error rate by endpoint
+SELECT percentage(count(*), WHERE error IS true) FROM Transaction WHERE appName = 'MyApp API' FACET name SINCE 1 hour ago
+
+-- Response time percentiles
+SELECT percentile(duration, 50, 95, 99) FROM Transaction WHERE appName = 'MyApp API' SINCE 1 hour ago TIMESERIES
+
+-- Throughput
+SELECT rate(count(*), 1 minute) FROM Transaction WHERE appName = 'MyApp API' FACET name SINCE 30 minutes ago
+```
+
+---
 
 ## Best Practices
-- Use **distributed tracing** across microservices
-- Configure **alert policies** with dynamic thresholds
-- Implement **SLI/SLO** for service level management
+
+| Practice | Details |
+|----------|---------|
+| **APM** | Auto-instrument with newrelic agent |
+| **Custom events** | recordCustomEvent for business metrics |
+| **Custom attributes** | Add context to transactions |
+| **NRQL** | Query telemetry with SQL-like syntax |
+| **Distributed tracing** | Track requests across services |
+| **Alerts** | NRQL alert conditions |
+| **Dashboards** | Custom NRQL-based dashboards |
+| **Browser** | Real user monitoring for frontend |
+| **Error tracking** | noticeError for custom error capture |
+| **Deployment markers** | Track deploys with change tracking |
+
+---
+
+## Rules Integration
+- **APM**: Auto-instrumentation with custom attributes
+- **Events**: Custom business event recording
+- **NRQL**: SQL-like queries for analysis
+- **Alerting**: NRQL-based alert conditions

@@ -6,106 +6,140 @@ description: Skill for developing with Oracle Database, covering schema design, 
 # Oracle Database Skill
 
 ## Overview
-Oracle Database is an enterprise-grade relational database. Use this skill for mission-critical applications requiring high availability, advanced partitioning, and PL/SQL stored procedures.
+Oracle Database is an enterprise relational database with ACID compliance, PL/SQL, partitioning, advanced indexing, JSON support, and high availability (RAC, Data Guard). Oracle is the standard for enterprise and financial applications.
 
-## Setup & Connection
-```bash
-# Docker (Oracle XE)
-docker run -d --name oracle -p 1521:1521 -e ORACLE_PASSWORD=secret container-registry.oracle.com/database/express:21.3.0-xe
+**References**:
+- [Oracle Documentation](https://docs.oracle.com/en/database/)
+- [PL/SQL Reference](https://docs.oracle.com/en/database/oracle/oracle-database/23/lnpls/)
 
-# Connection string (JDBC)
-jdbc:oracle:thin:@localhost:1521/XEPDB1
-
-# Node.js (oracledb)
-const conn = await oracledb.getConnection({
-  user: 'myuser', password: 'secret', connectString: 'localhost:1521/XEPDB1'
-});
-```
+---
 
 ## Schema Design
+
 ```sql
--- Oracle: UUID with RAW(16) or VARCHAR2(36)
+-- Users
 CREATE TABLE users (
     id RAW(16) DEFAULT SYS_GUID() PRIMARY KEY,
-    email VARCHAR2(255) NOT NULL,
+    email VARCHAR2(255) NOT NULL UNIQUE,
     password_hash VARCHAR2(255) NOT NULL,
-    first_name VARCHAR2(100) NOT NULL,
-    last_name VARCHAR2(100) NOT NULL,
-    is_active NUMBER(1) DEFAULT 1 NOT NULL CHECK (is_active IN (0, 1)),
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT SYSTIMESTAMP NOT NULL,
-    updated_at TIMESTAMP WITH TIME ZONE DEFAULT SYSTIMESTAMP NOT NULL,
-    deleted_at TIMESTAMP WITH TIME ZONE DEFAULT NULL,
-    CONSTRAINT uq_users_email UNIQUE (email)
+    name VARCHAR2(100) NOT NULL,
+    role VARCHAR2(20) DEFAULT 'user' CHECK (role IN ('user','admin','editor')),
+    status VARCHAR2(20) DEFAULT 'active',
+    created_at TIMESTAMP DEFAULT SYSTIMESTAMP,
+    updated_at TIMESTAMP DEFAULT SYSTIMESTAMP
 );
 
-CREATE INDEX idx_users_email ON users (email) WHERE deleted_at IS NULL;  -- Oracle 21c+
--- For older versions use function-based index:
--- CREATE INDEX idx_users_email ON users (CASE WHEN deleted_at IS NULL THEN email END);
+CREATE INDEX idx_users_email ON users(email);
+
+-- Products
+CREATE TABLE products (
+    id RAW(16) DEFAULT SYS_GUID() PRIMARY KEY,
+    name VARCHAR2(200) NOT NULL,
+    slug VARCHAR2(200) NOT NULL UNIQUE,
+    description CLOB,
+    price NUMBER(10) DEFAULT 0 NOT NULL,
+    stock NUMBER(10) DEFAULT 0 NOT NULL,
+    category_id RAW(16) REFERENCES categories(id),
+    status VARCHAR2(10) DEFAULT 'draft' CHECK (status IN ('draft','active','archived')),
+    metadata CLOB CHECK (metadata IS JSON),
+    created_at TIMESTAMP DEFAULT SYSTIMESTAMP
+);
+
+CREATE INDEX idx_products_status ON products(status);
+CREATE INDEX idx_products_category ON products(category_id);
 ```
 
-## PL/SQL Stored Procedures
+---
+
+## Common Queries
+
+```sql
+-- Pagination with OFFSET/FETCH
+SELECT p.id, p.name, p.price, c.name AS category_name
+FROM products p JOIN categories c ON c.id = p.category_id
+WHERE p.status = 'active'
+ORDER BY p.created_at DESC
+OFFSET 0 ROWS FETCH NEXT 20 ROWS ONLY;
+
+-- Window functions
+SELECT FORMAT_DATE(o.created_at, 'YYYY-MM') AS month,
+    COUNT(*) AS total_orders, SUM(o.total) AS revenue,
+    SUM(SUM(o.total)) OVER (ORDER BY TRUNC(o.created_at, 'MM')) AS running_total
+FROM orders o WHERE o.status != 'cancelled'
+GROUP BY TRUNC(o.created_at, 'MM')
+ORDER BY 1 DESC;
+
+-- JSON queries (Oracle 21c+)
+SELECT p.name, JSON_VALUE(p.metadata, '$.color') AS color
+FROM products p
+WHERE JSON_EXISTS(p.metadata, '$.color');
+
+-- MERGE (Upsert)
+MERGE INTO products t USING (SELECT :id AS id, :name AS name, :price AS price FROM DUAL) s
+ON (t.id = s.id)
+WHEN MATCHED THEN UPDATE SET t.name = s.name, t.price = s.price
+WHEN NOT MATCHED THEN INSERT (name, slug, price) VALUES (s.name, :slug, s.price);
+```
+
+---
+
+## PL/SQL Procedure
+
 ```sql
 CREATE OR REPLACE PROCEDURE create_order(
-    p_user_id    IN RAW,
-    p_items      IN SYS.ODCIVARCHAR2LIST,
-    p_order_id   OUT RAW,
-    p_status     OUT VARCHAR2
+    p_user_id IN RAW, p_items IN CLOB, p_order_id OUT RAW
 ) AS
-    v_total NUMBER(12,2) := 0;
+    v_subtotal NUMBER := 0;
+    v_tax NUMBER;
+    v_order_number VARCHAR2(20);
+    v_price NUMBER;
+    v_qty NUMBER;
 BEGIN
+    SELECT 'ORD-' || TO_CHAR(SYSTIMESTAMP, 'YYYYMMDDHH24MISS') INTO v_order_number FROM DUAL;
     p_order_id := SYS_GUID();
 
-    INSERT INTO orders (id, user_id, status, total_amount, created_at, updated_at)
-    VALUES (p_order_id, p_user_id, 'pending', 0, SYSTIMESTAMP, SYSTIMESTAMP);
+    FOR item IN (SELECT * FROM JSON_TABLE(p_items, '$[*]' COLUMNS (
+        product_id VARCHAR2(32) PATH '$.productId', quantity NUMBER PATH '$.quantity'
+    ))) LOOP
+        SELECT price INTO v_price FROM products WHERE id = HEXTORAW(item.product_id) AND stock >= item.quantity FOR UPDATE;
+        UPDATE products SET stock = stock - item.quantity WHERE id = HEXTORAW(item.product_id);
+        INSERT INTO order_items (order_id, product_id, quantity, unit_price, total)
+        VALUES (p_order_id, HEXTORAW(item.product_id), item.quantity, v_price, v_price * item.quantity);
+        v_subtotal := v_subtotal + (v_price * item.quantity);
+    END LOOP;
 
-    -- Process items...
-    UPDATE orders SET total_amount = v_total, updated_at = SYSTIMESTAMP
-    WHERE id = p_order_id;
+    v_tax := ROUND(v_subtotal * 0.11);
+    INSERT INTO orders (id, order_number, user_id, subtotal, tax, total)
+    VALUES (p_order_id, v_order_number, p_user_id, v_subtotal, v_tax, v_subtotal + v_tax);
 
-    p_status := 'SUCCESS';
     COMMIT;
 EXCEPTION
-    WHEN OTHERS THEN
-        ROLLBACK;
-        p_status := 'ERROR: ' || SQLERRM;
-        RAISE;
-END create_order;
+    WHEN OTHERS THEN ROLLBACK; RAISE;
+END;
 /
 ```
 
-## Partitioning
-```sql
-CREATE TABLE events (
-    id RAW(16) DEFAULT SYS_GUID() NOT NULL,
-    event_type VARCHAR2(50) NOT NULL,
-    payload CLOB CHECK (payload IS JSON),
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT SYSTIMESTAMP NOT NULL
-) PARTITION BY RANGE (created_at) (
-    PARTITION p_2026_q1 VALUES LESS THAN (TIMESTAMP '2026-04-01 00:00:00 +00:00'),
-    PARTITION p_2026_q2 VALUES LESS THAN (TIMESTAMP '2026-07-01 00:00:00 +00:00'),
-    PARTITION p_future VALUES LESS THAN (MAXVALUE)
-);
-```
+---
 
-## Performance Tuning
-```sql
--- Execution plan
-EXPLAIN PLAN FOR SELECT * FROM users WHERE email = 'test@example.com';
-SELECT * FROM TABLE(DBMS_XPLAN.DISPLAY);
+## Best Practices
 
--- AWR report for performance analysis
-@?/rdbms/admin/awrrpt.sql
-```
+| Practice | Details |
+|----------|---------|
+| **SYS_GUID** | Use RAW(16) with SYS_GUID() for UUIDs |
+| **VARCHAR2** | Prefer over CHAR for variable-length strings |
+| **CLOB** | Use for large text/JSON data |
+| **JSON** | CHECK constraint IS JSON, JSON_VALUE, JSON_TABLE |
+| **MERGE** | Use for upsert operations |
+| **PL/SQL** | Stored procedures for complex business logic |
+| **FOR UPDATE** | Lock rows in transactions |
+| **Partitioning** | Range/hash partitions for large tables |
+| **Indexes** | B-tree, bitmap, function-based indexes |
+| **Sequences** | Use sequences for auto-increment |
 
-## Key Differences
-| Feature | Oracle | PostgreSQL |
-|---------|--------|------------|
-| UUID | `SYS_GUID()` / `RAW(16)` | `gen_random_uuid()` / `UUID` |
-| Boolean | `NUMBER(1)` | Native `BOOLEAN` |
-| Auto-update timestamp | Trigger required | Trigger required |
-| JSON | `CLOB CHECK (IS JSON)` (21c: native JSON) | Native `JSONB` |
-| Sequences | `CREATE SEQUENCE` | `SERIAL` / `GENERATED` |
+---
 
 ## Rules Integration
-- **Database**: UUID via `SYS_GUID()`, `RAW(16)` storage, audit columns, partitioning for large tables
-- **Security**: INVOKER rights, fine-grained access control, VPD, Oracle Data Redaction
+- **Schema**: RAW UUIDs, CHECK constraints, JSON columns
+- **Queries**: OFFSET/FETCH, window functions, MERGE
+- **PL/SQL**: Stored procedures with transactions
+- **Performance**: Indexes, partitioning, explain plans

@@ -6,175 +6,172 @@ description: Skill for building reactive web applications with Vue.js 3 — cove
 # Vue.js Skill
 
 ## Overview
-Vue.js is a progressive JavaScript framework for building user interfaces. This skill covers Vue 3 with the Composition API as the standard approach.
+Vue.js 3 is a progressive JavaScript framework for building reactive user interfaces. It provides the Composition API with `ref`/`reactive`, components with `<script setup>`, Pinia for state management, Vue Router for SPA routing, and composables for logic reuse.
 
-**Reference**: [Vue.js Documentation](https://vuejs.org/guide/introduction.html)
+**References**:
+- [Vue.js Documentation](https://vuejs.org/)
+- [Pinia](https://pinia.vuejs.org/)
+- [Vue Router](https://router.vuejs.org/)
 
-## Project Setup
+---
+
+## Setup
+
 ```bash
-npx -y create-vue@latest ./  # Select: TypeScript, Router, Pinia, ESLint, Prettier
-# OR with Vite
-npx -y create-vite@latest ./ --template vue-ts
+npm create vue@latest myapp -- --typescript --router --pinia --eslint
+cd myapp && npm install
+npm run dev
 ```
 
-## Component Structure (Composition API + `<script setup>`)
+---
+
+## Component (script setup)
+
 ```vue
+<!-- src/components/ProductCard.vue -->
 <script setup lang="ts">
-import { ref, computed, onMounted } from "vue";
-import type { User } from "@/types";
+import type { Product } from '@/types';
 
-// Props
-const props = defineProps<{
-  userId: string;
-  title?: string;
-}>();
+const props = defineProps<{ product: Product }>();
+const emit = defineEmits<{ addToCart: [product: Product] }>();
 
-// Emits
-const emit = defineEmits<{
-  submit: [user: User];
-  cancel: [];
-}>();
+const isAdding = ref(false);
 
-// Reactive state
-const name = ref("");
-const users = ref<User[]>([]);
-const loading = ref(false);
-
-// Computed
-const filteredUsers = computed(() =>
-  users.value.filter(u => u.name.includes(name.value))
-);
-
-// Methods
-async function fetchUsers() {
-  loading.value = true;
-  try {
-    const res = await fetch("/api/users");
-    users.value = await res.json();
-  } finally {
-    loading.value = false;
-  }
+async function handleAdd() {
+  isAdding.value = true;
+  emit('addToCart', props.product);
+  setTimeout(() => isAdding.value = false, 500);
 }
-
-// Lifecycle
-onMounted(() => fetchUsers());
 </script>
 
 <template>
-  <div class="user-list">
-    <h2>{{ props.title ?? "Users" }}</h2>
-    <input v-model="name" placeholder="Search..." />
-    <div v-if="loading">Loading...</div>
-    <ul v-else>
-      <li v-for="user in filteredUsers" :key="user.id">
-        {{ user.name }}
-      </li>
-    </ul>
-    <button @click="emit('cancel')">Cancel</button>
+  <div class="card">
+    <img :src="product.images[0]" :alt="product.name" />
+    <div class="body">
+      <h3>{{ product.name }}</h3>
+      <p class="price">${{ product.price.toLocaleString() }}</p>
+      <div class="rating">★ {{ product.rating.toFixed(1) }}</div>
+      <button @click="handleAdd" :disabled="isAdding">
+        {{ isAdding ? 'Adding...' : 'Add to Cart' }}
+      </button>
+    </div>
   </div>
 </template>
 
 <style scoped>
-.user-list { padding: 1rem; }
+.card { border: 1px solid #e5e7eb; border-radius: 1rem; overflow: hidden; transition: box-shadow 0.2s; }
+.card:hover { box-shadow: 0 8px 25px rgba(0,0,0,0.1); }
+.price { color: #6366f1; font-weight: 700; }
+button { width: 100%; padding: 0.75rem; background: #6366f1; color: white; border: none; border-radius: 0.5rem; cursor: pointer; }
 </style>
 ```
 
-## State Management (Pinia)
+---
+
+## Pinia Store
+
 ```typescript
-// stores/user.ts
-import { defineStore } from "pinia";
-import { ref, computed } from "vue";
+// src/stores/cart.ts
+import { defineStore } from 'pinia';
 
-export const useUserStore = defineStore("user", () => {
-  const users = ref<User[]>([]);
+interface CartItem { productId: string; name: string; price: number; quantity: number; }
+
+export const useCartStore = defineStore('cart', () => {
+  const items = ref<CartItem[]>([]);
+  const total = computed(() => items.value.reduce((sum, i) => sum + i.price * i.quantity, 0));
+  const count = computed(() => items.value.reduce((sum, i) => sum + i.quantity, 0));
+
+  function add(product: Product) {
+    const existing = items.value.find(i => i.productId === product.id);
+    if (existing) { existing.quantity++; }
+    else { items.value.push({ productId: product.id, name: product.name, price: product.price, quantity: 1 }); }
+  }
+
+  function remove(productId: string) { items.value = items.value.filter(i => i.productId !== productId); }
+  function clear() { items.value = []; }
+
+  return { items, total, count, add, remove, clear };
+}, { persist: true });
+```
+
+---
+
+## Composables
+
+```typescript
+// src/composables/useProducts.ts
+export function useProducts() {
+  const products = ref<Product[]>([]);
   const loading = ref(false);
-  const currentUser = ref<User | null>(null);
+  const error = ref('');
 
-  const activeUsers = computed(() => users.value.filter(u => u.active));
-
-  async function fetchUsers() {
+  async function fetchProducts(params?: { search?: string; category?: string; page?: number }) {
     loading.value = true;
+    error.value = '';
     try {
-      const res = await fetch("/api/users");
-      users.value = await res.json();
+      const query = new URLSearchParams(params as any).toString();
+      const res = await fetch(`/api/products?${query}`);
+      const data = await res.json();
+      products.value = data.data;
+    } catch (e) {
+      error.value = (e as Error).message;
     } finally {
       loading.value = false;
     }
   }
 
-  function setCurrentUser(user: User) {
-    currentUser.value = user;
-  }
-
-  return { users, loading, currentUser, activeUsers, fetchUsers, setCurrentUser };
-});
+  return { products, loading, error, fetchProducts };
+}
 ```
 
-## Routing (Vue Router)
+---
+
+## Vue Router
+
 ```typescript
-// router/index.ts
-import { createRouter, createWebHistory } from "vue-router";
+// src/router/index.ts
+import { createRouter, createWebHistory } from 'vue-router';
 
 const router = createRouter({
   history: createWebHistory(),
   routes: [
-    { path: "/", component: () => import("@/views/Home.vue") },
-    { path: "/users", component: () => import("@/views/Users.vue") },
-    { path: "/users/:id", component: () => import("@/views/UserDetail.vue"), props: true },
-    { path: "/dashboard", component: () => import("@/views/Dashboard.vue"), meta: { requiresAuth: true } },
-    { path: "/:pathMatch(.*)*", component: () => import("@/views/NotFound.vue") },
+    { path: '/', component: () => import('@/views/HomeView.vue') },
+    { path: '/products', component: () => import('@/views/ProductsView.vue') },
+    { path: '/products/:slug', component: () => import('@/views/ProductDetailView.vue'), props: true },
+    { path: '/dashboard', component: () => import('@/views/DashboardView.vue'), meta: { requiresAuth: true } },
   ],
 });
 
-// Navigation guard
 router.beforeEach((to) => {
   const auth = useAuthStore();
-  if (to.meta.requiresAuth && !auth.isAuthenticated) {
-    return { path: "/login", query: { redirect: to.fullPath } };
-  }
+  if (to.meta.requiresAuth && !auth.isAuthenticated) return '/login';
 });
 
 export default router;
 ```
 
-## Composables (Custom Hooks)
-```typescript
-// composables/useFetch.ts
-import { ref, watchEffect } from "vue";
-
-export function useFetch<T>(url: string) {
-  const data = ref<T | null>(null);
-  const error = ref<Error | null>(null);
-  const loading = ref(true);
-
-  watchEffect(async () => {
-    loading.value = true;
-    try {
-      const res = await fetch(url);
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      data.value = await res.json();
-    } catch (e) {
-      error.value = e instanceof Error ? e : new Error(String(e));
-    } finally {
-      loading.value = false;
-    }
-  });
-
-  return { data, error, loading };
-}
-```
+---
 
 ## Best Practices
 
-| Practice | Description |
-|----------|-------------|
-| **`<script setup>`** | Always use for cleaner, more performant components |
-| **Composition API** | Preferred over Options API for new projects |
-| **Pinia** | Official state management — replaces Vuex |
-| **TypeScript** | Always use with `lang="ts"` |
-| **Composables** | Extract reusable logic into `composables/` |
-| **`<style scoped>`** | Scope CSS to prevent leaking styles |
-| **Lazy routes** | Use dynamic `import()` for route components |
-| **`v-model`** | For two-way binding on inputs and custom components |
-| **`defineProps`** | Type-safe props with generic syntax |
-| **`shallowRef`** | For large objects/arrays that don't need deep reactivity |
+| Practice | Details |
+|----------|---------|
+| **script setup** | Use `<script setup>` for concise Composition API |
+| **defineProps/Emits** | Type-safe props and events |
+| **ref/reactive** | ref for primitives, reactive for objects |
+| **computed** | Derived state with automatic tracking |
+| **Pinia** | Composable-style stores with persist plugin |
+| **Composables** | Reusable logic with `use*` prefix |
+| **Router** | Lazy-loaded routes with navigation guards |
+| **Scoped CSS** | Component-scoped styles by default |
+| **v-model** | Two-way binding for form inputs |
+| **watch/watchEffect** | Side effects on reactive changes |
+
+---
+
+## Rules Integration
+- **Components**: script setup + defineProps/Emits
+- **State**: Pinia stores with computed/actions
+- **Composables**: Reusable async data fetching logic
+- **Router**: Lazy routes with auth guards
+- **Reactivity**: ref, reactive, computed, watch

@@ -6,191 +6,197 @@ description: Skill for Java development, covering project setup with Spring Boot
 # Java Skill
 
 ## Overview
-Java is a strongly-typed, object-oriented language for enterprise applications. Use this skill with Spring Boot for web services, microservices, and enterprise backends.
+Java is the enterprise standard for backend development. Spring Boot provides auto-configuration, dependency injection, JPA/Hibernate ORM, Spring Security, and REST API development. Modern Java (17+) includes records, sealed classes, pattern matching, and text blocks.
 
-## Project Setup
+**References**:
+- [Spring Boot Documentation](https://docs.spring.io/spring-boot/docs/current/reference/)
+- [Java Documentation](https://docs.oracle.com/en/java/)
 
-### Spring Boot (Spring Initializr)
-```bash
-# Generate via CLI
-curl https://start.spring.io/starter.tgz \
-  -d type=gradle-project \
-  -d language=java \
-  -d bootVersion=3.2.2 \
-  -d javaVersion=21 \
-  -d dependencies=web,data-jpa,postgresql,validation,security,actuator \
-  -d groupId=com.myapp \
-  -d artifactId=my-service | tar -xzvf -
-```
+---
 
-### Directory Structure (Clean Architecture)
+## Project Structure (Spring Boot)
+
 ```
 src/main/java/com/myapp/
-├── MyApplication.java              # Entry point
-├── domain/                          # Business logic (no framework deps)
-│   ├── model/                       # Entities, value objects
-│   ├── service/                     # Domain services
-│   ├── repository/                  # Repository interfaces (DIP)
-│   └── exception/                   # Domain exceptions
-├── application/                     # Use cases / orchestration
-│   ├── dto/                         # Data Transfer Objects
-│   ├── mapper/                      # Entity ↔ DTO mappers
-│   └── usecase/                     # Application services
-├── infrastructure/                  # Framework + external
-│   ├── persistence/                 # JPA repositories
-│   ├── config/                      # Spring config, security
-│   └── external/                    # Third-party integrations
-└── api/                             # HTTP layer
-    ├── controller/                  # REST controllers
-    ├── request/                     # Request DTOs
-    ├── response/                    # Response DTOs
-    └── advice/                      # Global exception handlers
+├── MyAppApplication.java
+├── config/
+│   └── SecurityConfig.java
+├── controller/
+│   └── ProductController.java
+├── service/
+│   └── ProductService.java
+├── repository/
+│   └── ProductRepository.java
+├── model/
+│   ├── entity/Product.java
+│   └── dto/ProductDTO.java
+└── exception/
+    └── GlobalExceptionHandler.java
 ```
 
-## Entity with JPA & UUID
+---
+
+## Entity
+
 ```java
 @Entity
-@Table(name = "users")
-@SQLRestriction("deleted_at IS NULL")  // Soft delete filter
-public class User {
-
+@Table(name = "products", indexes = {
+    @Index(name = "idx_status", columnList = "status"),
+    @Index(name = "idx_category", columnList = "category_id")
+})
+public class Product {
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
-    @Column(columnDefinition = "uuid")
     private UUID id;
 
-    @Column(nullable = false, unique = true, length = 255)
-    private String email;
+    @Column(nullable = false, length = 200)
+    private String name;
 
-    @Column(name = "password_hash", nullable = false)
-    private String passwordHash;
+    @Column(unique = true, nullable = false)
+    private String slug;
 
-    @Column(name = "first_name", nullable = false, length = 100)
-    private String firstName;
+    @Column(columnDefinition = "TEXT")
+    private String description;
 
-    @Column(name = "last_name", nullable = false, length = 100)
-    private String lastName;
+    @Column(nullable = false)
+    private Integer price = 0;
 
-    @Column(name = "is_active", nullable = false)
-    private boolean isActive = true;
+    @Column(nullable = false)
+    private Integer stock = 0;
 
-    @CreationTimestamp
-    @Column(name = "created_at", nullable = false, updatable = false)
-    private Instant createdAt;
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 10)
+    private ProductStatus status = ProductStatus.DRAFT;
 
-    @UpdateTimestamp
-    @Column(name = "updated_at", nullable = false)
-    private Instant updatedAt;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "category_id", nullable = false)
+    private Category category;
 
-    @Column(name = "deleted_at")
-    private Instant deletedAt;
+    @Column(name = "created_at", updatable = false)
+    @CreatedDate
+    private LocalDateTime createdAt;
 
-    // Constructors, getters/setters, builder pattern...
+    // Getters, setters
 }
+
+public enum ProductStatus { DRAFT, ACTIVE, ARCHIVED }
 ```
 
-## Repository (Spring Data JPA)
+---
+
+## Repository
+
 ```java
-// Domain interface (DIP — high-level defines contract)
-public interface UserRepository {
-    Optional<User> findById(UUID id);
-    Optional<User> findByEmail(String email);
-    User save(User user);
-    void deleteById(UUID id);
-    Page<User> findAll(Pageable pageable);
-}
+public interface ProductRepository extends JpaRepository<Product, UUID>, JpaSpecificationExecutor<Product> {
+    Optional<Product> findBySlug(String slug);
+    Page<Product> findByStatus(ProductStatus status, Pageable pageable);
 
-// Infrastructure implementation
-@Repository
-public interface JpaUserRepository extends JpaRepository<User, UUID>, UserRepository {
-    Optional<User> findByEmailAndDeletedAtIsNull(String email);
-
-    @Query("SELECT u FROM User u WHERE u.isActive = true AND u.deletedAt IS NULL")
-    Page<User> findAllActive(Pageable pageable);
+    @Query("SELECT p FROM Product p WHERE p.status = :status AND p.name LIKE %:search%")
+    Page<Product> searchProducts(@Param("status") ProductStatus status, @Param("search") String search, Pageable pageable);
 }
 ```
 
-## REST Controller
+---
+
+## Service
+
+```java
+@Service
+@Transactional(readOnly = true)
+public class ProductService {
+    private final ProductRepository productRepo;
+
+    public ProductService(ProductRepository productRepo) {
+        this.productRepo = productRepo;
+    }
+
+    public Page<ProductDTO> listProducts(int page, int size, String search) {
+        Pageable pageable = PageRequest.of(page - 1, size, Sort.by("createdAt").descending());
+        Page<Product> products = (search != null && !search.isEmpty())
+            ? productRepo.searchProducts(ProductStatus.ACTIVE, search, pageable)
+            : productRepo.findByStatus(ProductStatus.ACTIVE, pageable);
+        return products.map(ProductDTO::fromEntity);
+    }
+
+    @Transactional
+    public ProductDTO createProduct(CreateProductRequest req) {
+        Product product = new Product();
+        product.setName(req.name());
+        product.setSlug(req.name().toLowerCase().replaceAll("[^a-z0-9]+", "-"));
+        product.setPrice(req.price());
+        product.setStock(req.stock());
+        return ProductDTO.fromEntity(productRepo.save(product));
+    }
+}
+```
+
+---
+
+## Controller
+
 ```java
 @RestController
-@RequestMapping("/api/v1/users")
-@Validated
-public class UserController {
+@RequestMapping("/api/products")
+public class ProductController {
+    private final ProductService productService;
 
-    private final UserService userService;
+    public ProductController(ProductService productService) {
+        this.productService = productService;
+    }
 
-    public UserController(UserService userService) {
-        this.userService = userService;
+    @GetMapping
+    public Page<ProductDTO> listProducts(
+        @RequestParam(defaultValue = "1") int page,
+        @RequestParam(defaultValue = "20") int size,
+        @RequestParam(required = false) String search
+    ) {
+        return productService.listProducts(page, size, search);
     }
 
     @PostMapping
-    @ResponseStatus(HttpStatus.CREATED)
-    public UserResponse createUser(@Valid @RequestBody CreateUserRequest request) {
-        return userService.createUser(request);
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<ProductDTO> createProduct(@Valid @RequestBody CreateProductRequest req) {
+        return ResponseEntity.status(201).body(productService.createProduct(req));
     }
+}
 
-    @GetMapping("/{id}")
-    public UserResponse getUser(@PathVariable UUID id) {
-        return userService.findById(id)
-            .orElseThrow(() -> new ResourceNotFoundException("User", id));
+// DTO with Java 17 record
+public record CreateProductRequest(
+    @NotBlank String name,
+    @Min(0) Integer price,
+    @Min(0) Integer stock,
+    @NotNull UUID categoryId
+) {}
+
+public record ProductDTO(UUID id, String name, String slug, Integer price, String status, LocalDateTime createdAt) {
+    public static ProductDTO fromEntity(Product p) {
+        return new ProductDTO(p.getId(), p.getName(), p.getSlug(), p.getPrice(), p.getStatus().name(), p.getCreatedAt());
     }
 }
 ```
 
-## Global Exception Handler
-```java
-@RestControllerAdvice
-public class GlobalExceptionHandler {
+---
 
-    @ExceptionHandler(ResourceNotFoundException.class)
-    @ResponseStatus(HttpStatus.NOT_FOUND)
-    public ErrorResponse handleNotFound(ResourceNotFoundException ex) {
-        return new ErrorResponse("NOT_FOUND", ex.getMessage());
-    }
+## Best Practices
 
-    @ExceptionHandler(MethodArgumentNotValidException.class)
-    @ResponseStatus(HttpStatus.BAD_REQUEST)
-    public ErrorResponse handleValidation(MethodArgumentNotValidException ex) {
-        var errors = ex.getBindingResult().getFieldErrors().stream()
-            .map(e -> e.getField() + ": " + e.getDefaultMessage())
-            .toList();
-        return new ErrorResponse("VALIDATION_ERROR", "Invalid request", errors);
-    }
+| Practice | Details |
+|----------|---------|
+| **Records** | Use Java records for DTOs (immutable) |
+| **UUID** | GenerationType.UUID for primary keys |
+| **Pagination** | Spring Data Page with Pageable |
+| **@Transactional** | readOnly=true for reads, writable for writes |
+| **Constructor injection** | Prefer over @Autowired |
+| **Validation** | @Valid with Jakarta Bean Validation |
+| **Enum** | @Enumerated(STRING) for statuses |
+| **FetchType.LAZY** | Avoid N+1 with lazy loading |
+| **@PreAuthorize** | Method-level security |
+| **Exception handler** | @ControllerAdvice for global error handling |
 
-    @ExceptionHandler(Exception.class)
-    @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
-    public ErrorResponse handleGeneral(Exception ex) {
-        log.error("Unhandled exception", ex);
-        return new ErrorResponse("INTERNAL_ERROR", "An unexpected error occurred");
-    }
-}
-```
-
-## Testing
-```java
-@SpringBootTest
-@AutoConfigureMockMvc
-class UserControllerTest {
-
-    @Autowired private MockMvc mockMvc;
-    @MockBean private UserService userService;
-
-    @Test
-    void createUser_shouldReturn201() throws Exception {
-        var request = new CreateUserRequest("test@example.com", "John", "Doe", "password123");
-        when(userService.createUser(any())).thenReturn(new UserResponse(UUID.randomUUID(), "test@example.com"));
-
-        mockMvc.perform(post("/api/v1/users")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(request)))
-            .andExpect(status().isCreated())
-            .andExpect(jsonPath("$.email").value("test@example.com"));
-    }
-}
-```
+---
 
 ## Rules Integration
-- **SOLID**: Clean Architecture layers, DI via Spring constructor injection, Repository pattern
-- **Security**: Spring Security, `@Valid` annotations, BCryptPasswordEncoder, JWT
-- **Database**: UUID PKs, JPA audit annotations, soft delete, Flyway/Liquibase migrations
-- **Dependencies**: Check with `gradle dependencyCheckAnalyze` or `mvn dependency-check:check`
+- **Entity**: JPA with UUID, indexes, enums
+- **Repository**: JpaRepository with custom queries
+- **Service**: Transactional business logic
+- **Controller**: REST endpoints with validation
+- **DTOs**: Java records for request/response

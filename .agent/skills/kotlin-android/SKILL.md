@@ -6,122 +6,125 @@ description: Skill for native Android development with Kotlin — covering Jetpa
 # Kotlin / Android Skill
 
 ## Overview
-Kotlin is the official language for Android development. This skill covers Jetpack Compose as the modern UI toolkit.
+Kotlin is the preferred language for Android development. Modern Android uses Jetpack Compose for declarative UI, MVVM architecture, Coroutines for async, Room for local DB, Retrofit for REST APIs, Hilt for DI, and Material Design 3.
 
-**Reference**: [Android Developers](https://developer.android.com/kotlin)
+**References**:
+- [Android Developers](https://developer.android.com/)
+- [Jetpack Compose](https://developer.android.com/compose)
+- [Kotlin Documentation](https://kotlinlang.org/docs/)
 
-## Jetpack Compose
+---
+
+## Jetpack Compose UI
+
 ```kotlin
 @Composable
-fun UserListScreen(viewModel: UserViewModel = hiltViewModel()) {
-    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+fun ProductListScreen(viewModel: ProductViewModel = hiltViewModel()) {
+    val products by viewModel.products.collectAsStateWithLifecycle()
+    val isLoading by viewModel.isLoading.collectAsStateWithLifecycle()
 
     Scaffold(
-        topBar = { TopAppBar(title = { Text("Users") }) },
-        floatingActionButton = {
-            FloatingActionButton(onClick = { /* navigate */ }) {
-                Icon(Icons.Default.Add, contentDescription = "Add")
-            }
-        }
+        topBar = { TopAppBar(title = { Text("Products") }) },
+        floatingActionButton = { FloatingActionButton(onClick = { /* navigate to create */ }) { Icon(Icons.Default.Add, "Add") } }
     ) { padding ->
-        when (val state = uiState) {
-            is UiState.Loading -> CircularProgressIndicator(Modifier.padding(padding))
-            is UiState.Success -> {
-                LazyColumn(contentPadding = padding) {
-                    items(state.users, key = { it.id }) { user ->
-                        UserCard(user = user, onClick = { viewModel.selectUser(it) })
-                    }
+        if (isLoading) {
+            Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { CircularProgressIndicator() }
+        } else {
+            LazyColumn(Modifier.padding(padding)) {
+                items(products, key = { it.id }) { product ->
+                    ProductCard(product = product, onClick = { /* navigate */ })
                 }
             }
-            is UiState.Error -> Text("Error: ${state.message}", Modifier.padding(padding))
         }
     }
 }
 
 @Composable
-fun UserCard(user: User, onClick: (User) -> Unit) {
-    Card(
-        modifier = Modifier.fillMaxWidth().padding(8.dp).clickable { onClick(user) },
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
-    ) {
-        Row(modifier = Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
-            AsyncImage(model = user.avatarUrl, contentDescription = null,
-                modifier = Modifier.size(48.dp).clip(CircleShape))
-            Spacer(Modifier.width(12.dp))
-            Column {
-                Text(user.name, style = MaterialTheme.typography.titleMedium)
-                Text(user.email, style = MaterialTheme.typography.bodySmall)
+fun ProductCard(product: Product, onClick: () -> Unit) {
+    Card(Modifier.fillMaxWidth().padding(8.dp).clickable(onClick = onClick), shape = RoundedCornerShape(16.dp)) {
+        Row(Modifier.padding(16.dp)) {
+            AsyncImage(model = product.imageUrl, contentDescription = product.name, modifier = Modifier.size(80.dp).clip(RoundedCornerShape(12.dp)))
+            Column(Modifier.padding(start = 12.dp)) {
+                Text(product.name, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+                Text("$${product.price / 100.0}", color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
+                Text("★ ${product.rating}", style = MaterialTheme.typography.bodySmall)
             }
         }
     }
 }
 ```
 
-## ViewModel + Coroutines
+---
+
+## ViewModel
+
 ```kotlin
 @HiltViewModel
-class UserViewModel @Inject constructor(
-    private val repository: UserRepository
-) : ViewModel() {
-    private val _uiState = MutableStateFlow<UiState>(UiState.Loading)
-    val uiState: StateFlow<UiState> = _uiState.asStateFlow()
+class ProductViewModel @Inject constructor(private val repository: ProductRepository) : ViewModel() {
+    private val _products = MutableStateFlow<List<Product>>(emptyList())
+    val products: StateFlow<List<Product>> = _products.asStateFlow()
 
-    init { fetchUsers() }
+    private val _isLoading = MutableStateFlow(false)
+    val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
 
-    fun fetchUsers() {
+    init { loadProducts() }
+
+    private fun loadProducts() {
         viewModelScope.launch {
-            _uiState.value = UiState.Loading
-            repository.getUsers()
-                .onSuccess { _uiState.value = UiState.Success(it) }
-                .onFailure { _uiState.value = UiState.Error(it.message ?: "Unknown error") }
+            _isLoading.value = true
+            _products.value = repository.getProducts()
+            _isLoading.value = false
         }
     }
 }
-
-sealed interface UiState {
-    data object Loading : UiState
-    data class Success(val users: List<User>) : UiState
-    data class Error(val message: String) : UiState
-}
 ```
 
-## Room Database
+---
+
+## Retrofit API
+
 ```kotlin
-@Entity(tableName = "users")
-data class UserEntity(
-    @PrimaryKey val id: String,
-    val name: String,
-    val email: String,
-    @ColumnInfo(name = "created_at") val createdAt: Long = System.currentTimeMillis()
-)
+interface ApiService {
+    @GET("api/products")
+    suspend fun getProducts(@Query("page") page: Int = 1): PaginatedResponse<Product>
 
-@Dao
-interface UserDao {
-    @Query("SELECT * FROM users ORDER BY created_at DESC")
-    fun getAll(): Flow<List<UserEntity>>
-
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun insertAll(users: List<UserEntity>)
-
-    @Delete
-    suspend fun delete(user: UserEntity)
+    @POST("api/products")
+    suspend fun createProduct(@Body data: CreateProductRequest): Product
 }
 
-@Database(entities = [UserEntity::class], version = 1)
-abstract class AppDatabase : RoomDatabase() {
-    abstract fun userDao(): UserDao
+@Module
+@InstallIn(SingletonComponent::class)
+object NetworkModule {
+    @Provides @Singleton
+    fun provideApiService(): ApiService = Retrofit.Builder()
+        .baseUrl(BuildConfig.API_URL)
+        .addConverterFactory(GsonConverterFactory.create())
+        .build()
+        .create(ApiService::class.java)
 }
 ```
+
+---
 
 ## Best Practices
 
-| Practice | Description |
-|----------|-------------|
-| **Jetpack Compose** | Modern declarative UI (over XML) |
-| **MVVM + UiState** | `sealed interface` for UI states |
-| **Coroutines + Flow** | For async operations |
-| **Hilt** | Dependency injection |
-| **Room** | Type-safe local database |
-| **Retrofit** | HTTP client with coroutine support |
-| **Navigation Compose** | Type-safe navigation |
-| **Material 3** | Follow Material Design 3 guidelines |
+| Practice | Details |
+|----------|---------|
+| **Compose** | Declarative UI with @Composable functions |
+| **MVVM** | ViewModel + StateFlow for state |
+| **Coroutines** | viewModelScope for async operations |
+| **Hilt** | Dependency injection with @HiltViewModel |
+| **Room** | Local database with type-safe queries |
+| **Retrofit** | Type-safe HTTP client with suspend |
+| **Navigation** | Jetpack Navigation Compose |
+| **Material 3** | MaterialTheme for consistent design |
+| **StateFlow** | Reactive state with lifecycle awareness |
+| **Coil** | AsyncImage for image loading |
+
+---
+
+## Rules Integration
+- **UI**: Jetpack Compose with Material Design 3
+- **Architecture**: MVVM with ViewModel + StateFlow
+- **Network**: Retrofit with coroutines
+- **DI**: Hilt for dependency injection

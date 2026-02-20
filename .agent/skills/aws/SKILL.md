@@ -6,106 +6,119 @@ description: Skill for Amazon Web Services — covering EC2, S3, Lambda, RDS, Cl
 # AWS Services Skill
 
 ## Overview
-Amazon Web Services is the leading cloud platform. This skill covers core AWS services commonly used in application development and deployment.
+Amazon Web Services (AWS) is the leading cloud platform providing compute (EC2, Lambda), storage (S3), databases (RDS, DynamoDB), networking (VPC, CloudFront), messaging (SQS, SNS), containers (ECS/Fargate), and IAM for security.
 
-**Reference**: [AWS Documentation](https://docs.aws.amazon.com/)
+**References**:
+- [AWS Documentation](https://docs.aws.amazon.com/)
+- [AWS SDK for JavaScript v3](https://docs.aws.amazon.com/AWSJavaScriptSDK/v3/latest/)
 
-## AWS CLI Configuration
-```bash
-aws configure
-# AWS Access Key ID: AKIA...
-# AWS Secret Access Key: ...
-# Default region name: ap-southeast-1
-# Default output format: json
-```
+---
 
-## S3 (Object Storage)
-```bash
-aws s3 mb s3://my-bucket-name
-aws s3 cp ./file.txt s3://my-bucket/uploads/
-aws s3 sync ./dist s3://my-bucket/static/ --delete
-aws s3 ls s3://my-bucket/ --recursive
-```
+## S3 (File Storage)
+
 ```typescript
-// Node.js SDK v3
-import { S3Client, PutObjectCommand, GetObjectCommand } from "@aws-sdk/client-s3";
-import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
+import { S3Client, PutObjectCommand, GetObjectCommand, DeleteObjectCommand } from '@aws-sdk/client-s3';
+import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 
-const s3 = new S3Client({ region: "ap-southeast-1" });
+const s3 = new S3Client({ region: process.env.AWS_REGION });
+const BUCKET = process.env.AWS_S3_BUCKET!;
 
-// Upload
-await s3.send(new PutObjectCommand({
-  Bucket: "my-bucket", Key: `uploads/${filename}`, Body: fileBuffer, ContentType: "image/png",
-}));
+export async function uploadFile(key: string, body: Buffer, contentType: string) {
+  await s3.send(new PutObjectCommand({ Bucket: BUCKET, Key: key, Body: body, ContentType: contentType }));
+  return `https://${BUCKET}.s3.amazonaws.com/${key}`;
+}
 
-// Pre-signed URL (temporary access)
-const url = await getSignedUrl(s3, new GetObjectCommand({ Bucket: "my-bucket", Key: "file.pdf" }), { expiresIn: 3600 });
-```
+export async function getPresignedUrl(key: string, expiresIn = 3600) {
+  return getSignedUrl(s3, new GetObjectCommand({ Bucket: BUCKET, Key: key }), { expiresIn });
+}
 
-## Lambda (Serverless Functions)
-```typescript
-// handler.ts
-import { APIGatewayProxyEvent, APIGatewayProxyResult } from "aws-lambda";
-
-export const handler = async (event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> => {
-  try {
-    const body = JSON.parse(event.body || "{}");
-    const result = await processData(body);
-    return { statusCode: 200, headers: { "Content-Type": "application/json" }, body: JSON.stringify(result) };
-  } catch (error) {
-    return { statusCode: 500, body: JSON.stringify({ error: "Internal server error" }) };
-  }
-};
-```
-
-## IAM Policy
-```json
-{
-  "Version": "2012-10-17",
-  "Statement": [
-    {
-      "Effect": "Allow",
-      "Action": ["s3:GetObject", "s3:PutObject"],
-      "Resource": "arn:aws:s3:::my-bucket/*"
-    },
-    {
-      "Effect": "Allow",
-      "Action": ["dynamodb:GetItem", "dynamodb:PutItem", "dynamodb:Query"],
-      "Resource": "arn:aws:dynamodb:*:*:table/MyTable"
-    }
-  ]
+export async function deleteFile(key: string) {
+  await s3.send(new DeleteObjectCommand({ Bucket: BUCKET, Key: key }));
 }
 ```
 
-## Common Services Quick Reference
+---
 
-| Service | Purpose | Use Case |
-|---------|---------|----------|
-| **EC2** | Virtual servers | Application hosting |
-| **S3** | Object storage | File uploads, static hosting |
-| **RDS** | Managed databases | PostgreSQL, MySQL |
-| **Lambda** | Serverless functions | API handlers, event processing |
-| **API Gateway** | API management | REST/WebSocket APIs |
-| **CloudFront** | CDN | Static asset delivery |
-| **DynamoDB** | NoSQL database | Key-value, high throughput |
-| **SQS** | Message queue | Async task processing |
-| **SNS** | Pub/Sub | Notifications, fan-out |
-| **ECS/Fargate** | Container orchestration | Docker deployments |
-| **Cognito** | Authentication | User pools, social login |
-| **Secrets Manager** | Secret storage | API keys, DB passwords |
-| **CloudWatch** | Monitoring | Logs, metrics, alarms |
+## Lambda
+
+```typescript
+// handler.ts
+import { APIGatewayProxyHandler } from 'aws-lambda';
+
+export const handler: APIGatewayProxyHandler = async (event) => {
+  const body = JSON.parse(event.body || '{}');
+  return { statusCode: 200, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ message: 'Success', data: body }) };
+};
+```
+
+---
+
+## SQS (Message Queue)
+
+```typescript
+import { SQSClient, SendMessageCommand, ReceiveMessageCommand, DeleteMessageCommand } from '@aws-sdk/client-sqs';
+
+const sqs = new SQSClient({ region: process.env.AWS_REGION });
+const QUEUE_URL = process.env.SQS_QUEUE_URL!;
+
+export async function sendMessage(data: object) {
+  await sqs.send(new SendMessageCommand({ QueueUrl: QUEUE_URL, MessageBody: JSON.stringify(data) }));
+}
+
+export async function receiveMessages() {
+  const { Messages } = await sqs.send(new ReceiveMessageCommand({ QueueUrl: QUEUE_URL, MaxNumberOfMessages: 10, WaitTimeSeconds: 20 }));
+  return Messages?.map(m => ({ id: m.MessageId, body: JSON.parse(m.Body!), receipt: m.ReceiptHandle })) || [];
+}
+```
+
+---
+
+## DynamoDB
+
+```typescript
+import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
+import { DynamoDBDocumentClient, GetCommand, PutCommand, QueryCommand } from '@aws-sdk/lib-dynamodb';
+
+const client = new DynamoDBClient({ region: process.env.AWS_REGION });
+const ddb = DynamoDBDocumentClient.from(client);
+
+export async function getItem(pk: string, sk: string) {
+  const { Item } = await ddb.send(new GetCommand({ TableName: 'MyTable', Key: { PK: pk, SK: sk } }));
+  return Item;
+}
+
+export async function putItem(item: Record<string, any>) {
+  await ddb.send(new PutCommand({ TableName: 'MyTable', Item: item }));
+}
+
+export async function queryItems(pk: string) {
+  const { Items } = await ddb.send(new QueryCommand({ TableName: 'MyTable', KeyConditionExpression: 'PK = :pk', ExpressionAttributeValues: { ':pk': pk } }));
+  return Items;
+}
+```
+
+---
 
 ## Best Practices
 
-| Practice | Description |
-|----------|-------------|
-| **Least privilege** | IAM policies with minimum permissions |
-| **No hardcoded keys** | Use IAM roles, not access keys |
-| **Encryption** | Enable at-rest encryption for S3, RDS, DynamoDB |
-| **VPC** | Deploy resources in private subnets |
+| Practice | Details |
+|----------|---------|
+| **IAM** | Least privilege, use roles not access keys |
+| **S3** | Presigned URLs for secure access |
+| **Lambda** | Keep functions small, use layers |
+| **SQS** | Long polling, DLQ for failures |
+| **DynamoDB** | Single-table design, partition key strategy |
+| **Secrets** | Use AWS Secrets Manager, never hardcode |
+| **VPC** | Private subnets for databases |
+| **CloudFront** | CDN for static assets and API caching |
 | **Tags** | Tag all resources for cost tracking |
-| **Multi-AZ** | Enable for RDS, ECS for high availability |
-| **CloudWatch** | Set alarms for critical metrics |
-| **Secrets Manager** | Store secrets, never in code or env files |
-| **Cost alerts** | Set billing alarms to prevent surprises |
-| **Infrastructure as Code** | Use Terraform or CloudFormation |
+| **SDK v3** | Use modular imports |
+
+---
+
+## Rules Integration
+- **Storage**: S3 upload/download with presigned URLs
+- **Compute**: Lambda handlers for serverless functions  
+- **Messaging**: SQS send/receive with long polling
+- **Database**: DynamoDB single-table design
+- **Security**: IAM roles, Secrets Manager, VPC

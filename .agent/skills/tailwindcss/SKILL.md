@@ -6,191 +6,112 @@ description: Skill for building modern UIs with Tailwind CSS, covering configura
 # Tailwind CSS Skill
 
 ## Overview
-Tailwind CSS is a utility-first CSS framework. Use this skill for building custom designs rapidly with utility classes. **Always confirm which version (v3 or v4) the project uses before coding.**
+Tailwind CSS is a utility-first CSS framework for building custom designs rapidly. It provides utility classes for layout, spacing, typography, colors, shadows, transitions, and responsive design. Tailwind v3+ includes JIT compilation, dark mode, and arbitrary values.
 
-## Installation
+**References**:
+- [Tailwind CSS Documentation](https://tailwindcss.com/docs)
+- [Tailwind CSS v4](https://tailwindcss.com/blog/tailwindcss-v4)
 
-### Vite Project
-```bash
-npm install -D tailwindcss @tailwindcss/vite
-```
+---
+
+## Configuration
 
 ```javascript
-// vite.config.js
-import tailwindcss from '@tailwindcss/vite';
-export default defineConfig({
-  plugins: [tailwindcss()],
-});
-```
-
-```css
-/* main.css */
-@import "tailwindcss";
-```
-
-### Tailwind v3 (Legacy)
-```bash
-npm install -D tailwindcss postcss autoprefixer
-npx tailwindcss init -p
-```
-
-## Configuration (tailwind.config.js — v3)
-```javascript
-/** @type {import('tailwindcss').Config} */
+// tailwind.config.js
 export default {
-  content: ['./index.html', './src/**/*.{js,ts,jsx,tsx,vue}'],
-  darkMode: 'class', // or 'media'
+  content: ['./src/**/*.{js,ts,jsx,tsx,html}'],
+  darkMode: 'class',
   theme: {
     extend: {
       colors: {
-        primary: {
-          50:  '#eef2ff', 100: '#e0e7ff', 200: '#c7d2fe', 300: '#a5b4fc',
-          400: '#818cf8', 500: '#6366f1', 600: '#4f46e5', 700: '#4338ca',
-          800: '#3730a3', 900: '#312e81', 950: '#1e1b4b',
-        },
+        brand: { 50: '#eef2ff', 100: '#e0e7ff', 500: '#6366f1', 600: '#4f46e5', 700: '#4338ca', 900: '#312e81' },
       },
-      fontFamily: {
-        sans: ['Inter', 'system-ui', '-apple-system', 'sans-serif'],
-      },
-      borderRadius: { '4xl': '2rem' },
-      animation: {
-        'fade-in': 'fadeIn 0.3s ease-out',
-        'slide-up': 'slideUp 0.3s ease-out',
-      },
-      keyframes: {
-        fadeIn: { '0%': { opacity: '0' }, '100%': { opacity: '1' } },
-        slideUp: { '0%': { opacity: '0', transform: 'translateY(16px)' }, '100%': { opacity: '1', transform: 'translateY(0)' } },
-      },
+      fontFamily: { sans: ['Inter', 'sans-serif'] },
+      borderRadius: { xl: '1rem', '2xl': '1.5rem' },
+      boxShadow: { soft: '0 2px 15px rgba(0,0,0,0.08)' },
     },
   },
-  plugins: [
-    require('@tailwindcss/forms'),
-    require('@tailwindcss/typography'),
-  ],
+  plugins: [require('@tailwindcss/forms'), require('@tailwindcss/typography')],
 };
 ```
 
+---
+
 ## Common Patterns
 
-### Premium Card
 ```html
-<div class="group relative overflow-hidden rounded-2xl border border-gray-200 bg-white p-6
-            shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-xl
-            dark:border-gray-800 dark:bg-gray-900">
-  <!-- Gradient accent top border -->
-  <div class="absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500"></div>
-  
-  <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Card Title</h3>
-  <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">Description text that explains...</p>
-  
-  <button class="mt-4 inline-flex items-center gap-2 rounded-full bg-indigo-500 px-5 py-2.5
-                 text-sm font-semibold text-white shadow-md shadow-indigo-500/30
-                 transition-all hover:bg-indigo-600 hover:shadow-lg hover:shadow-indigo-500/40
-                 active:scale-[0.98] focus-visible:outline-2 focus-visible:outline-offset-2
-                 focus-visible:outline-indigo-500">
-    Get Started
-    <svg class="h-4 w-4 transition-transform group-hover:translate-x-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
-    </svg>
-  </button>
-</div>
-```
-
-### Glassmorphism
-```html
-<div class="rounded-2xl border border-white/20 bg-white/60 p-6 shadow-xl
-            backdrop-blur-xl dark:border-white/10 dark:bg-gray-900/60">
-  <!-- Glass content -->
-</div>
-```
-
-### Responsive Dashboard Layout
-```html
-<div class="flex min-h-screen bg-gray-50 dark:bg-gray-950">
-  <!-- Sidebar: hidden on mobile, visible on lg+ -->
-  <aside class="hidden w-64 shrink-0 border-r border-gray-200 bg-white p-4 dark:border-gray-800 dark:bg-gray-900 lg:block">
-    <nav class="space-y-1">
-      <a href="#" class="flex items-center gap-3 rounded-lg bg-indigo-50 px-3 py-2 text-sm font-medium text-indigo-700
-                         dark:bg-indigo-500/10 dark:text-indigo-400">
-        Dashboard
-      </a>
-      <a href="#" class="flex items-center gap-3 rounded-lg px-3 py-2 text-sm text-gray-600
-                         hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-gray-800">
-        Users
-      </a>
-    </nav>
-  </aside>
-
-  <!-- Main content -->
-  <main class="flex-1 p-4 lg:p-8">
-    <div class="grid gap-6 sm:grid-cols-2 xl:grid-cols-4">
-      <!-- Stat cards -->
+<!-- Dashboard Stats Card -->
+<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+  <div class="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 p-6 shadow-soft">
+    <div class="flex justify-between items-start">
+      <div>
+        <p class="text-sm text-gray-500 dark:text-gray-400">Revenue</p>
+        <p class="text-2xl font-bold mt-1">$45,231</p>
+      </div>
+      <div class="bg-brand-50 dark:bg-brand-900/30 p-2 rounded-xl">
+        <svg class="w-5 h-5 text-brand-500">...</svg>
+      </div>
     </div>
-  </main>
+    <p class="text-xs text-green-600 mt-3">↑ 20.1% vs last month</p>
+  </div>
+</div>
+
+<!-- Button variants -->
+<button class="px-6 py-2.5 bg-brand-500 hover:bg-brand-600 text-white font-semibold rounded-xl transition-colors">
+  Primary
+</button>
+<button class="px-6 py-2.5 border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-xl transition-colors">
+  Secondary
+</button>
+
+<!-- Table -->
+<div class="overflow-x-auto rounded-2xl border border-gray-100 dark:border-gray-700">
+  <table class="w-full text-left">
+    <thead class="bg-gray-50 dark:bg-gray-800">
+      <tr>
+        <th class="px-6 py-3 text-xs font-medium text-gray-500 uppercase">Product</th>
+        <th class="px-6 py-3 text-xs font-medium text-gray-500 uppercase">Status</th>
+      </tr>
+    </thead>
+    <tbody class="divide-y divide-gray-100 dark:divide-gray-700">
+      <tr class="hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
+        <td class="px-6 py-4 font-semibold">Product Name</td>
+        <td class="px-6 py-4"><span class="px-2 py-1 text-xs font-medium bg-green-100 text-green-700 rounded-full">Active</span></td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- Form -->
+<div class="space-y-4">
+  <div>
+    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Name</label>
+    <input class="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 dark:bg-gray-800 rounded-xl focus:ring-2 focus:ring-brand-500 focus:border-transparent outline-none" />
+  </div>
 </div>
 ```
 
-### Form Input
-```html
-<div>
-  <label for="email" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Email</label>
-  <input type="email" id="email" name="email"
-         class="mt-1.5 block w-full rounded-lg border border-gray-300 bg-white px-4 py-2.5
-                text-sm text-gray-900 shadow-sm transition-colors
-                placeholder:text-gray-400
-                hover:border-gray-400
-                focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20
-                dark:border-gray-700 dark:bg-gray-900 dark:text-white dark:focus:border-indigo-400"
-         placeholder="you@example.com" />
-</div>
-```
+---
 
-## Dark Mode
-```html
-<!-- Toggle dark mode -->
-<html class="dark">
+## Best Practices
 
-<!-- Component with dark variants -->
-<div class="bg-white text-gray-900 dark:bg-gray-900 dark:text-white">
-  <p class="text-gray-500 dark:text-gray-400">Adapts to theme</p>
-</div>
-```
+| Practice | Details |
+|----------|---------|
+| **Utility-first** | Compose designs with utility classes |
+| **Responsive** | Mobile-first: sm:, md:, lg:, xl: |
+| **Dark mode** | Use dark: variant with class strategy |
+| **Custom colors** | Extend theme with brand colors |
+| **@apply** | Extract repeated patterns (use sparingly) |
+| **Arbitrary values** | `w-[calc(100%-2rem)]` when needed |
+| **Plugins** | @tailwindcss/forms, @tailwindcss/typography |
+| **Component classes** | Extract with @apply for complex components |
+| **Transitions** | transition-colors, transition-all |
+| **Purge** | Content config ensures unused CSS is removed |
 
-```javascript
-// Dark mode toggle
-function toggleDarkMode() {
-  document.documentElement.classList.toggle('dark');
-  localStorage.setItem('theme',
-    document.documentElement.classList.contains('dark') ? 'dark' : 'light'
-  );
-}
-
-// Init on load
-if (localStorage.theme === 'dark' || (!localStorage.theme && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
-  document.documentElement.classList.add('dark');
-}
-```
-
-## @apply for Reusable Component Classes
-```css
-/* Use @apply sparingly — only for highly repeated patterns */
-@layer components {
-  .btn-primary {
-    @apply inline-flex items-center justify-center gap-2 rounded-lg bg-indigo-500 px-5 py-2.5
-           text-sm font-semibold text-white shadow-sm transition-all
-           hover:bg-indigo-600 hover:shadow-md
-           active:scale-[0.98]
-           focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-500;
-  }
-}
-```
-
-## Performance
-- Tailwind auto-purges unused classes in production builds
-- Use `@layer` for custom utilities ordering
-- Avoid arbitrary values `[123px]` — prefer design tokens in config
+---
 
 ## Rules Integration
-- **UI/UX**: Always include dark mode variants, use premium shadows, add hover/active/focus states
-- **Accessibility**: Include `focus-visible:` outlines, `sr-only` for screen reader text, ARIA labels
-- **Dependencies**: Check Tailwind version (v3 vs v4 have different config systems)
+- **Config**: Extended theme with brand colors, fonts, shadows
+- **Responsive**: Grid with responsive breakpoints
+- **Dark mode**: class-based dark variant
+- **Components**: Cards, tables, forms, buttons with utilities

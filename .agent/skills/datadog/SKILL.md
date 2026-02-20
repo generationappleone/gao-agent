@@ -6,143 +6,105 @@ description: Skill for application monitoring and synthetic testing with Datadog
 # Datadog Skill
 
 ## Overview
-Datadog is an observability platform providing APM, infrastructure monitoring, log management, synthetic testing, and security monitoring. Requires an account and API key.
+Datadog is a cloud monitoring and analytics platform providing APM (Application Performance Monitoring), infrastructure monitoring, log management, synthetic testing, and real user monitoring (RUM). It supports 700+ integrations.
 
-## Setup
-```bash
-# Install Datadog Agent
-DD_API_KEY=your_api_key DD_SITE="datadoghq.com" bash -c "$(curl -L https://install.datadoghq.com/scripts/install_script.sh)"
+**References**:
+- [Datadog Documentation](https://docs.datadoghq.com/)
+- [Datadog APM](https://docs.datadoghq.com/tracing/)
 
-# NPM packages for Node.js APM
-npm install dd-trace --save
+---
 
-# Environment variables
-DD_API_KEY=your_api_key
-DD_APP_KEY=your_app_key
-DD_SITE=datadoghq.com
-```
+## APM Setup (Node.js)
 
-## APM (Application Performance Monitoring)
-
-### Node.js
-```javascript
-// tracing.js — require FIRST before anything else
-const tracer = require('dd-trace').init({
-  service: 'my-api',
-  env: process.env.NODE_ENV || 'development',
-  version: '1.0.0',
+```typescript
+// Must be first import
+import tracer from 'dd-trace';
+tracer.init({
+  service: 'myapp-api',
+  env: process.env.NODE_ENV,
+  version: process.env.APP_VERSION,
   logInjection: true,
   runtimeMetrics: true,
 });
-module.exports = tracer;
 
-// In app entry: require('./tracing');
+// Custom span
+const span = tracer.startSpan('process.order');
+span.setTag('order.id', orderId);
+try {
+  await processOrder(orderId);
+  span.setTag('status', 'success');
+} catch (error) {
+  span.setTag('error', true);
+  span.setTag('error.message', error.message);
+  throw error;
+} finally {
+  span.finish();
+}
 ```
 
-### Python
-```bash
-pip install ddtrace
-ddtrace-run python app.py
+---
+
+## Custom Metrics
+
+```typescript
+import StatsD from 'hot-shots';
+
+const dogstatsd = new StatsD({ host: process.env.DD_AGENT_HOST || 'localhost', port: 8125, prefix: 'myapp.' });
+
+// Counter
+dogstatsd.increment('orders.created', 1, { channel: 'web', status: 'success' });
+
+// Histogram
+dogstatsd.histogram('order.processing_time', durationMs, { status: 'success' });
+
+// Gauge
+dogstatsd.gauge('active_users', activeCount);
+
+// Distribution
+dogstatsd.distribution('api.response_time', responseTime, { endpoint: '/api/products' });
 ```
 
-### PHP (Laravel)
-```bash
-# Install extension
-pecl install datadog_trace
-# Add to php.ini:
-# extension=ddtrace.so
-# datadog.service=my-laravel-app
-# datadog.env=production
+---
+
+## Log Management
+
+```typescript
+import winston from 'winston';
+
+const logger = winston.createLogger({
+  format: winston.format.combine(
+    winston.format.timestamp(),
+    winston.format.json(),
+  ),
+  defaultMeta: { service: 'myapp-api', env: process.env.NODE_ENV },
+  transports: [new winston.transports.Console()],
+});
+
+// Structured logs with Datadog correlation
+logger.info('Order created', { orderId: order.id, userId: user.id, total: order.total, dd: { trace_id: span.context().toTraceId() } });
 ```
 
-## Synthetic Testing
-
-### API Test (via Datadog API)
-```bash
-curl -X POST "https://api.datadoghq.com/api/v1/synthetics/tests/api" \
-  -H "DD-API-KEY: ${DD_API_KEY}" \
-  -H "DD-APPLICATION-KEY: ${DD_APP_KEY}" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "name": "API Health Check",
-    "type": "api",
-    "subtype": "http",
-    "config": {
-      "request": {
-        "method": "GET",
-        "url": "https://myapp.com/api/health"
-      },
-      "assertions": [
-        { "type": "statusCode", "operator": "is", "target": 200 },
-        { "type": "responseTime", "operator": "lessThan", "target": 500 }
-      ]
-    },
-    "locations": ["aws:us-east-1", "aws:eu-west-1"],
-    "options": {
-      "tick_every": 300,
-      "min_failure_duration": 0,
-      "min_location_failed": 1
-    },
-    "message": "API health check failed!",
-    "tags": ["env:production", "service:api"]
-  }'
-```
-
-### Browser Test (via Datadog API)
-```bash
-curl -X POST "https://api.datadoghq.com/api/v1/synthetics/tests/browser" \
-  -H "DD-API-KEY: ${DD_API_KEY}" \
-  -H "DD-APPLICATION-KEY: ${DD_APP_KEY}" \
-  -d '{
-    "name": "Login Flow Test",
-    "type": "browser",
-    "config": {
-      "request": { "url": "https://myapp.com/login" },
-      "variables": []
-    },
-    "locations": ["aws:us-east-1"],
-    "options": { "tick_every": 3600 },
-    "tags": ["env:production"]
-  }'
-```
-
-## Monitors (Alerting)
-
-### Create Monitor via API
-```bash
-curl -X POST "https://api.datadoghq.com/api/v1/monitor" \
-  -H "DD-API-KEY: ${DD_API_KEY}" \
-  -H "DD-APPLICATION-KEY: ${DD_APP_KEY}" \
-  -d '{
-    "name": "High Error Rate",
-    "type": "metric alert",
-    "query": "sum(last_5m):sum:trace.http.request.errors{service:my-api}.as_count() > 50",
-    "message": "Error rate exceeded threshold! @slack-alerts @pagerduty",
-    "tags": ["service:my-api", "env:production"],
-    "options": {
-      "thresholds": { "critical": 50, "warning": 25 },
-      "notify_no_data": true,
-      "no_data_timeframe": 10
-    }
-  }'
-```
-
-## CI/CD Integration
-```yaml
-# GitHub Actions — run synthetic tests
-- name: Datadog Synthetics
-  uses: DataDog/synthetics-ci-github-action@v1
-  with:
-    api_key: ${{ secrets.DD_API_KEY }}
-    app_key: ${{ secrets.DD_APP_KEY }}
-    public_ids: 'abc-123,def-456'
-    fail_on_critical_errors: true
-```
+---
 
 ## Best Practices
-- Use consistent `service`, `env`, `version` tags across all telemetry
-- Set up SLOs (Service Level Objectives) for critical endpoints
-- Use composite monitors to reduce alert fatigue
-- Enable log correlation with APM traces
-- Set up dashboards for key business metrics
-- Use anomaly detection for dynamic thresholds
+
+| Practice | Details |
+|----------|---------|
+| **APM** | Auto-instrument with dd-trace |
+| **Custom spans** | Track business operations |
+| **Metrics** | DogStatsD for custom metrics |
+| **Logs** | JSON format with trace correlation |
+| **Dashboards** | Monitor SLIs/SLOs with dashboards |
+| **Alerts** | Anomaly detection, threshold alerts |
+| **Synthetics** | API and browser synthetic tests |
+| **RUM** | Real User Monitoring for frontend |
+| **Service map** | Visualize service dependencies |
+| **Tags** | Consistent tagging (env, service, version) |
+
+---
+
+## Rules Integration
+- **APM**: dd-trace for auto-instrumentation
+- **Metrics**: DogStatsD for counters/histograms/gauges
+- **Logs**: Winston with trace correlation
+- **Alerting**: Anomaly and threshold-based alerts

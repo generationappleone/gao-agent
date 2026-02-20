@@ -6,14 +6,31 @@ description: Skill for type-safe database access with Prisma ORM — covering sc
 # Prisma ORM Skill
 
 ## Overview
-Prisma is a next-generation ORM for Node.js and TypeScript providing type-safe database access, migrations, and a visual database browser.
+Prisma is a next-generation ORM for Node.js and TypeScript. It provides a declarative schema, type-safe database client, automatic migrations, and powerful query API. Prisma supports PostgreSQL, MySQL, SQLite, SQL Server, MongoDB, and CockroachDB.
 
-**Reference**: [Prisma Documentation](https://www.prisma.io/docs)
+**References**:
+- [Prisma Documentation](https://www.prisma.io/docs)
+- [Prisma Schema Reference](https://www.prisma.io/docs/reference/api-reference/prisma-schema-reference)
+- [Prisma Client API](https://www.prisma.io/docs/reference/api-reference/prisma-client-reference)
 
-## Schema (prisma/schema.prisma)
+---
+
+## Setup
+
+```bash
+npm install prisma @prisma/client
+npx prisma init --datasource-provider postgresql
+```
+
+---
+
+## Schema
+
 ```prisma
+// prisma/schema.prisma
 generator client {
   provider = "prisma-client-js"
+  previewFeatures = ["fullTextSearch"]
 }
 
 datasource db {
@@ -21,128 +38,292 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model User {
-  id        String   @id @default(uuid())
-  email     String   @unique
-  name      String
-  role      Role     @default(USER)
-  posts     Post[]
-  profile   Profile?
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
-
-  @@map("users")
-  @@index([email])
-}
-
-model Post {
-  id        String   @id @default(uuid())
-  title     String
-  content   String?
-  published Boolean  @default(false)
-  authorId  String   @map("author_id")
-  author    User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
-  tags      Tag[]
-  createdAt DateTime @default(now()) @map("created_at")
-
-  @@map("posts")
-  @@index([authorId])
-}
-
-model Profile {
-  id     String @id @default(uuid())
-  bio    String?
-  avatar String?
-  userId String @unique @map("user_id")
-  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@map("profiles")
-}
-
-model Tag {
-  id    String @id @default(uuid())
-  name  String @unique
-  posts Post[]
-
-  @@map("tags")
-}
-
 enum Role {
   USER
   ADMIN
-  MODERATOR
+  EDITOR
+}
+
+enum OrderStatus {
+  PENDING
+  PROCESSING
+  SHIPPED
+  DELIVERED
+  CANCELLED
+}
+
+model User {
+  id            String    @id @default(uuid())
+  email         String    @unique
+  password      String
+  name          String
+  role          Role      @default(USER)
+  avatarUrl     String?
+  emailVerified DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  orders  Order[]
+  reviews Review[]
+
+  @@index([role])
+  @@index([createdAt])
+  @@map("users")
+}
+
+model Category {
+  id       String     @id @default(uuid())
+  name     String
+  slug     String     @unique
+  parentId String?
+  parent   Category?  @relation("CategoryTree", fields: [parentId], references: [id])
+  children Category[] @relation("CategoryTree")
+  products Product[]
+
+  @@map("categories")
+}
+
+model Product {
+  id          String   @id @default(uuid())
+  name        String
+  slug        String   @unique
+  description String?
+  price       Int      @default(0)
+  stock       Int      @default(0)
+  categoryId  String
+  category    Category @relation(fields: [categoryId], references: [id])
+  status      String   @default("draft")
+  rating      Float    @default(0)
+  ratingCount Int      @default(0)
+  images      String[]
+  metadata    Json?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  orderItems OrderItem[]
+  reviews    Review[]
+
+  @@index([categoryId])
+  @@index([status])
+  @@index([price])
+  @@index([status, categoryId])
+  @@map("products")
+}
+
+model Order {
+  id          String      @id @default(uuid())
+  orderNumber String      @unique
+  userId      String
+  user        User        @relation(fields: [userId], references: [id])
+  status      OrderStatus @default(PENDING)
+  subtotal    Int         @default(0)
+  tax         Int         @default(0)
+  total       Int         @default(0)
+  notes       String?
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  items    OrderItem[]
+  payment  Payment?
+
+  @@index([userId])
+  @@index([status])
+  @@index([createdAt])
+  @@map("orders")
+}
+
+model OrderItem {
+  id        String  @id @default(uuid())
+  orderId   String
+  order     Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  productId String
+  product   Product @relation(fields: [productId], references: [id])
+  quantity  Int     @default(1)
+  unitPrice Int
+  total     Int
+
+  @@map("order_items")
+}
+
+model Payment {
+  id            String   @id @default(uuid())
+  orderId       String   @unique
+  order         Order    @relation(fields: [orderId], references: [id])
+  method        String
+  amount        Int
+  status        String   @default("pending")
+  transactionId String?
+  paidAt        DateTime?
+  createdAt     DateTime @default(now())
+
+  @@map("payments")
+}
+
+model Review {
+  id        String   @id @default(uuid())
+  productId String
+  product   Product  @relation(fields: [productId], references: [id])
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  rating    Int
+  comment   String?
+  createdAt DateTime @default(now())
+
+  @@unique([productId, userId])
+  @@map("reviews")
 }
 ```
 
-## CRUD Operations
+---
+
+## Client Singleton
+
 ```typescript
-import { PrismaClient } from "@prisma/client";
-const prisma = new PrismaClient();
+// src/lib/prisma.ts
+import { PrismaClient } from '@prisma/client';
 
-// Create
-const user = await prisma.user.create({
-  data: { name: "John", email: "john@example.com", profile: { create: { bio: "Developer" } } },
-  include: { profile: true },
+const globalForPrisma = globalThis as unknown as { prisma: PrismaClient };
+
+export const prisma = globalForPrisma.prisma ?? new PrismaClient({
+  log: process.env.NODE_ENV === 'development' ? ['query', 'warn', 'error'] : ['error'],
 });
 
-// Read
-const users = await prisma.user.findMany({
-  where: { role: "ADMIN", name: { contains: "john", mode: "insensitive" } },
-  include: { posts: { where: { published: true }, take: 5 } },
-  orderBy: { createdAt: "desc" },
-  skip: 0, take: 20,
-});
-
-const user = await prisma.user.findUnique({ where: { email: "john@example.com" } });
-
-// Update
-await prisma.user.update({ where: { id: userId }, data: { name: "Jane" } });
-
-// Upsert
-await prisma.user.upsert({
-  where: { email: "john@example.com" },
-  update: { name: "John Updated" },
-  create: { name: "John", email: "john@example.com" },
-});
-
-// Delete
-await prisma.user.delete({ where: { id: userId } });
-
-// Transaction
-const [user, post] = await prisma.$transaction([
-  prisma.user.create({ data: { name: "Author", email: "author@example.com" } }),
-  prisma.post.create({ data: { title: "First Post", authorId: "..." } }),
-]);
-
-// Interactive transaction
-await prisma.$transaction(async (tx) => {
-  const user = await tx.user.findUnique({ where: { id: userId } });
-  if (!user) throw new Error("User not found");
-  await tx.post.create({ data: { title: "New Post", authorId: user.id } });
-});
+if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = prisma;
 ```
 
-## Migrations
+---
+
+## CRUD Operations
+
+```typescript
+// src/services/product.service.ts
+import { prisma } from '@/lib/prisma';
+import { Prisma } from '@prisma/client';
+
+// ── List with filters + pagination ──
+export async function listProducts(options: {
+  category?: string; search?: string; status?: string;
+  sortBy?: string; page?: number; limit?: number;
+}) {
+  const { page = 1, limit = 20 } = options;
+  const where: Prisma.ProductWhereInput = {};
+
+  if (options.status) where.status = options.status;
+  if (options.category) where.category = { slug: options.category };
+  if (options.search) {
+    where.OR = [
+      { name: { contains: options.search, mode: 'insensitive' } },
+      { description: { contains: options.search, mode: 'insensitive' } },
+    ];
+  }
+
+  const orderBy: Prisma.ProductOrderByWithRelationInput = (() => {
+    switch (options.sortBy) {
+      case 'price_asc': return { price: 'asc' };
+      case 'price_desc': return { price: 'desc' };
+      case 'rating': return { rating: 'desc' };
+      default: return { createdAt: 'desc' };
+    }
+  })();
+
+  const [data, total] = await prisma.$transaction([
+    prisma.product.findMany({
+      where, orderBy,
+      skip: (page - 1) * limit,
+      take: limit,
+      include: { category: { select: { name: true, slug: true } } },
+    }),
+    prisma.product.count({ where }),
+  ]);
+
+  return { data, total, page, totalPages: Math.ceil(total / limit) };
+}
+
+// ── Create order with transaction ──
+export async function createOrder(userId: string, items: { productId: string; quantity: number }[]) {
+  return prisma.$transaction(async (tx) => {
+    let subtotal = 0;
+
+    // Validate stock and calculate totals
+    const orderItems = await Promise.all(items.map(async (item) => {
+      const product = await tx.product.findUniqueOrThrow({ where: { id: item.productId } });
+
+      if (product.stock < item.quantity) {
+        throw new Error(`Insufficient stock for ${product.name}`);
+      }
+
+      // Decrement stock
+      await tx.product.update({
+        where: { id: item.productId },
+        data: { stock: { decrement: item.quantity } },
+      });
+
+      const total = product.price * item.quantity;
+      subtotal += total;
+
+      return { productId: item.productId, quantity: item.quantity, unitPrice: product.price, total };
+    }));
+
+    const tax = Math.round(subtotal * 0.11);
+    const orderNumber = `ORD-${Date.now()}-${Math.random().toString(36).slice(2, 6).toUpperCase()}`;
+
+    return tx.order.create({
+      data: {
+        orderNumber, userId, subtotal, tax, total: subtotal + tax,
+        items: { create: orderItems },
+      },
+      include: { items: { include: { product: true } } },
+    });
+  });
+}
+```
+
+---
+
+## Migration Commands
+
 ```bash
-npx prisma migrate dev --name init          # Create migration
-npx prisma migrate deploy                    # Apply in production
-npx prisma db push                           # Push schema (dev only)
-npx prisma generate                          # Regenerate client
-npx prisma studio                            # Visual database browser
-npx prisma db seed                           # Run seed script
+# Create migration from schema changes
+npx prisma migrate dev --name add_reviews_table
+
+# Apply migrations (production)
+npx prisma migrate deploy
+
+# Reset database (dev only)
+npx prisma migrate reset
+
+# Generate client
+npx prisma generate
+
+# Studio (GUI)
+npx prisma studio
+
+# Seed
+npx prisma db seed
 ```
+
+---
 
 ## Best Practices
 
-| Practice | Description |
-|----------|-------------|
-| **`@@map`** | Map to snake_case table/column names |
-| **`@default(uuid())`** | UUID primary keys |
-| **`@updatedAt`** | Auto-update timestamps |
-| **`onDelete: Cascade`** | Define referential actions |
-| **Transactions** | Use for multi-model operations |
-| **`select` over `include`** | Select only needed fields |
-| **Middleware** | Use for soft delete, audit logging |
-| **Connection pooling** | Use `?connection_limit=5` in URL |
-| **Seeding** | Create `prisma/seed.ts` for test data |
-| **Type safety** | Leverage generated types everywhere |
+| Practice | Details |
+|----------|---------|
+| **Singleton** | Global PrismaClient to prevent connection exhaustion |
+| **$transaction** | Use for multi-model writes and stock operations |
+| **select/include** | Only fetch fields you need |
+| **Prisma.XxxWhereInput** | Use generated types for dynamic filters |
+| **@@index** | Add indexes for query patterns |
+| **@@map** | Map model names to snake_case table names |
+| **@updatedAt** | Auto-update timestamp on changes |
+| **Enums** | Use Prisma enums for type-safe status fields |
+| **Migrations** | Always use `migrate dev` in development |
+| **Seeding** | Use `prisma db seed` for test data |
+
+---
+
+## Rules Integration
+- **Schema**: Models with relations, indexes, enums, @@map
+- **Client**: Singleton pattern for connection management
+- **Queries**: Filtered listing with pagination, dynamic orderBy
+- **Transactions**: Order creation with stock validation
+- **Migrations**: dev for development, deploy for production

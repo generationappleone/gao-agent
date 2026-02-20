@@ -6,233 +6,207 @@ description: Skill for Go development, covering project setup, clean architectur
 # Go (Golang) Skill
 
 ## Overview
-Go is a statically-typed, compiled language designed for simplicity, performance, and concurrency. Use this skill for microservices, CLI tools, APIs, and systems programming.
+Go is a statically typed, compiled language designed by Google for systems programming, microservices, and cloud-native applications. It provides goroutines for concurrency, interfaces for polymorphism, and a minimal standard library for HTTP servers, JSON, and I/O.
 
-## Project Setup
-```bash
-mkdir my-service && cd my-service
-go mod init github.com/myorg/my-service
+**References**:
+- [Go Documentation](https://go.dev/doc/)
+- [Effective Go](https://go.dev/doc/effective_go)
+
+---
+
+## Project Structure
+
+```
+myapp/
+├── cmd/
+│   └── api/
+│       └── main.go
+├── internal/
+│   ├── handler/
+│   │   └── product.go
+│   ├── service/
+│   │   └── product.go
+│   ├── repository/
+│   │   └── product.go
+│   ├── model/
+│   │   └── product.go
+│   └── middleware/
+│       └── auth.go
+├── pkg/
+│   └── response/
+│       └── json.go
+├── go.mod
+├── go.sum
+└── Dockerfile
 ```
 
-## Directory Structure (Standard Go Layout)
-```
-cmd/
-├── server/
-│   └── main.go              # Entry point
-internal/                     # Private application code
-├── domain/                   # Business entities & interfaces
-│   ├── user.go               # Entity + repository interface
-│   └── errors.go             # Domain errors
-├── service/                  # Business logic (use cases)
-│   └── user_service.go
-├── handler/                  # HTTP handlers
-│   ├── user_handler.go
-│   └── middleware.go
-├── repository/               # Data access implementations
-│   └── postgres/
-│       └── user_repository.go
-├── config/                   # Configuration
-│   └── config.go
-└── server/                   # HTTP server setup
-    └── server.go
-pkg/                          # Public reusable packages
-├── logger/
-└── validator/
-migrations/                   # SQL migrations
-go.mod
-go.sum
-Dockerfile
-Makefile
-```
+---
 
-## Domain Layer (DIP — Interfaces in Domain)
+## HTTP Server (net/http + chi)
+
 ```go
-// internal/domain/user.go
-package domain
+// cmd/api/main.go
+package main
 
 import (
-    "context"
-    "time"
-    "github.com/google/uuid"
+    "log"
+    "net/http"
+    "github.com/go-chi/chi/v5"
+    "github.com/go-chi/chi/v5/middleware"
 )
 
-type User struct {
-    ID        uuid.UUID  `json:"id" db:"id"`
-    Email     string     `json:"email" db:"email"`
-    FirstName string     `json:"firstName" db:"first_name"`
-    LastName  string     `json:"lastName" db:"last_name"`
-    IsActive  bool       `json:"isActive" db:"is_active"`
-    CreatedAt time.Time  `json:"createdAt" db:"created_at"`
-    UpdatedAt time.Time  `json:"updatedAt" db:"updated_at"`
-    DeletedAt *time.Time `json:"-" db:"deleted_at"`
-}
+func main() {
+    r := chi.NewRouter()
+    r.Use(middleware.Logger)
+    r.Use(middleware.Recoverer)
+    r.Use(middleware.RequestID)
 
-// Repository interface (defined in domain — DIP)
-type UserRepository interface {
-    FindByID(ctx context.Context, id uuid.UUID) (*User, error)
-    FindByEmail(ctx context.Context, email string) (*User, error)
-    Create(ctx context.Context, user *User) error
-    Update(ctx context.Context, user *User) error
-    Delete(ctx context.Context, id uuid.UUID) error
-    List(ctx context.Context, limit, offset int) ([]*User, int, error)
-}
-```
-
-## Service Layer
-```go
-// internal/service/user_service.go
-package service
-
-type UserService struct {
-    repo   domain.UserRepository
-    hasher PasswordHasher
-    logger *slog.Logger
-}
-
-func NewUserService(repo domain.UserRepository, hasher PasswordHasher, logger *slog.Logger) *UserService {
-    return &UserService{repo: repo, hasher: hasher, logger: logger}
-}
-
-func (s *UserService) Register(ctx context.Context, req CreateUserRequest) (*domain.User, error) {
-    existing, _ := s.repo.FindByEmail(ctx, req.Email)
-    if existing != nil {
-        return nil, domain.ErrEmailAlreadyExists
-    }
-
-    hashed, err := s.hasher.Hash(req.Password)
-    if err != nil {
-        return nil, fmt.Errorf("hash password: %w", err)
-    }
-
-    user := &domain.User{
-        ID:        uuid.New(),
-        Email:     req.Email,
-        FirstName: req.FirstName,
-        LastName:  req.LastName,
-        IsActive:  true,
-        CreatedAt: time.Now().UTC(),
-        UpdatedAt: time.Now().UTC(),
-    }
-
-    if err := s.repo.Create(ctx, user); err != nil {
-        return nil, fmt.Errorf("create user: %w", err)
-    }
-
-    s.logger.Info("user registered", slog.String("user_id", user.ID.String()))
-    return user, nil
-}
-```
-
-## HTTP Handler
-```go
-// internal/handler/user_handler.go
-func (h *UserHandler) Register(w http.ResponseWriter, r *http.Request) {
-    var req CreateUserRequest
-    if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-        respondError(w, http.StatusBadRequest, "invalid request body")
-        return
-    }
-
-    if err := h.validator.Validate(req); err != nil {
-        respondError(w, http.StatusBadRequest, err.Error())
-        return
-    }
-
-    user, err := h.service.Register(r.Context(), req)
-    if err != nil {
-        switch {
-        case errors.Is(err, domain.ErrEmailAlreadyExists):
-            respondError(w, http.StatusConflict, "email already exists")
-        default:
-            h.logger.Error("register failed", slog.Any("error", err))
-            respondError(w, http.StatusInternalServerError, "internal error")
-        }
-        return
-    }
-
-    respondJSON(w, http.StatusCreated, user)
-}
-```
-
-## Error Handling (Idiomatic Go)
-```go
-// ✅ REQUIRED: Wrap errors with context
-if err != nil {
-    return fmt.Errorf("userService.Register: %w", err)
-}
-
-// ✅ REQUIRED: Sentinel errors for domain errors
-var (
-    ErrNotFound          = errors.New("resource not found")
-    ErrEmailAlreadyExists = errors.New("email already exists")
-    ErrUnauthorized      = errors.New("unauthorized")
-)
-```
-
-## Concurrency Patterns
-```go
-// ✅ Worker pool pattern
-func processItems(ctx context.Context, items []Item, workers int) error {
-    g, ctx := errgroup.WithContext(ctx)
-    ch := make(chan Item, len(items))
-
-    for i := 0; i < workers; i++ {
-        g.Go(func() error {
-            for item := range ch {
-                if err := process(ctx, item); err != nil {
-                    return err
-                }
-            }
-            return nil
-        })
-    }
-
-    for _, item := range items {
-        ch <- item
-    }
-    close(ch)
-
-    return g.Wait()
-}
-```
-
-## Testing
-```go
-func TestUserService_Register(t *testing.T) {
-    repo := &MockUserRepository{}
-    repo.FindByEmailFn = func(ctx context.Context, email string) (*domain.User, error) {
-        return nil, domain.ErrNotFound
-    }
-    repo.CreateFn = func(ctx context.Context, user *domain.User) error {
-        return nil
-    }
-
-    svc := service.NewUserService(repo, &FakeHasher{}, slog.Default())
-    user, err := svc.Register(context.Background(), service.CreateUserRequest{
-        Email:     "test@example.com",
-        FirstName: "John",
-        LastName:  "Doe",
-        Password:  "password123",
+    r.Get("/health", func(w http.ResponseWriter, r *http.Request) {
+        w.Write([]byte("OK"))
     })
 
-    assert.NoError(t, err)
-    assert.Equal(t, "test@example.com", user.Email)
-    assert.True(t, repo.CreateCalled)
+    r.Route("/api/products", func(r chi.Router) {
+        r.Get("/", handler.ListProducts)
+        r.Post("/", handler.CreateProduct)
+        r.Get("/{slug}", handler.GetProduct)
+    })
+
+    log.Println("Server starting on :8080")
+    log.Fatal(http.ListenAndServe(":8080", r))
 }
 ```
 
-## Key Tools
-| Tool | Purpose |
-|------|---------|
-| `slog` | Structured logging (stdlib) |
-| `chi` / `gorilla/mux` | HTTP router |
-| `sqlx` | SQL database access |
-| `golang-migrate` | Database migrations |
-| `golangci-lint` | Linting |
-| `govulncheck` | Vulnerability scanning |
-| `errgroup` | Concurrent error handling |
+---
+
+## Models
+
+```go
+// internal/model/product.go
+package model
+
+import "time"
+
+type Product struct {
+    ID          string    `json:"id" db:"id"`
+    Name        string    `json:"name" db:"name"`
+    Slug        string    `json:"slug" db:"slug"`
+    Description string    `json:"description" db:"description"`
+    Price       int       `json:"price" db:"price"`
+    Stock       int       `json:"stock" db:"stock"`
+    Status      string    `json:"status" db:"status"`
+    CreatedAt   time.Time `json:"created_at" db:"created_at"`
+}
+
+type CreateProductInput struct {
+    Name        string `json:"name" validate:"required,min=2"`
+    Price       int    `json:"price" validate:"required,gte=0"`
+    Description string `json:"description"`
+    CategoryID  string `json:"category_id" validate:"required,uuid"`
+}
+
+type PaginatedResponse[T any] struct {
+    Data       []T `json:"data"`
+    Total      int `json:"total"`
+    Page       int `json:"page"`
+    TotalPages int `json:"total_pages"`
+}
+```
+
+---
+
+## Handler
+
+```go
+// internal/handler/product.go
+package handler
+
+import (
+    "encoding/json"
+    "net/http"
+    "strconv"
+    "github.com/go-chi/chi/v5"
+)
+
+func ListProducts(w http.ResponseWriter, r *http.Request) {
+    page, _ := strconv.Atoi(r.URL.Query().Get("page"))
+    if page < 1 { page = 1 }
+    search := r.URL.Query().Get("search")
+
+    products, total, err := productService.List(r.Context(), page, 20, search)
+    if err != nil {
+        http.Error(w, err.Error(), http.StatusInternalServerError)
+        return
+    }
+
+    json.NewEncoder(w).Encode(model.PaginatedResponse[model.Product]{
+        Data: products, Total: total, Page: page, TotalPages: (total + 19) / 20,
+    })
+}
+
+func GetProduct(w http.ResponseWriter, r *http.Request) {
+    slug := chi.URLParam(r, "slug")
+    product, err := productService.GetBySlug(r.Context(), slug)
+    if err != nil {
+        http.Error(w, "Not found", http.StatusNotFound)
+        return
+    }
+    json.NewEncoder(w).Encode(product)
+}
+```
+
+---
+
+## Concurrency
+
+```go
+// Goroutines with WaitGroup
+func processOrders(orders []Order) error {
+    var wg sync.WaitGroup
+    errCh := make(chan error, len(orders))
+
+    for _, order := range orders {
+        wg.Add(1)
+        go func(o Order) {
+            defer wg.Done()
+            if err := processOrder(o); err != nil {
+                errCh <- fmt.Errorf("order %s: %w", o.ID, err)
+            }
+        }(order)
+    }
+
+    wg.Wait()
+    close(errCh)
+
+    var errs []error
+    for err := range errCh {
+        errs = append(errs, err)
+    }
+    return errors.Join(errs...)
+}
+```
+
+---
+
+## Best Practices
+
+| Practice | Details |
+|----------|---------|
+| **Project layout** | cmd/internal/pkg structure |
+| **chi router** | Lightweight, idiomatic HTTP router |
+| **Interfaces** | Define at consumer, not provider |
+| **Error handling** | Return errors, wrap with `%w` |
+| **Goroutines** | Use WaitGroup for fan-out patterns |
+| **Channels** | Communicate via channels, not shared memory |
+| **Context** | Pass context for cancellation/timeout |
+| **Generics** | Use for type-safe collections (Go 1.18+) |
+| **Testing** | Table-driven tests with `testing` package |
+| **Defer** | Clean up resources with defer |
+
+---
 
 ## Rules Integration
-- **SOLID**: Interfaces in domain (DIP), small interfaces (ISP), constructor injection
-- **Security**: Input validation, parameterized queries, `crypto/rand` for secrets
-- **Dependencies**: `go mod tidy`, `govulncheck`, pin versions in go.mod
+- **Server**: chi router with middleware
+- **Models**: Struct tags for JSON/DB mapping
+- **Handlers**: HTTP handlers with JSON responses
+- **Concurrency**: Goroutines, WaitGroup, channels
+- **Architecture**: cmd/internal/pkg layout

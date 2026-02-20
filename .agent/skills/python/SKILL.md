@@ -6,131 +6,106 @@ description: Skill for Python development, covering project setup, type hints, a
 # Python Skill
 
 ## Overview
-Python is a versatile, high-level programming language. Use this skill for web backends (FastAPI, Django), data processing, automation, ML/AI, and scripting.
+Python is a versatile programming language for web development (Django, Flask, FastAPI), data science, automation, and AI/ML. Modern Python (3.12+) provides type hints, async/await, pattern matching, dataclasses, and powerful standard library.
 
-## Project Setup
+**References**:
+- [Python Documentation](https://docs.python.org/3/)
+- [FastAPI](https://fastapi.tiangolo.com/)
 
-### Modern Project Structure
-```
-project/
-├── src/
-│   └── my_app/
-│       ├── __init__.py
-│       ├── main.py              # Entry point
-│       ├── config.py            # Settings (Pydantic)
-│       ├── domain/              # Business logic (SRP)
-│       │   ├── models.py
-│       │   └── services.py
-│       ├── infrastructure/      # External integrations (DIP)
-│       │   ├── database.py
-│       │   └── repositories.py
-│       ├── api/                 # HTTP layer
-│       │   ├── routes.py
-│       │   ├── schemas.py       # Request/Response DTOs
-│       │   └── dependencies.py
-│       └── utils/
-├── tests/
-│   ├── conftest.py
-│   ├── unit/
-│   └── integration/
-├── pyproject.toml               # Project metadata + dependencies
-├── .env.example
-├── Dockerfile
-└── README.md
-```
+---
 
-### pyproject.toml (Modern Standard)
-```toml
-[project]
-name = "my-app"
-version = "1.0.0"
-requires-python = ">=3.11"
-dependencies = [
-    "fastapi>=0.109.0,<0.110.0",
-    "uvicorn[standard]>=0.27.0,<0.28.0",
-    "pydantic>=2.6.0,<3.0.0",
-    "pydantic-settings>=2.1.0,<3.0.0",
-    "sqlalchemy[asyncio]>=2.0.0,<3.0.0",
-    "asyncpg>=0.29.0,<0.30.0",
-    "alembic>=1.13.0,<2.0.0",
-]
+## FastAPI Application
 
-[project.optional-dependencies]
-dev = [
-    "pytest>=8.0.0",
-    "pytest-asyncio>=0.23.0",
-    "pytest-cov>=4.1.0",
-    "ruff>=0.2.0",
-    "mypy>=1.8.0",
-]
-```
-
-## Type Hints (MUST use)
 ```python
-from typing import Protocol, runtime_checkable
-from collections.abc import Sequence
+# main.py
+from fastapi import FastAPI, HTTPException, Depends, Query
+from pydantic import BaseModel, Field
+from typing import Optional
+from uuid import UUID, uuid4
+from datetime import datetime
 
-# ✅ REQUIRED: Full type annotations
-@runtime_checkable
-class UserRepository(Protocol):
-    async def find_by_id(self, user_id: str) -> User | None: ...
-    async def find_all(self, limit: int = 50, offset: int = 0) -> Sequence[User]: ...
-    async def create(self, data: CreateUserDto) -> User: ...
-    async def update(self, user_id: str, data: UpdateUserDto) -> User: ...
-    async def delete(self, user_id: str) -> bool: ...
+app = FastAPI(title="MyApp API", version="1.0.0")
 
-class UserService:
-    def __init__(self, repo: UserRepository, hasher: PasswordHasher) -> None:
-        self._repo = repo
-        self._hasher = hasher
+# Models with Pydantic
+class ProductCreate(BaseModel):
+    name: str = Field(min_length=2, max_length=200)
+    price: int = Field(ge=0)
+    description: str = ""
+    category_id: UUID
 
-    async def register(self, dto: CreateUserDto) -> User:
-        hashed = self._hasher.hash(dto.password)
-        return await self._repo.create(dto.model_copy(update={"password": hashed}))
-```
-
-## FastAPI Best Practices
-```python
-from fastapi import FastAPI, Depends, HTTPException, status
-from pydantic import BaseModel, Field, EmailStr
-
-class CreateUserRequest(BaseModel):
-    email: EmailStr
-    name: str = Field(..., min_length=1, max_length=100)
-    password: str = Field(..., min_length=8, max_length=128)
-
-class UserResponse(BaseModel):
-    id: str
-    email: str
+class ProductResponse(BaseModel):
+    id: UUID
     name: str
+    slug: str
+    price: int
+    status: str
     created_at: datetime
 
-    model_config = ConfigDict(from_attributes=True)
+    model_config = {"from_attributes": True}
 
-@router.post("/users", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
-async def create_user(
-    request: CreateUserRequest,
-    service: UserService = Depends(get_user_service),
-) -> UserResponse:
-    user = await service.register(CreateUserDto(**request.model_dump()))
-    return UserResponse.from_orm(user)
+class PaginatedResponse(BaseModel):
+    data: list[ProductResponse]
+    total: int
+    page: int
+    total_pages: int
+
+# Routes
+@app.get("/api/products", response_model=PaginatedResponse)
+async def list_products(
+    page: int = Query(default=1, ge=1),
+    search: Optional[str] = None,
+    category: Optional[str] = None,
+):
+    # Database query with pagination
+    products, total = await product_service.list(page=page, search=search, category=category)
+    return PaginatedResponse(data=products, total=total, page=page, total_pages=(total + 19) // 20)
+
+@app.post("/api/products", response_model=ProductResponse, status_code=201)
+async def create_product(data: ProductCreate, user=Depends(get_current_admin)):
+    return await product_service.create(data)
+
+@app.get("/api/products/{slug}", response_model=ProductResponse)
+async def get_product(slug: str):
+    product = await product_service.get_by_slug(slug)
+    if not product:
+        raise HTTPException(status_code=404, detail="Product not found")
+    return product
 ```
 
-## Async Programming
+---
+
+## Modern Python Patterns
+
 ```python
-import asyncio
+# Dataclasses
+from dataclasses import dataclass, field
+
+@dataclass
+class Config:
+    debug: bool = False
+    database_url: str = ""
+    redis_url: str = ""
+    cors_origins: list[str] = field(default_factory=list)
+
+# Pattern matching (3.10+)
+def handle_status(status: str) -> str:
+    match status:
+        case "pending": return "Waiting for processing"
+        case "processing": return "Being prepared"
+        case "shipped": return "On the way"
+        case _: return "Unknown status"
+
+# Type hints
+def calculate_total(items: list[dict[str, int]], tax_rate: float = 0.11) -> int:
+    subtotal = sum(item["price"] * item["quantity"] for item in items)
+    return round(subtotal * (1 + tax_rate))
+
+# Context managers
 from contextlib import asynccontextmanager
 
-# ✅ Use async/await for I/O operations
-async def fetch_all_data(user_ids: list[str]) -> list[dict]:
-    async with aiohttp.ClientSession() as session:
-        tasks = [fetch_user(session, uid) for uid in user_ids]
-        return await asyncio.gather(*tasks, return_exceptions=True)
-
-# ✅ Use context managers for resource cleanup
 @asynccontextmanager
-async def get_db_session():
-    session = async_session_factory()
+async def get_db():
+    session = SessionLocal()
     try:
         yield session
         await session.commit()
@@ -141,36 +116,27 @@ async def get_db_session():
         await session.close()
 ```
 
-## Testing
-```python
-import pytest
-from unittest.mock import AsyncMock
+---
 
-@pytest.fixture
-def mock_repo() -> AsyncMock:
-    repo = AsyncMock(spec=UserRepository)
-    repo.create.return_value = User(id="uuid-1", email="test@example.com", name="Test")
-    return repo
+## Best Practices
 
-@pytest.mark.asyncio
-async def test_register_user(mock_repo: AsyncMock):
-    service = UserService(repo=mock_repo, hasher=FakeHasher())
-    user = await service.register(CreateUserDto(email="test@example.com", name="Test", password="pass1234"))
+| Practice | Details |
+|----------|---------|
+| **Type hints** | Use type annotations for all functions |
+| **Pydantic** | Data validation and serialization |
+| **FastAPI** | Async REST API with auto-docs |
+| **Dataclasses** | Structured configuration objects |
+| **Pattern matching** | Structural pattern matching (3.10+) |
+| **async/await** | Use for I/O-bound operations |
+| **Context managers** | Resource management with `with`/`async with` |
+| **Virtual env** | Use venv or poetry for dependencies |
+| **pytest** | Test framework with fixtures |
+| **Black + Ruff** | Code formatting and linting |
 
-    assert user.email == "test@example.com"
-    mock_repo.create.assert_called_once()
-```
-
-## Tools
-| Tool | Purpose |
-|------|---------|
-| `ruff` | Linting + formatting (replaces flake8, black, isort) |
-| `mypy` | Static type checking |
-| `pytest` | Testing |
-| `alembic` | Database migrations |
-| `pip-audit` | Security vulnerability scanning |
+---
 
 ## Rules Integration
-- **SOLID**: Protocol classes (ISP/DIP), single-responsibility modules, dependency injection
-- **Security**: Pydantic validation, `SecretStr`, argon2 hashing, parameterized queries
-- **Dependencies**: `pyproject.toml` with version bounds, `pip-audit` before deploy
+- **API**: FastAPI with Pydantic models and type hints
+- **Models**: Pydantic for validation, dataclasses for config
+- **Async**: async/await for database, HTTP operations
+- **Modern**: Pattern matching, type hints, f-strings

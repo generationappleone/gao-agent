@@ -5,257 +5,258 @@ description: Skill for conducting comprehensive security audits on applications 
 
 # Security Audit Skill
 
-## Purpose
-This skill provides a structured methodology for conducting **full security audits** on applications. It serves as the **orchestrator skill** that coordinates specialized security skills (secrets-management, secure-code-patterns, threat-modeling, data-privacy) into a unified audit process.
+## Overview
+A security audit systematically evaluates an application's security posture by reviewing code, configurations, dependencies, and runtime behavior against established standards (OWASP Top 10, CIS Controls). This skill provides structured checklists, automated scanning commands, and reporting templates.
+
+**References**:
+- [OWASP Top 10 (2021)](https://owasp.org/Top10/)
+- [OWASP ASVS](https://owasp.org/www-project-application-security-verification-standard/)
+- [CIS Benchmarks](https://www.cisecurity.org/cis-benchmarks)
 
 ---
 
-## Audit Modes
-
-### Full Audit Mode
-Complete security assessment covering all OWASP Top 10 categories, dependency scanning, configuration review, and threat assessment. Use for initial audits or periodic reviews.
-
-### Quick Scan Mode
-Focused scan on high-risk areas: secrets exposure, dependency vulnerabilities, and critical misconfigurations. Use for pre-deployment checks.
-
-### Targeted Mode
-Deep dive into a specific security domain (auth, injection, access control, etc.). Use when investigating a specific concern.
-
----
-
-## Decision Tree — Routing to Specialized Skills
-
-```
-Security Audit Start
-├── Secrets & Credentials → skills/secrets-management/SKILL.md
-│   └── Hardcoded keys, .env exposure, secret rotation
-├── Code Patterns → skills/secure-code-patterns/SKILL.md
-│   └── Input validation, output encoding, parameterized queries
-├── Threat Analysis → skills/threat-modeling/SKILL.md
-│   └── STRIDE analysis, trust boundaries, attack surface
-├── Data Privacy → skills/data-privacy/SKILL.md
-│   └── PII handling, consent, data retention, subject rights
-├── Dependency Vulnerabilities → skills/snyk/SKILL.md or npm audit
-│   └── Known CVEs, outdated packages, license issues
-├── XSS Prevention → skills/xss-security/SKILL.md
-│   └── CSP, output encoding, DOM sanitization
-├── DDoS & Rate Limiting → skills/ddos-protection/SKILL.md
-│   └── Rate limiting, Cloudflare, graceful degradation
-├── WAF Configuration → skills/waf/SKILL.md
-│   └── Rules, bot protection, OWASP CRS
-├── Encryption → skills/aes-256/SKILL.md
-│   └── AES-256-GCM, key management, field-level encryption
-└── Compliance → skills/iso-27001/SKILL.md + skills/nist-csf/SKILL.md
-    └── Control mapping, risk assessment, audit preparation
-```
-
----
-
-## OWASP Top 10 (2021) Checklist
+## OWASP Top 10 Checklist
 
 ### A01: Broken Access Control
-```
-Check:
-- [ ] Role-based access control (RBAC) implemented on all endpoints
-- [ ] Authorization checks on every controller/route (not just frontend)
-- [ ] IDOR protection — users cannot access other users' resources
-- [ ] Directory traversal prevention (path validation)
-- [ ] CORS configured restrictively (not wildcard *)
-- [ ] JWT/session cannot be tampered with
-- [ ] Admin routes protected with proper middleware
-- [ ] API rate limiting in place
-```
+```markdown
+- [ ] Role-based access control (RBAC) implemented
+- [ ] Server-side authorization on every endpoint
+- [ ] IDOR prevention (users can only access their own resources)
+- [ ] CORS properly configured (not wildcard *)
+- [ ] Directory listing disabled
+- [ ] JWT claims validated (role, permissions, expiry)
+- [ ] Admin endpoints require admin role
+- [ ] File upload restricted to allowed types/sizes
+- [ ] Rate limiting on sensitive endpoints
 
-**How to check:**
-```bash
-# Find routes without auth middleware
-grep -rn "router\.\(get\|post\|put\|delete\)" --include="*.ts" --include="*.js" | grep -v "auth\|middleware\|protect\|guard"
-# Laravel
-grep -rn "Route::" --include="*.php" -not -path '*/vendor/*' | grep -v "middleware\|auth\|guest"
+# Test:
+- Login as User A, try accessing User B's resources
+- Access admin endpoints without admin role
+- Send requests without Authorization header
+- Modify JWT claims (role: user → admin)
 ```
 
 ### A02: Cryptographic Failures
-```
-Check:
-- [ ] Passwords hashed with bcrypt (cost ≥ 12) or Argon2id
+```markdown
+- [ ] TLS 1.2+ enforced (no TLS 1.0/1.1)
+- [ ] Passwords hashed with bcrypt (12+ rounds)
+- [ ] No MD5/SHA1 for passwords
 - [ ] Sensitive data encrypted at rest (AES-256-GCM)
-- [ ] TLS 1.2+ enforced for data in transit
-- [ ] No sensitive data in URLs or query parameters
-- [ ] No sensitive data in logs
-- [ ] Cryptographic keys stored in vault/env (not code)
-- [ ] No deprecated algorithms (MD5, SHA1, DES, RC4)
-```
-
-**How to check:**
-```bash
-# Find potential weak hashing
-grep -rn "md5\|sha1\|SHA1\|MD5" --include="*.ts" --include="*.js" --include="*.php" --include="*.py" -not -path '*/node_modules/*' -not -path '*/vendor/*'
-# Find hardcoded secrets
-grep -rn "password\s*=\s*['\"]" --include="*.ts" --include="*.js" --include="*.php" --include="*.py" -not -path '*/node_modules/*' -not -path '*/vendor/*' | grep -v "test\|spec\|mock\|example\|sample"
+- [ ] No hardcoded secrets in code
+- [ ] Encryption keys managed securely (env vars/vault)
+- [ ] PII encrypted in database
+- [ ] HSTS header enabled
+- [ ] SSL certificate valid and not expiring soon
 ```
 
 ### A03: Injection
-```
-Check:
-- [ ] All SQL uses parameterized queries (no string concatenation)
-- [ ] ORM used for database access (Prisma, Eloquent, SQLAlchemy)
-- [ ] User input validated and sanitized before processing
-- [ ] No eval(), exec(), or dynamic code execution with user input
-- [ ] No shell command injection (child_process with user input)
-- [ ] Template engines auto-escape output
-- [ ] LDAP injection prevention (if applicable)
-```
-
-**How to check:**
-```bash
-# Find potential SQL injection
-grep -rn "query\|execute\|raw" --include="*.ts" --include="*.js" --include="*.php" --include="*.py" -not -path '*/node_modules/*' -not -path '*/vendor/*' | grep -i "concat\|\+\|format\|%s\|\${"
-# Find dangerous functions
-grep -rn "eval\|exec\|system\|passthru\|shell_exec\|popen" --include="*.ts" --include="*.js" --include="*.php" --include="*.py" -not -path '*/node_modules/*' -not -path '*/vendor/*'
+```markdown
+- [ ] Parameterized queries for all database operations
+- [ ] No string concatenation in SQL
+- [ ] ORM used (Prisma, Sequelize, Eloquent)
+- [ ] Input validation on all endpoints (Zod/Joi)
+- [ ] Output encoding for HTML responses
+- [ ] No eval(), new Function(), or exec() with user input
+- [ ] Command injection prevented (no shell exec with user data)
+- [ ] LDAP injection prevented (if applicable)
 ```
 
 ### A04: Insecure Design
-```
-Check:
-- [ ] Business logic has server-side validation (not just frontend)
-- [ ] Rate limiting on authentication endpoints
+```markdown
+- [ ] Threat modeling completed
+- [ ] Business logic abuse cases identified
+- [ ] Rate limiting on authentication flows
 - [ ] Account lockout after failed attempts
-- [ ] Secure password reset flow (time-limited tokens)
-- [ ] No sensitive operations via GET requests
-- [ ] Proper error messages (no stack traces to users)
+- [ ] Transaction limits enforced
+- [ ] Input validation at business logic level
 ```
 
 ### A05: Security Misconfiguration
-```
-Check:
-- [ ] Debug mode disabled in production
+```markdown
 - [ ] Default credentials changed
-- [ ] Unnecessary features/ports disabled
-- [ ] Security headers configured (CSP, HSTS, X-Frame-Options, etc.)
-- [ ] Error pages don't reveal stack traces
-- [ ] Directory listing disabled
-- [ ] HTTPS enforced (HTTP redirects to HTTPS)
+- [ ] Debug mode disabled in production
+- [ ] Stack traces not exposed to users
+- [ ] Unnecessary HTTP methods disabled
+- [ ] Security headers configured (CSP, HSTS, X-Frame-Options)
+- [ ] Server version not exposed
+- [ ] Admin panels not publicly accessible
+- [ ] .env files not in git
+- [ ] CORS not set to wildcard (*)
 ```
 
-**How to check:**
-```bash
-# Check for debug mode
-grep -rn "DEBUG\s*=\s*[Tt]rue\|APP_DEBUG\s*=\s*true\|NODE_ENV.*development" -not -path '*/node_modules/*' -not -path '*/vendor/*' --include="*.env" --include="*.env.*"
+### A06: Vulnerable Components
+```markdown
+- [ ] No known vulnerabilities in dependencies
+- [ ] Dependencies regularly updated
+- [ ] Automated vulnerability scanning (npm audit, Snyk)
+- [ ] Lock files committed (package-lock.json)
+- [ ] No unnecessary dependencies
 ```
 
-### A06: Vulnerable and Outdated Components
-```
-Check:
-- [ ] No known vulnerabilities in dependencies (npm audit, composer audit)
-- [ ] Dependencies up to date (no EOL versions)
-- [ ] License compliance verified
-- [ ] Only necessary dependencies installed
-- [ ] Lock files committed (package-lock.json, composer.lock)
-```
-
-### A07: Identification and Authentication Failures
-```
-Check:
-- [ ] Strong password policy enforced (min 8 chars, complexity)
-- [ ] Multi-factor authentication available (if applicable)
-- [ ] Session management secure (httpOnly, Secure, SameSite cookies)
-- [ ] JWT properly configured (algorithm, expiry, refresh rotation)
-- [ ] Brute force protection (rate limiting, CAPTCHA)
-- [ ] Session invalidation on logout
-- [ ] Password reset tokens are single-use and time-limited
+### A07: Authentication Failures
+```markdown
+- [ ] Strong password policy enforced
+- [ ] MFA available/required for admin
+- [ ] Brute force protection (rate limiting + lockout)
+- [ ] Session tokens regenerated after login
+- [ ] Secure cookie flags (HttpOnly, Secure, SameSite)
+- [ ] JWT expiry short (15 min access, 7d refresh)
+- [ ] Refresh token rotation implemented
+- [ ] Logout invalidates tokens server-side
+- [ ] Password reset tokens expire (1 hour)
 ```
 
-### A08: Software and Data Integrity Failures
-```
-Check:
-- [ ] CI/CD pipeline secured (no arbitrary code execution)
-- [ ] Dependency integrity verified (lockfiles, checksums)
-- [ ] No unsafe deserialization of user input
-- [ ] Signed releases/deployments
-- [ ] Subresource Integrity (SRI) for CDN resources
+### A08: Software and Data Integrity
+```markdown
+- [ ] CI/CD pipeline secured
+- [ ] Dependencies verified (checksums/signatures)
+- [ ] No unsigned code in production
+- [ ] Subresource Integrity (SRI) for CDN scripts
+- [ ] Code reviewed before merge
 ```
 
-### A09: Security Logging and Monitoring Failures
-```
-Check:
-- [ ] Authentication events logged (login, logout, failed attempts)
-- [ ] Authorization failures logged
+### A09: Logging & Monitoring
+```markdown
+- [ ] Login attempts logged (success + failure)
+- [ ] Access control failures logged
 - [ ] Input validation failures logged
-- [ ] High-value transactions logged
-- [ ] Logs don't contain sensitive data (passwords, tokens, PII)
-- [ ] Log injection prevention (sanitized log input)
-- [ ] Alerting configured for suspicious activity
+- [ ] Sensitive operations logged (admin actions)
+- [ ] Logs do NOT contain passwords/tokens/PII
+- [ ] Centralized logging (ELK/Datadog/CloudWatch)
+- [ ] Alerting on security events
+- [ ] Log tamper protection
 ```
 
-### A10: Server-Side Request Forgery (SSRF)
-```
-Check:
-- [ ] URL validation for user-supplied URLs
-- [ ] Whitelist allowed domains/IPs for outbound requests
-- [ ] No internal network access from user-supplied URLs
+### A10: SSRF
+```markdown
+- [ ] URL allowlists for external requests
+- [ ] No user-controlled URLs in server-side requests
+- [ ] Internal network access blocked (169.254.x.x, 10.x.x.x)
 - [ ] DNS rebinding protection
-- [ ] Metadata endpoint blocking (cloud environments)
 ```
 
 ---
 
-## Report Format
+## Automated Scanning Commands
 
-### Summary Table
+```bash
+# ── Dependency vulnerabilities ──
+npm audit                           # Node.js vulnerabilities
+npm audit --production              # Production only
+npx snyk test                       # Snyk vulnerability scan
+pip-audit                           # Python dependencies
+
+# ── Static analysis ──
+npx semgrep --config auto .         # Semgrep SAST
+npx eslint --ext .ts,.js src/       # ESLint security rules
+
+# ── Secret detection ──
+gitleaks detect --source .          # Scan for hardcoded secrets
+trufflehog filesystem --directory . # Deep secret scan
+
+# ── Docker security ──
+docker scout cves myapp:latest      # Docker image vulnerabilities
+trivy image myapp:latest            # Trivy container scan
+
+# ── SSL/TLS ──
+nmap --script ssl-enum-ciphers -p 443 myapp.com
+testssl.sh myapp.com                # Comprehensive SSL test
+
+# ── Web application ──
+nikto -h https://myapp.com          # Web server scan
+zap-cli quick-scan https://myapp.com  # OWASP ZAP scan
+
+# ── Headers ──
+curl -sI https://myapp.com | grep -iE '(x-frame|x-content|strict-transport|content-security|x-xss|referrer)'
+```
+
+---
+
+## Audit Report Template
+
 ```markdown
-## Security Audit Summary
+# Security Audit Report
+## Application: MyApp API v1.2.3
+## Date: 2024-01-15
+## Auditor: Security Team
 
-| Category | Status | Findings | Severity |
-|----------|--------|----------|----------|
-| A01: Broken Access Control | ✅ Pass / ⚠️ Partial / ❌ Fail | [count] | [highest] |
-| A02: Cryptographic Failures | ✅ / ⚠️ / ❌ | [count] | [highest] |
-| A03: Injection | ✅ / ⚠️ / ❌ | [count] | [highest] |
-| ... | ... | ... | ... |
-| Secrets Exposure | ✅ / ⚠️ / ❌ | [count] | [highest] |
-| Dependency Vulnerabilities | ✅ / ⚠️ / ❌ | [count] | [highest] |
-| Privacy Compliance | ✅ / ⚠️ / ❌ | [count] | [highest] |
-```
+---
 
-### Finding Format
-```markdown
-### Finding #[N]: [Title]
+### Executive Summary
+| Severity | Count |
+|----------|-------|
+| 🔴 Critical | 0 |
+| 🟠 High | 2 |
+| 🟡 Medium | 5 |
+| 🔵 Low | 8 |
+| ℹ️ Info | 3 |
 
-**Severity:** 🔴 P1 Critical / 🟡 P2 Important / 🟢 P3 Suggestion
-**Category:** [OWASP category]
-**File(s):** `path/to/file.ts:42`
-**Description:** [What the vulnerability is]
-**Impact:** [What could happen if exploited]
-**Recommendation:** [How to fix it]
-**Code Example:**
-```[language]
-// Before (vulnerable)
-...
+Overall Risk Level: **MEDIUM**
 
-// After (fixed)
-...
-```
+---
+
+### Findings
+
+#### [HIGH] H-001: Missing Rate Limiting on Login
+- **Category**: A07 - Authentication Failures
+- **Location**: POST /api/auth/login
+- **Description**: No rate limiting on login endpoint, enabling brute force attacks.
+- **Evidence**: 1000 login attempts in 10 seconds without throttling.
+- **Impact**: Account compromise through credential stuffing.
+- **Remediation**: Implement rate limiting (5 attempts per 15 minutes per IP + email).
+- **Priority**: P1 - Fix immediately
+- **Status**: ⬜ Open
+
+#### [MEDIUM] M-001: Missing CSP Header
+- **Category**: A05 - Security Misconfiguration
+- **Location**: All HTTP responses
+- **Description**: Content-Security-Policy header not set.
+- **Impact**: Increased risk of XSS attacks.
+- **Remediation**: Add strict CSP header with helmet.js.
+- **Priority**: P2 - Fix within sprint
+- **Status**: ⬜ Open
+
+---
+
+### Recommendations
+1. Implement rate limiting on all authentication endpoints
+2. Add Content Security Policy headers
+3. Enable MFA for admin accounts
+4. Set up automated dependency scanning in CI/CD
+5. Conduct quarterly security audits
+
+---
+
+### Tools Used
+- Semgrep v1.50.0 (SAST)
+- npm audit (dependency scanning)
+- Nmap 7.94 (network/SSL scanning)
+- Burp Suite Professional (DAST)
+- Gitleaks v8.18 (secret detection)
 ```
 
 ---
 
-## Security Review Exit Criteria
+## Best Practices
 
-A security audit is COMPLETE when:
-- [ ] All 10 OWASP categories have been checked
-- [ ] Secrets scan completed (no hardcoded credentials)
-- [ ] Dependency vulnerability scan completed
-- [ ] Authentication implementation reviewed
-- [ ] All P1 Critical findings have remediation plans
-- [ ] Report generated with prioritized findings
-- [ ] Data privacy assessment completed (if PII present)
+| Practice | Details |
+|----------|---------|
+| **Checklist-driven** | Use OWASP Top 10 as systematic baseline |
+| **Automated + manual** | Automated scans find known issues; manual testing finds logic flaws |
+| **Severity classification** | Critical/High/Medium/Low/Info with clear criteria |
+| **Evidence-based** | Include reproduction steps and evidence for each finding |
+| **Prioritized** | P1 (immediate), P2 (sprint), P3 (backlog), P4 (accepted risk) |
+| **Regular cadence** | Quarterly audits + continuous scanning in CI/CD |
+| **Track remediation** | Follow up on findings until resolved |
+| **Scope** | Define audit scope clearly (app, infra, dependencies) |
+| **Tools** | Combine SAST, DAST, SCA, and manual review |
+| **Report** | Executive summary + detailed findings with remediation |
 
 ---
 
-## Integration with Rules
-
-This skill enforces and validates:
-- `rules/developer-security.md` — 4-layer security model
-- `rules/iso-27000-compliance.md` — Compliance controls
-- `rules/uu-pdp-compliance.md` — Indonesian data privacy (if applicable)
-- `rules/database-design.md` — Secure database patterns
-- `rules/production-code-standards.md` — Zero-hallucination verification
+## Rules Integration
+- **Checklist**: OWASP Top 10 verification for each category
+- **Automated**: npm audit, Semgrep, Gitleaks, Nmap, Nikto
+- **Manual**: IDOR testing, auth bypass, business logic review
+- **Reporting**: Structured findings with severity, evidence, remediation
+- **Cadence**: Quarterly audits, continuous scanning in CI/CD

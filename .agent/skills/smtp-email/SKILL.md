@@ -6,277 +6,124 @@ description: Skill for sending transactional and notification emails via SMTP �
 # SMTP Email Skill
 
 ## Overview
-Email is critical infrastructure for authentication (verification, password reset), notifications, and transactional communication. This skill covers sending emails via SMTP with proper authentication, templates, and deliverability best practices.
+SMTP (Simple Mail Transfer Protocol) is used for sending transactional emails, notifications, password resets, and marketing emails. Nodemailer is the standard Node.js library. For production, use services like Mailgun, SendGrid, or AWS SES with proper SPF/DKIM/DMARC configuration.
+
+**References**:
+- [Nodemailer Documentation](https://nodemailer.com/)
+- [SendGrid Documentation](https://docs.sendgrid.com/)
+- [Mailgun Documentation](https://documentation.mailgun.com/)
 
 ---
 
-## Provider Comparison
+## Setup (Nodemailer)
 
-| Provider | Free Tier | Best For | SMTP Host |
-|----------|-----------|----------|-----------|
-| **Gmail/Google Workspace** | 500/day | Small apps, development | `smtp.gmail.com:587` |
-| **Mailgun** | 100/day (trial) | Transactional email | `smtp.mailgun.org:587` |
-| **SendGrid** | 100/day | Marketing + transactional | `smtp.sendgrid.net:587` |
-| **AWS SES** | 62K/month (from EC2) | High volume, AWS ecosystem | `email-smtp.{region}.amazonaws.com:587` |
-| **Mailtrap** | 1000/month | Testing/staging | `sandbox.smtp.mailtrap.io:587` |
-| **Resend** | 3000/month | Developer-friendly, React Email | `smtp.resend.com:465` |
-
----
-
-## Node.js — Nodemailer
-
-### Installation
-```bash
-npm install nodemailer
-npm install -D @types/nodemailer
-```
-
-### Configuration
 ```typescript
-// lib/email.ts
+// src/lib/mailer.ts
 import nodemailer from 'nodemailer';
 
-interface EmailConfig {
-  host: string;
-  port: number;
-  secure: boolean;
-  auth: { user: string; pass: string };
-}
+const transporter = nodemailer.createTransport({
+  host: process.env.SMTP_HOST || 'smtp.gmail.com',
+  port: Number(process.env.SMTP_PORT) || 587,
+  secure: false, // true for 465
+  auth: { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS },
+});
 
-function createTransporter(): nodemailer.Transporter {
-  const config: EmailConfig = {
-    host: process.env.SMTP_HOST!,
-    port: parseInt(process.env.SMTP_PORT || '587'),
-    secure: process.env.SMTP_SECURE === 'true',
-    auth: {
-      user: process.env.SMTP_USER!,
-      pass: process.env.SMTP_PASSWORD!,
-    },
-  };
-
-  const transporter = nodemailer.createTransport(config);
-
-  // Verify connection on startup
-  transporter.verify((error) => {
-    if (error) {
-      console.error('SMTP connection failed:', error.message);
-    } else {
-      console.log('SMTP server ready');
-    }
+export async function sendEmail(options: { to: string; subject: string; html: string; text?: string }) {
+  return transporter.sendMail({
+    from: `"${process.env.APP_NAME}" <${process.env.SMTP_FROM}>`,
+    to: options.to,
+    subject: options.subject,
+    html: options.html,
+    text: options.text,
   });
-
-  return transporter;
 }
-
-export const transporter = createTransporter();
 ```
 
-### Send Email Function
+---
+
+## Email Templates
+
 ```typescript
-// services/emailService.ts
-import { transporter } from '@/lib/email';
-
-interface SendEmailOptions {
-  to: string | string[];
-  subject: string;
-  html: string;
-  text?: string;
-  from?: string;
-  replyTo?: string;
-  attachments?: Array<{ filename: string; content: Buffer; contentType: string }>;
+// src/emails/templates.ts
+export function welcomeEmail(name: string): string {
+  return `
+    <div style="font-family:'Inter',sans-serif;max-width:600px;margin:0 auto;padding:40px 20px;">
+      <h1 style="color:#1e293b;font-size:24px;">Welcome, ${name}!</h1>
+      <p style="color:#64748b;font-size:16px;line-height:1.6;">Thank you for joining us. Your account has been created successfully.</p>
+      <a href="${process.env.APP_URL}/dashboard" style="display:inline-block;padding:12px 24px;background:#6366f1;color:white;text-decoration:none;border-radius:8px;font-weight:600;">Go to Dashboard</a>
+      <p style="color:#94a3b8;font-size:14px;margin-top:32px;">— The ${process.env.APP_NAME} Team</p>
+    </div>
+  `;
 }
 
-export async function sendEmail(options: SendEmailOptions): Promise<boolean> {
-  try {
-    const result = await transporter.sendMail({
-      from: options.from || `"${process.env.APP_NAME}" <${process.env.SMTP_FROM}>`,
-      to: Array.isArray(options.to) ? options.to.join(', ') : options.to,
-      subject: options.subject,
-      html: options.html,
-      text: options.text || stripHtml(options.html),
-      replyTo: options.replyTo,
-      attachments: options.attachments,
-    });
-
-    console.log(`Email sent: ${result.messageId} to ${options.to}`);
-    return true;
-  } catch (error) {
-    console.error('Email send failed:', error);
-    return false;
-  }
+export function resetPasswordEmail(name: string, resetUrl: string): string {
+  return `
+    <div style="font-family:'Inter',sans-serif;max-width:600px;margin:0 auto;padding:40px 20px;">
+      <h1 style="color:#1e293b;font-size:24px;">Password Reset</h1>
+      <p style="color:#64748b;">Hi ${name}, click below to reset your password. This link expires in 1 hour.</p>
+      <a href="${resetUrl}" style="display:inline-block;padding:12px 24px;background:#6366f1;color:white;text-decoration:none;border-radius:8px;">Reset Password</a>
+      <p style="color:#94a3b8;font-size:12px;">If you didn't request this, please ignore this email.</p>
+    </div>
+  `;
 }
 
-function stripHtml(html: string): string {
-  return html.replace(/<[^>]*>/g, '').replace(/\s+/g, ' ').trim();
+export function orderConfirmationEmail(order: any): string {
+  const itemRows = order.items.map((item: any) => `
+    <tr><td style="padding:8px;border-bottom:1px solid #e5e7eb;">${item.name}</td>
+    <td style="padding:8px;text-align:center;">${item.quantity}</td>
+    <td style="padding:8px;text-align:right;">$${(item.total / 100).toFixed(2)}</td></tr>
+  `).join('');
+
+  return `
+    <div style="font-family:'Inter',sans-serif;max-width:600px;margin:0 auto;">
+      <h1>Order Confirmed</h1>
+      <p>Order #${order.orderNumber}</p>
+      <table style="width:100%;border-collapse:collapse;">
+        <thead><tr><th style="text-align:left;padding:8px;">Product</th><th>Qty</th><th style="text-align:right;">Total</th></tr></thead>
+        <tbody>${itemRows}</tbody>
+        <tfoot><tr><td colspan="2" style="padding:8px;font-weight:700;">Total</td><td style="padding:8px;text-align:right;font-weight:700;">$${(order.total / 100).toFixed(2)}</td></tr></tfoot>
+      </table>
+    </div>
+  `;
 }
 ```
 
-### Usage — Common Email Types
+---
+
+## Usage
+
 ```typescript
-// Verification email
-await sendEmail({
-  to: user.email,
-  subject: 'Verifikasi Email Anda',
-  html: verificationTemplate({ name: user.fullName, link: verifyUrl }),
-});
+// Send welcome email
+await sendEmail({ to: user.email, subject: 'Welcome to MyApp!', html: welcomeEmail(user.name) });
 
-// Password reset
-await sendEmail({
-  to: user.email,
-  subject: 'Reset Password',
-  html: resetPasswordTemplate({ name: user.fullName, link: resetUrl, expiresIn: '1 jam' }),
-});
+// Send password reset
+await sendEmail({ to: user.email, subject: 'Reset Your Password', html: resetPasswordEmail(user.name, resetUrl) });
 
-// Welcome email
-await sendEmail({
-  to: user.email,
-  subject: `Selamat datang di ${APP_NAME}!`,
-  html: welcomeTemplate({ name: user.fullName }),
-});
-
-// Invoice / transactional
-await sendEmail({
-  to: order.customerEmail,
-  subject: `Invoice #${order.invoiceNumber}`,
-  html: invoiceTemplate(order),
-  attachments: [{ filename: `invoice-${order.invoiceNumber}.pdf`, content: pdfBuffer, contentType: 'application/pdf' }],
-});
+// Send order confirmation
+await sendEmail({ to: user.email, subject: `Order #${order.orderNumber} Confirmed`, html: orderConfirmationEmail(order) });
 ```
 
 ---
-
-## Laravel — Built-in Mail
-
-```php
-// .env
-MAIL_MAILER=smtp
-MAIL_HOST=smtp.mailgun.org
-MAIL_PORT=587
-MAIL_USERNAME=postmaster@yourdomain.com
-MAIL_PASSWORD=your-password
-MAIL_ENCRYPTION=tls
-MAIL_FROM_ADDRESS=noreply@yourdomain.com
-MAIL_FROM_NAME="${APP_NAME}"
-
-// Create Mailable
-// php artisan make:mail VerificationMail
-
-// app/Mail/VerificationMail.php
-class VerificationMail extends Mailable
-{
-    use Queueable, SerializesModels;
-
-    public function __construct(
-        public readonly User $user,
-        public readonly string $verificationUrl,
-    ) {}
-
-    public function envelope(): Envelope
-    {
-        return new Envelope(subject: 'Verifikasi Email Anda');
-    }
-
-    public function content(): Content
-    {
-        return new Content(view: 'emails.verification');
-    }
-}
-
-// Send
-Mail::to($user->email)->send(new VerificationMail($user, $url));
-
-// Queue (production — always queue emails)
-Mail::to($user->email)->queue(new VerificationMail($user, $url));
-```
-
----
-
-## Email Template (Base Layout)
-
-```html
-<!DOCTYPE html>
-<html lang="id">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-</head>
-<body style="margin: 0; padding: 0; background-color: #f8fafc; font-family: 'Inter', -apple-system, sans-serif;">
-  <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #f8fafc; padding: 40px 20px;">
-    <tr>
-      <td align="center">
-        <table width="100%" cellpadding="0" cellspacing="0" style="max-width: 540px; background: #ffffff; border-radius: 12px; border: 1px solid #e2e8f0; overflow: hidden;">
-          <!-- Header -->
-          <tr>
-            <td style="background: linear-gradient(135deg, #6366f1, #8b5cf6); padding: 32px 40px; text-align: center;">
-              <h1 style="color: #ffffff; font-size: 20px; font-weight: 700; margin: 0;">APP_NAME</h1>
-            </td>
-          </tr>
-          <!-- Content -->
-          <tr>
-            <td style="padding: 40px;">
-              <!-- CONTENT HERE -->
-            </td>
-          </tr>
-          <!-- Footer -->
-          <tr>
-            <td style="padding: 24px 40px; background: #f8fafc; border-top: 1px solid #e2e8f0; text-align: center;">
-              <p style="color: #94a3b8; font-size: 12px; margin: 0;">
-                &copy; 2025 APP_NAME. All rights reserved.<br>
-                <a href="{{unsubscribe_url}}" style="color: #6366f1;">Berhenti berlangganan</a>
-              </p>
-            </td>
-          </tr>
-        </table>
-      </td>
-    </tr>
-  </table>
-</body>
-</html>
-```
-
----
-
-## Deliverability — SPF, DKIM, DMARC
-
-```
-DNS Records (REQUIRED for production):
-
-1. SPF — Authorize mail servers
-   TXT @ "v=spf1 include:mailgun.org include:_spf.google.com ~all"
-
-2. DKIM — Sign emails cryptographically
-   TXT mail._domainkey "v=DKIM1; k=rsa; p=YOUR_PUBLIC_KEY"
-
-3. DMARC — Policy for failed checks
-   TXT _dmarc "v=DMARC1; p=quarantine; rua=mailto:dmarc@yourdomain.com; pct=100"
-```
-
----
-
-## Environment Variables
-```bash
-SMTP_HOST=smtp.mailgun.org
-SMTP_PORT=587
-SMTP_SECURE=false
-SMTP_USER=postmaster@mg.yourdomain.com
-SMTP_PASSWORD=your-smtp-password
-SMTP_FROM=noreply@yourdomain.com
-APP_NAME="Your App"
-```
 
 ## Best Practices
-1. **Always queue emails** in production — never send synchronously in request
-2. **Use templates** — consistent branding, no inline HTML in code
-3. **Include plain text version** — not just HTML
-4. **Set up SPF/DKIM/DMARC** — or emails go to spam
-5. **Use Mailtrap for testing** — never test with real SMTP in development
-6. **Rate limit email sending** — respect provider limits
-7. **Log sends, not content** — log recipient + status, never email body
-8. **Handle bounces** — monitor bounce rates, clean email lists
-9. **Unsubscribe link** — required by law for marketing emails
-10. **Verify SMTP on startup** — fail fast if config is wrong
+
+| Practice | Details |
+|----------|---------|
+| **Provider** | Use Mailgun/SendGrid/SES for production |
+| **SPF/DKIM/DMARC** | Configure DNS records for deliverability |
+| **Templates** | Inline CSS for email client compatibility |
+| **Queue** | Queue emails with Bull/RabbitMQ for reliability |
+| **Unsubscribe** | Include unsubscribe link in marketing emails |
+| **Testing** | Use Mailtrap/Ethereal for development |
+| **Rate limiting** | Respect provider sending limits |
+| **Text fallback** | Include plain text version |
+| **From address** | Use consistent, verified sender address |
+| **Error handling** | Retry failed sends, log errors |
+
+---
 
 ## Rules Integration
-- **SMTP OTP**: OTP delivery via SMTP in `skills/smtp-otp/`
-- **Developer Security**: Email credential security in `rules/developer-security.md`
-- **UU PDP**: Marketing emails require consent in `rules/uu-pdp-compliance.md`
+- **Transport**: Nodemailer with SMTP config
+- **Templates**: Inline-styled HTML for compatibility
+- **Types**: Welcome, reset password, order confirmation
+- **Production**: Queue + provider (Mailgun/SendGrid/SES)

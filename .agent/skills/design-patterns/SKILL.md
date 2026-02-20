@@ -6,153 +6,145 @@ description: Skill for software design patterns — covering GoF patterns (Creat
 # Design Patterns Skill
 
 ## Overview
-Design patterns are proven solutions to recurring software design problems. This skill covers Gang of Four patterns and modern architectural patterns.
+Design patterns are proven solutions to common software design problems. They include GoF patterns (Creational, Structural, Behavioral) and architectural patterns (Repository, CQRS, Event-Driven). This skill covers practical TypeScript implementations.
 
-**Reference**: Design Patterns: Elements of Reusable Object-Oriented Software (GoF)
+**References**:
+- [Refactoring Guru](https://refactoring.guru/design-patterns)
+- [Gang of Four Patterns](https://en.wikipedia.org/wiki/Design_Patterns)
 
-## Creational Patterns
+---
 
-### Factory Method
+## Repository Pattern
+
 ```typescript
-interface Logger { log(message: string): void; }
-
-class ConsoleLogger implements Logger { log(msg: string) { console.log(msg); } }
-class FileLogger implements Logger { log(msg: string) { fs.appendFileSync("app.log", msg + "\n"); } }
-
-class LoggerFactory {
-  static create(type: "console" | "file"): Logger {
-    switch (type) {
-      case "console": return new ConsoleLogger();
-      case "file": return new FileLogger();
-      default: throw new Error(`Unknown logger type: ${type}`);
-    }
-  }
-}
-```
-
-### Builder
-```typescript
-class QueryBuilder {
-  private table = "";
-  private conditions: string[] = [];
-  private orderField = "";
-  private limitCount = 0;
-
-  from(table: string) { this.table = table; return this; }
-  where(condition: string) { this.conditions.push(condition); return this; }
-  orderBy(field: string) { this.orderField = field; return this; }
-  limit(count: number) { this.limitCount = count; return this; }
-
-  build(): string {
-    let query = `SELECT * FROM ${this.table}`;
-    if (this.conditions.length) query += ` WHERE ${this.conditions.join(" AND ")}`;
-    if (this.orderField) query += ` ORDER BY ${this.orderField}`;
-    if (this.limitCount) query += ` LIMIT ${this.limitCount}`;
-    return query;
-  }
-}
-
-const query = new QueryBuilder().from("users").where("active = true").orderBy("name").limit(20).build();
-```
-
-### Singleton
-```typescript
-class Database {
-  private static instance: Database;
-  private constructor() { /* connect */ }
-  static getInstance(): Database {
-    if (!Database.instance) Database.instance = new Database();
-    return Database.instance;
-  }
-}
-```
-
-## Structural Patterns
-
-### Repository
-```typescript
-interface Repository<T> {
+// Generic repository interface
+interface IRepository<T> {
   findById(id: string): Promise<T | null>;
-  findAll(filter?: Partial<T>): Promise<T[]>;
-  create(data: Omit<T, "id">): Promise<T>;
+  findMany(filter: Partial<T>, options?: { page: number; limit: number }): Promise<{ data: T[]; total: number }>;
+  create(data: Omit<T, 'id' | 'createdAt'>): Promise<T>;
   update(id: string, data: Partial<T>): Promise<T>;
   delete(id: string): Promise<void>;
 }
 
-class UserRepository implements Repository<User> {
-  constructor(private db: PrismaClient) {}
-  async findById(id: string) { return this.db.user.findUnique({ where: { id } }); }
-  async findAll(filter?: Partial<User>) { return this.db.user.findMany({ where: filter }); }
-  async create(data: Omit<User, "id">) { return this.db.user.create({ data }); }
-  async update(id: string, data: Partial<User>) { return this.db.user.update({ where: { id }, data }); }
-  async delete(id: string) { await this.db.user.delete({ where: { id } }); }
+// Prisma implementation
+class PrismaProductRepo implements IRepository<Product> {
+  async findById(id: string) {
+    return prisma.product.findUnique({ where: { id }, include: { category: true } });
+  }
+  async findMany(filter: Partial<Product>, options = { page: 1, limit: 20 }) {
+    const [data, total] = await Promise.all([
+      prisma.product.findMany({ where: filter as any, skip: (options.page - 1) * options.limit, take: options.limit }),
+      prisma.product.count({ where: filter as any }),
+    ]);
+    return { data, total };
+  }
+  async create(data) { return prisma.product.create({ data }); }
+  async update(id, data) { return prisma.product.update({ where: { id }, data }); }
+  async delete(id) { await prisma.product.delete({ where: { id } }); }
 }
 ```
 
-### Adapter
+---
+
+## Strategy Pattern
+
 ```typescript
-interface PaymentGateway {
-  charge(amount: number, currency: string): Promise<PaymentResult>;
+interface PaymentStrategy {
+  process(amount: number, metadata: Record<string, any>): Promise<PaymentResult>;
 }
 
-class StripeAdapter implements PaymentGateway {
-  constructor(private stripe: Stripe) {}
-  async charge(amount: number, currency: string) {
-    const intent = await this.stripe.paymentIntents.create({ amount: amount * 100, currency });
-    return { id: intent.id, status: intent.status };
+class StripePayment implements PaymentStrategy {
+  async process(amount: number, metadata: Record<string, any>) {
+    const intent = await stripe.paymentIntents.create({ amount, currency: 'usd', metadata });
+    return { transactionId: intent.id, status: 'pending', clientSecret: intent.client_secret };
   }
 }
+
+class MidtransPayment implements PaymentStrategy {
+  async process(amount: number, metadata: Record<string, any>) {
+    const snap = await midtrans.createTransaction({ transaction_details: { order_id: metadata.orderId, gross_amount: amount } });
+    return { transactionId: snap.transaction_id, status: 'pending', redirectUrl: snap.redirect_url };
+  }
+}
+
+// Usage
+const strategies: Record<string, PaymentStrategy> = { stripe: new StripePayment(), midtrans: new MidtransPayment() };
+const result = await strategies[method].process(amount, { orderId });
 ```
 
-## Behavioral Patterns
+---
 
-### Observer / Event Emitter
+## Observer Pattern (Event Emitter)
+
 ```typescript
 class EventBus {
-  private listeners = new Map<string, Function[]>();
+  private listeners = new Map<string, Set<Function>>();
 
-  on(event: string, callback: Function) {
-    const handlers = this.listeners.get(event) || [];
-    handlers.push(callback);
-    this.listeners.set(event, handlers);
+  on(event: string, handler: Function) {
+    if (!this.listeners.has(event)) this.listeners.set(event, new Set());
+    this.listeners.get(event)!.add(handler);
+    return () => this.listeners.get(event)?.delete(handler);
   }
 
   emit(event: string, data?: any) {
-    this.listeners.get(event)?.forEach(cb => cb(data));
-  }
-
-  off(event: string, callback: Function) {
-    const handlers = this.listeners.get(event) || [];
-    this.listeners.set(event, handlers.filter(cb => cb !== callback));
+    this.listeners.get(event)?.forEach(handler => handler(data));
   }
 }
+
+// Usage
+const bus = new EventBus();
+bus.on('order.created', (order) => sendConfirmationEmail(order));
+bus.on('order.created', (order) => updateInventory(order));
+bus.emit('order.created', order);
 ```
 
-### Strategy
+---
+
+## Builder Pattern
+
 ```typescript
-interface SortStrategy<T> { sort(data: T[]): T[]; }
+class QueryBuilder<T> {
+  private filters: Record<string, any> = {};
+  private sortField = 'createdAt';
+  private sortDir: 'asc' | 'desc' = 'desc';
+  private _page = 1;
+  private _limit = 20;
 
-class QuickSort<T> implements SortStrategy<T> { sort(data: T[]) { /* ... */ return data; } }
-class MergeSort<T> implements SortStrategy<T> { sort(data: T[]) { /* ... */ return data; } }
+  where(field: string, value: any) { this.filters[field] = value; return this; }
+  orderBy(field: string, dir: 'asc' | 'desc' = 'asc') { this.sortField = field; this.sortDir = dir; return this; }
+  page(p: number) { this._page = p; return this; }
+  limit(l: number) { this._limit = l; return this; }
 
-class Sorter<T> {
-  constructor(private strategy: SortStrategy<T>) {}
-  setStrategy(strategy: SortStrategy<T>) { this.strategy = strategy; }
-  sort(data: T[]) { return this.strategy.sort(data); }
+  build() {
+    return { where: this.filters, orderBy: { [this.sortField]: this.sortDir }, skip: (this._page - 1) * this._limit, take: this._limit };
+  }
 }
+
+// Usage
+const query = new QueryBuilder().where('status', 'active').where('categoryId', catId).orderBy('price', 'asc').page(2).build();
 ```
 
-## Pattern Selection Guide
+---
 
-| Problem | Pattern |
-|---------|---------|
-| Create objects without specifying class | **Factory** |
-| Build complex objects step by step | **Builder** |
-| Single shared instance | **Singleton** |
-| Decouple data access from business logic | **Repository** |
-| Adapt incompatible interfaces | **Adapter** |
-| React to state changes | **Observer** |
-| Swap algorithms at runtime | **Strategy** |
-| Add behavior without modifying class | **Decorator** |
-| Simplify complex subsystem | **Facade** |
-| Undo/redo operations | **Command** |
+## Best Practices
+
+| Practice | Details |
+|----------|---------|
+| **Repository** | Abstract data access behind interfaces |
+| **Strategy** | Swap algorithms at runtime |
+| **Observer** | Decouple event producers from consumers |
+| **Builder** | Construct complex objects step-by-step |
+| **Factory** | Create objects without specifying exact class |
+| **Singleton** | Single instance (DB connection, config) |
+| **Adapter** | Convert interface to another interface |
+| **Decorator** | Add behavior without modifying class |
+| **CQRS** | Separate read/write models |
+| **Dependency injection** | Inject dependencies via constructor |
+
+---
+
+## Rules Integration
+- **Repository**: Data access abstraction
+- **Strategy**: Payment, notification, auth strategies
+- **Observer**: Event-driven decoupling
+- **Builder**: Query construction, config objects

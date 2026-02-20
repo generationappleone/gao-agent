@@ -6,109 +6,304 @@ description: Skill for implementing payment processing with Stripe — covering 
 # Stripe / Payment Gateway Skill
 
 ## Overview
-Stripe is the leading payment processing platform for internet businesses. This skill covers Stripe API integration for payments, subscriptions, and billing.
+Stripe is the leading payment processing platform for internet businesses. It provides APIs for one-time payments (Payment Intents), recurring billing (Subscriptions), hosted checkout (Checkout Sessions), customer management, invoicing, and webhook-driven event processing. Stripe handles PCI compliance.
 
-**Reference**: [Stripe Documentation](https://stripe.com/docs)
+**References**:
+- [Stripe API Documentation](https://stripe.com/docs/api)
+- [Stripe Node.js SDK](https://www.npmjs.com/package/stripe)
+- [Stripe Elements](https://stripe.com/docs/stripe-js)
+
+---
 
 ## Setup
+
 ```bash
 npm install stripe @stripe/stripe-js @stripe/react-stripe-js
 ```
 
-## Server-Side (Node.js)
 ```typescript
-import Stripe from "stripe";
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
+// src/lib/stripe.ts (Server)
+import Stripe from 'stripe';
 
-// Create Payment Intent
-app.post("/api/create-payment-intent", async (req, res) => {
-  const { amount, currency = "usd" } = req.body;
-  const paymentIntent = await stripe.paymentIntents.create({
-    amount: Math.round(amount * 100), // cents
-    currency,
-    automatic_payment_methods: { enabled: true },
-    metadata: { orderId: req.body.orderId },
-  });
-  res.json({ clientSecret: paymentIntent.client_secret });
-});
-
-// Checkout Session (hosted)
-app.post("/api/checkout", async (req, res) => {
-  const session = await stripe.checkout.sessions.create({
-    mode: "payment",
-    line_items: [{ price: "price_xxx", quantity: 1 }],
-    success_url: `${process.env.APP_URL}/success?session_id={CHECKOUT_SESSION_ID}`,
-    cancel_url: `${process.env.APP_URL}/cancel`,
-  });
-  res.json({ url: session.url });
-});
-
-// Subscription
-const subscription = await stripe.subscriptions.create({
-  customer: customerId,
-  items: [{ price: "price_monthly_xxx" }],
-  payment_behavior: "default_incomplete",
-  expand: ["latest_invoice.payment_intent"],
-});
-
-// Webhook handler
-app.post("/webhook", express.raw({ type: "application/json" }), (req, res) => {
-  const sig = req.headers["stripe-signature"]!;
-  const event = stripe.webhooks.constructEvent(req.body, sig, process.env.STRIPE_WEBHOOK_SECRET!);
-
-  switch (event.type) {
-    case "payment_intent.succeeded":
-      await handlePaymentSuccess(event.data.object);
-      break;
-    case "invoice.paid":
-      await handleInvoicePaid(event.data.object);
-      break;
-    case "customer.subscription.deleted":
-      await handleSubscriptionCanceled(event.data.object);
-      break;
-  }
-  res.json({ received: true });
+export const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
+  apiVersion: '2024-12-18.acacia',
+  typescript: true,
 });
 ```
 
-## Client-Side (React)
-```tsx
-import { loadStripe } from "@stripe/stripe-js";
-import { Elements, PaymentElement, useStripe, useElements } from "@stripe/react-stripe-js";
+```typescript
+// src/lib/stripe-client.ts (Client)
+import { loadStripe } from '@stripe/stripe-js';
 
-const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_KEY!);
+export const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!);
+```
+
+---
+
+## Checkout Session (Hosted)
+
+```typescript
+// POST /api/checkout
+export async function createCheckoutSession(req: Request) {
+  const { items, userId, email } = req.body;
+
+  // Find or create customer
+  let customer: Stripe.Customer;
+  const existing = await stripe.customers.list({ email, limit: 1 });
+  if (existing.data.length > 0) {
+    customer = existing.data[0];
+  } else {
+    customer = await stripe.customers.create({ email, metadata: { userId } });
+  }
+
+  const session = await stripe.checkout.sessions.create({
+    customer: customer.id,
+    mode: 'payment',
+    payment_method_types: ['card'],
+    line_items: items.map((item: any) => ({
+      price_data: {
+        currency: 'usd',
+        product_data: {
+          name: item.name,
+          description: item.description,
+          images: item.images,
+        },
+        unit_amount: item.price, // In cents
+      },
+      quantity: item.quantity,
+    })),
+    success_url: `${process.env.APP_URL}/checkout/success?session_id={CHECKOUT_SESSION_ID}`,
+    cancel_url: `${process.env.APP_URL}/checkout/cancel`,
+    metadata: { userId, orderId: item.orderId },
+    shipping_address_collection: { allowed_countries: ['US', 'ID'] },
+    expires_at: Math.floor(Date.now() / 1000) + 3600, // 1 hour
+  });
+
+  return { url: session.url };
+}
+```
+
+---
+
+## Payment Intent (Custom UI)
+
+```typescript
+// POST /api/payment-intent
+export async function createPaymentIntent(req: Request) {
+  const { amount, currency, orderId, customerId } = req.body;
+
+  const paymentIntent = await stripe.paymentIntents.create({
+    amount, // In smallest currency unit (cents)
+    currency: currency || 'usd',
+    customer: customerId,
+    metadata: { orderId },
+    automatic_payment_methods: { enabled: true },
+  });
+
+  return { clientSecret: paymentIntent.client_secret };
+}
+```
+
+```tsx
+// React: Payment Form
+import { Elements, PaymentElement, useStripe, useElements } from '@stripe/react-stripe-js';
+import { stripePromise } from '@/lib/stripe-client';
 
 function CheckoutForm() {
   const stripe = useStripe();
   const elements = useElements();
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
 
-  const handleSubmit = async (e: FormEvent) => {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!stripe || !elements) return;
-    const { error } = await stripe.confirmPayment({
-      elements, confirmParams: { return_url: `${window.location.origin}/success` },
+
+    setLoading(true);
+    setError('');
+
+    const { error: submitError } = await stripe.confirmPayment({
+      elements,
+      confirmParams: {
+        return_url: `${window.location.origin}/checkout/success`,
+      },
     });
-    if (error) console.error(error.message);
-  };
+
+    if (submitError) {
+      setError(submitError.message || 'Payment failed');
+      setLoading(false);
+    }
+  }
 
   return (
     <form onSubmit={handleSubmit}>
       <PaymentElement />
-      <button disabled={!stripe}>Pay</button>
+      {error && <p className="error">{error}</p>}
+      <button type="submit" disabled={!stripe || loading}>
+        {loading ? 'Processing...' : 'Pay Now'}
+      </button>
     </form>
+  );
+}
+
+export function PaymentPage({ clientSecret }: { clientSecret: string }) {
+  return (
+    <Elements stripe={stripePromise} options={{ clientSecret, appearance: { theme: 'stripe' } }}>
+      <CheckoutForm />
+    </Elements>
   );
 }
 ```
 
+---
+
+## Subscriptions
+
+```typescript
+// Create subscription
+export async function createSubscription(customerId: string, priceId: string) {
+  const subscription = await stripe.subscriptions.create({
+    customer: customerId,
+    items: [{ price: priceId }],
+    payment_behavior: 'default_incomplete',
+    payment_settings: { save_default_payment_method: 'on_subscription' },
+    expand: ['latest_invoice.payment_intent'],
+  });
+
+  const invoice = subscription.latest_invoice as Stripe.Invoice;
+  const paymentIntent = invoice.payment_intent as Stripe.PaymentIntent;
+
+  return {
+    subscriptionId: subscription.id,
+    clientSecret: paymentIntent.client_secret,
+  };
+}
+
+// Cancel subscription
+export async function cancelSubscription(subscriptionId: string) {
+  return stripe.subscriptions.update(subscriptionId, {
+    cancel_at_period_end: true,
+  });
+}
+
+// Create pricing products
+export async function createPricingPlans() {
+  const product = await stripe.products.create({ name: 'Pro Plan', description: 'Full access' });
+
+  const monthly = await stripe.prices.create({
+    product: product.id, unit_amount: 2999, currency: 'usd',
+    recurring: { interval: 'month' },
+  });
+
+  const yearly = await stripe.prices.create({
+    product: product.id, unit_amount: 29999, currency: 'usd',
+    recurring: { interval: 'year' },
+  });
+
+  return { monthly, yearly };
+}
+```
+
+---
+
+## Webhooks
+
+```typescript
+// POST /api/webhooks/stripe
+export async function handleStripeWebhook(req: Request) {
+  const sig = req.headers['stripe-signature']!;
+  const body = req.rawBody; // Raw body required
+
+  let event: Stripe.Event;
+  try {
+    event = stripe.webhooks.constructEvent(body, sig, process.env.STRIPE_WEBHOOK_SECRET!);
+  } catch (err) {
+    console.error('Webhook signature verification failed');
+    return { status: 400 };
+  }
+
+  switch (event.type) {
+    case 'checkout.session.completed': {
+      const session = event.data.object as Stripe.Checkout.Session;
+      await handleCheckoutComplete(session);
+      break;
+    }
+    case 'payment_intent.succeeded': {
+      const pi = event.data.object as Stripe.PaymentIntent;
+      await handlePaymentSuccess(pi);
+      break;
+    }
+    case 'payment_intent.payment_failed': {
+      const pi = event.data.object as Stripe.PaymentIntent;
+      await handlePaymentFailed(pi);
+      break;
+    }
+    case 'customer.subscription.updated': {
+      const sub = event.data.object as Stripe.Subscription;
+      await handleSubscriptionUpdate(sub);
+      break;
+    }
+    case 'customer.subscription.deleted': {
+      const sub = event.data.object as Stripe.Subscription;
+      await handleSubscriptionCancelled(sub);
+      break;
+    }
+    case 'invoice.payment_failed': {
+      const invoice = event.data.object as Stripe.Invoice;
+      await handleInvoicePaymentFailed(invoice);
+      break;
+    }
+    default:
+      console.log(`Unhandled event: ${event.type}`);
+  }
+
+  return { received: true };
+}
+
+async function handleCheckoutComplete(session: Stripe.Checkout.Session) {
+  const orderId = session.metadata?.orderId;
+  if (orderId) {
+    await db.order.update({
+      where: { id: orderId },
+      data: {
+        status: 'processing',
+        payment: {
+          create: {
+            method: 'stripe',
+            amount: session.amount_total!,
+            status: 'paid',
+            transactionId: session.payment_intent as string,
+            paidAt: new Date(),
+          },
+        },
+      },
+    });
+  }
+}
+```
+
+---
+
 ## Best Practices
 
-| Practice | Description |
-|----------|-------------|
-| **Webhooks** | Primary source of truth for payment status |
-| **Idempotency keys** | Prevent duplicate charges |
-| **Server-side amounts** | Never trust client-side pricing |
-| **Metadata** | Attach order/user IDs to payments |
-| **Test mode** | Use `sk_test_` keys for development |
-| **PCI compliance** | Use Stripe Elements — never handle raw card data |
-| **Error handling** | Handle all Stripe error types gracefully |
-| **Webhook signature** | Always verify webhook signatures |
+| Practice | Details |
+|----------|---------|
+| **Webhook verification** | Always verify `stripe-signature` header |
+| **Idempotency** | Handle duplicate webhook events gracefully |
+| **Raw body** | Use raw body for webhook signature verification |
+| **Amount in cents** | All amounts in smallest currency unit |
+| **Customer management** | Find or create customers by email |
+| **Metadata** | Attach orderId, userId to sessions/intents |
+| **Error handling** | Handle card declines, expired cards |
+| **Test mode** | Use `sk_test_` keys in development |
+| **Payment Element** | Use Stripe Elements for PCI compliance |
+| **Subscriptions** | Use `cancel_at_period_end` for graceful cancellation |
+
+---
+
+## Rules Integration
+- **Checkout**: Hosted checkout for simple flows
+- **Payment Intent**: Custom UI with Stripe Elements
+- **Subscriptions**: Create, cancel, update plans
+- **Webhooks**: Event-driven order/subscription updates
+- **PCI**: Stripe handles card data, never on your server
