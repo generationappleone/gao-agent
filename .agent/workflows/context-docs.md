@@ -17,6 +17,7 @@ The user triggers this workflow by:
 - Using `/context-docs readme` to generate/update README
 - Using `/context-docs changelog` to generate CHANGELOG
 - Using `/context-docs api` to generate API documentation
+- Using `/context-docs internal` to update internal agent context docs (`.agent/context/`)
 - Using `/context-docs all` to generate everything
 
 ---
@@ -66,8 +67,9 @@ What documentation do you need?
 3. 🤝 **CONTRIBUTING.md** — Contribution guidelines
 4. 📡 **API Documentation** — OpenAPI / Swagger spec
 5. 🏗️ **Architecture Decision Records (ADR)** — Design decisions
-6. 📦 **All of the above**
-7. 🔄 **Update existing** — Refresh outdated docs
+6. 🧠 **Internal Context Docs** — Refresh `.agent/context/` based on codebase changes
+7. 📦 **All of the above**
+8. 🔄 **Update existing** — Refresh outdated docs
 
 Existing docs detected: [list found files]
 ```
@@ -396,9 +398,26 @@ Create `docs/adr/template.md`:
 
 ---
 
-## Phase 7: Freshness Check & Validation
+## Phase 7: Internal Context Docs Update
 
-### Step 7.1 — Validate Generated Docs
+This phase applies only if the user requested `/context-docs internal` or included internal docs in the scope.
+
+### Step 7.1 — Identify Outdated Context
+1. Review the existing `.agent/context/` documentation.
+2. Cross-reference the documentation with the latest codebase changes.
+3. Determine which context files (e.g., `DATABASE_SCHEMA.md`, `API_REFERENCE.md`, `ARCHITECTURE.md`) have become outdated.
+
+### Step 7.2 — Update Specific Context Files
+For each file that requires an update:
+1. Gather the required new information using codebase search tools (e.g., find new endpoints, new database models, new dependencies).
+2. Use the code editing tools to update the specific `.agent/context/` file, keeping the format intact.
+3. After updates, report the changes specifically in the documentation output.
+
+---
+
+## Phase 8: Freshness Check & Validation
+
+### Step 8.1 — Validate Generated Docs
 // turbo
 
 For each generated document:
@@ -408,7 +427,7 @@ For each generated document:
 - [ ] version numbers are current
 - [ ] No placeholder text remains (e.g., `[TODO]`, `[description]`)
 
-### Step 7.2 — Check Doc Freshness
+### Step 8.2 — Check Doc Freshness
 
 If updating existing docs:
 ```bash
@@ -425,13 +444,13 @@ Report outdated sections and recommend updates.
 
 ---
 
-## Phase 8: Save & Report
+## Phase 9: Save & Report
 
-### Step 8.1 — Present for Review
+### Step 9.1 — Present for Review
 
 Show all generated documentation for user approval before saving.
 
-### Step 8.2 — Save Files
+### Step 9.2 — Save Files
 
 After approval, save to appropriate locations:
 - `README.md` — project root
@@ -439,8 +458,9 @@ After approval, save to appropriate locations:
 - `CONTRIBUTING.md` — project root
 - `docs/api/openapi.yaml` — API spec
 - `docs/adr/` — ADR documents
+- `.agent/context/` — Updated internal context docs
 
-### Step 8.3 — Report
+### Step 9.3 — Report
 
 ```markdown
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
