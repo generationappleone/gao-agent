@@ -6,7 +6,7 @@
 
 *Enterprise-grade AI coding agent with 364 skills, 18 enforced rules, 19 automated workflows, self-learning memory, and full-stack development capabilities across 10+ languages and 30+ frameworks.*
 
-[![Skills](https://img.shields.io/badge/Skills-364-blue?style=for-the-badge&logo=bookstack&logoColor=white)](#-skills-library-364)
+[![Skills](https://img.shields.io/badge/Skills-365-blue?style=for-the-badge&logo=bookstack&logoColor=white)](#-skills-library-365)
 [![Rules](https://img.shields.io/badge/Rules-18-red?style=for-the-badge&logo=shield&logoColor=white)](#-mandatory-rules-18)
 [![Workflows](https://img.shields.io/badge/Workflows-19-green?style=for-the-badge&logo=githubactions&logoColor=white)](#-workflows-19)
 [![Memory](https://img.shields.io/badge/Memory-Self--Learning-purple?style=for-the-badge&logo=brain&logoColor=white)](#-memory-system)
@@ -28,7 +28,7 @@
 - [Getting Started](#-getting-started)
 - [Mandatory Rules (17)](#-mandatory-rules-17)
 - [Workflows (18)](#-workflows-18)
-- [Skills Library (360)](#-skills-library-360)
+- [Skills Library (365)](#-skills-library-365)
 - [Memory System](#-memory-system)
 - [How It Works](#-how-it-works)
 - [Decision Matrix](#-decision-matrix)
@@ -50,7 +50,7 @@
 | No memory between sessions | **Self-learning memory** — learns from corrections and never repeats mistakes |
 | Generic responses | **Context-aware** — reads your entire codebase before writing a single line |
 | Inconsistent patterns | **17 mandatory rules** ensure consistent output across ALL tasks |
-| Limited framework knowledge | **360 deep technical skills** covering 30+ frameworks in production detail |
+| Limited framework knowledge | **365 deep technical skills** covering 30+ frameworks in production detail |
 | Manual workflows | **18 automated workflows** from planning to deployment |
 | No compliance awareness | **Built-in compliance**: ISO 27001, NIST CSF, CIS Controls, UU PDP/GDPR |
 
@@ -401,9 +401,9 @@ Every action performed by GAO Agent must comply with these rules. **They are non
 
 ---
 
-## 🛠 Skills Library (360)
+## 🛠 Skills Library (365)
 
-GAO Agent includes **360 deep technical skill directories**, each containing production-ready reference implementations, architecture patterns, and best practices. Skills are NOT generic documentation — they are **battle-tested implementation guides** that the agent reads before writing any code.
+GAO Agent includes **365 deep technical skill directories**, each containing production-ready reference implementations, architecture patterns, and best practices. Skills are NOT generic documentation — they are **battle-tested implementation guides** that the agent reads before writing any code.
 
 ### Languages & Core Frameworks
 
@@ -792,7 +792,7 @@ When GAO Agent encounters common architectural decisions, it follows these defau
 
 | Metric | Count |
 |--------|-------|
-| **Total Skill Directories** | 364 |
+| **Total Skill Directories** | 365 |
 | **Mandatory Rules** | 18 |
 | **Automated Workflows** | 19 |
 | **Memory Files** | 2 (Error Log + Learned Knowledge) |
@@ -826,6 +826,6 @@ This project is proprietary. All rights reserved.
 
 *Transforming AI coding assistants into production-grade software engineers — secure, compliant, and always learning.*
 
-**364 Skills · 18 Rules · 19 Workflows · Self-Learning Memory**
+**365 Skills · 18 Rules · 19 Workflows · Self-Learning Memory**
 
 </div>

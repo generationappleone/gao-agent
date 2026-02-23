@@ -200,7 +200,7 @@ The following rules MUST be applied to ALL code. They are non-negotiable.
 
 ---
 
-## 🛠️ Available Skills (364)
+## 🛠️ Available Skills (365)
 
 Skills are reference implementations and best practices for specific technologies. Read the relevant `SKILL.md` when working with that technology.
 
@@ -617,6 +617,7 @@ Skills are reference implementations and best practices for specific technologie
 | Skill | Path | Use When |
 |-------|------|----------|
 | Gravitee | `skills/gravitee/` | API management, gateway, developer portal, API security |
+| MataElang OS | `skills/mataelang/` | Enterprise network monitoring with Python, FastAPI, and SQLAlchemy |
 | Network Security Appliances | `skills/network-security-appliances/` | Cisco ACI, Fortinet, Palo Alto PAN-OS, Cloudflare |
 | Snort | `skills/snort/` | Open-source IDS/IPS, rule-based detection |
 | Suricata | `skills/suricata/` | High-performance IDS/IPS, protocol analysis |
