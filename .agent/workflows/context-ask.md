@@ -24,16 +24,16 @@ Determine the category of the user's question:
 
 | Category | Description | Example |
 |----------|-------------|---------|
-| **Codebase** | About existing project code, structure, logic | "Bagaimana flow authentication di project ini?" |
-| **Architecture** | About design patterns, system design | "Apakah kita sebaiknya pakai microservices atau monolith?" |
-| **Debugging** | About errors, bugs, unexpected behavior | "Kenapa endpoint /api/users return 500?" |
-| **How-To** | How to implement something | "Bagaimana cara menambahkan WebSocket ke project ini?" |
-| **Brainstorm** | Exploring ideas, solution design | "Fitur apa yang bisa ditambahkan untuk meningkatkan UX?" |
-| **Technology** | About specific tools, libraries, frameworks | "Apa perbedaan Redis vs Memcached untuk caching?" |
-| **Best Practice** | About industry standards, patterns | "Bagaimana best practice untuk handle file upload?" |
-| **Performance** | About optimization, speed, scaling | "Bagaimana cara optimize query yang lambat ini?" |
-| **Security** | About vulnerabilities, hardening | "Apakah implementasi auth kita sudah aman?" |
-| **DevOps** | About deployment, CI/CD, infrastructure | "Bagaimana setup zero-downtime deployment?" |
+| **Codebase** | About existing project code, structure, logic | "How does the authentication flow work in this project?" |
+| **Architecture** | About design patterns, system design | "Should we use microservices or a monolith?" |
+| **Debugging** | About errors, bugs, unexpected behavior | "Why does the /api/users endpoint return 500?" |
+| **How-To** | How to implement something | "How do I add WebSocket to this project?" |
+| **Brainstorm** | Exploring ideas, solution design | "What features could be added to improve UX?" |
+| **Technology** | About specific tools, libraries, frameworks | "What's the difference between Redis and Memcached for caching?" |
+| **Best Practice** | About industry standards, patterns | "What's the best practice for handling file uploads?" |
+| **Performance** | About optimization, speed, scaling | "How can I optimize this slow query?" |
+| **Security** | About vulnerabilities, hardening | "Is our auth implementation secure?" |
+| **DevOps** | About deployment, CI/CD, infrastructure | "How do I set up zero-downtime deployment?" |
 | **General** | Any other development question | Anything else |
 
 ### Step 1.2 — Assess Clarity

@@ -106,8 +106,8 @@ find . -maxdepth 2 \( -name "jest.config*" -o -name "vitest.config*" -o -name "c
 ```markdown
 ### Testing Tools Assessment
 
-#### 🟢 Kategori 1: Auto-Install (npm/pip/composer)
-Tools yang bisa langsung di-install dan dijalankan oleh agent:
+#### 🟢 Category 1: Auto-Install (npm/pip/composer)
+Tools that can be installed and run directly by the agent:
 
 | Tool | Purpose | Status | Install Command | Skill |
 |------|---------|--------|----------------|-------|
@@ -127,8 +127,8 @@ Tools yang bisa langsung di-install dan dijalankan oleh agent:
 | PHPStan/Larastan | PHP static analysis | ✅/❌ | `composer require --dev phpstan/phpstan` | phpstan-larastan |
 | Pest | PHP testing framework | ✅/❌ | `composer require --dev pestphp/pest` | phpstan-larastan |
 
-#### 🟡 Kategori 2: CLI Tools (Manual Install, Agent Runs)
-Tools yang perlu di-install manual oleh user, tapi agent bisa jalankan via CLI:
+#### 🟡 Category 2: CLI Tools (Manual Install, Agent Runs)
+Tools that need to be installed manually by the user, but can be run by the agent via CLI:
 
 | Tool | Purpose | Status | Install Info | Skill |
 |------|---------|--------|-------------|-------|
@@ -145,8 +145,8 @@ Tools yang perlu di-install manual oleh user, tapi agent bisa jalankan via CLI:
 | Burp Suite | Security testing (GUI) | ✅/❌ | Desktop installer | burp-suite |
 | Checkmarx | Enterprise SAST | ✅/❌ | License required | checkmarx |
 
-#### 🔴 Kategori 3: SaaS / Cloud (API Key Required)
-Tools berbasis cloud yang perlu account + API key:
+#### 🔴 Category 3: SaaS / Cloud (API Key Required)
+Cloud-based tools that require an account + API key:
 
 | Tool | Purpose | Status | Requirement | Skill |
 |------|---------|--------|------------|-------|
@@ -165,7 +165,7 @@ If required tools are missing:
 ```markdown
 ⚠️ Testing Tools Required
 
-### 🟢 Auto-Install (Agent dapat langsung install)
+### 🟢 Auto-Install (Agent can install directly)
 | # | Tool | Purpose | Command |
 |---|------|---------|--------|
 | 1 | Playwright | E2E testing | `npm i -D @playwright/test && npx playwright install` |
@@ -173,9 +173,9 @@ If required tools are missing:
 | 3 | pa11y | Accessibility | `npm i -D pa11y` |
 | ... | ... | ... | ... |
 
-→ **Boleh saya install sekarang?** (Ya / Tidak / Pilih yang mana saja)
+→ **May I install these now?** (Yes / No / Select specific ones)
 
-### 🟡 Manual Install (User harus install, agent jalankan)
+### 🟡 Manual Install (User must install, agent runs)
 | # | Tool | Purpose | Install Guide |
 |---|------|---------|---------------|
 | 1 | OWASP ZAP | DAST scanning | `docker pull ghcr.io/zaproxy/zaproxy:stable` |
@@ -183,9 +183,9 @@ If required tools are missing:
 | 3 | Trivy | Container scan | `docker pull aquasec/trivy` |
 | ... | ... | ... | ... |
 
-→ **Silakan install tool di atas, lalu konfirmasi kesiapan**
+→ **Please install the tools above, then confirm readiness**
 
-### 🔴 Cloud/SaaS (User sediakan API key)
+### 🔴 Cloud/SaaS (User provides API key)
 | # | Tool | Purpose | Setup |
 |---|------|---------|-------|
 | 1 | Snyk Cloud | Dep monitoring | Set `SNYK_TOKEN` in .env |
@@ -193,13 +193,13 @@ If required tools are missing:
 | 3 | BrowserStack | Cross-browser | Set `BROWSERSTACK_USERNAME` + `BROWSERSTACK_ACCESS_KEY` |
 | ... | ... | ... | ... |
 
-→ **Tambahkan API key ke .env, lalu konfirmasi**
+→ **Add API key to .env, then confirm**
 
-**Pilihan Global:**
-1. 📦 **Install semua Kategori 1** — Saya install semua npm/pip packages
-2. 🎯 **Install yang diperlukan saja** — Saya hanya install yang relevan untuk scope test ini
-3. ⏭️ **Skip semua yang missing** — Test dengan tool yang sudah ada (coverage berkurang)
-4. 🔧 **Tunggu user setup** — Anda setup manual dulu, saya lanjut setelah siap
+**Global Options:**
+1. 📦 **Install all Category 1** — I'll install all npm/pip packages
+2. 🎯 **Install only what's needed** — I'll only install what's relevant for this test scope
+3. ⏭️ **Skip all missing** — Test with existing tools only (reduced coverage)
+4. 🔧 **Wait for user setup** — You set up manually first, I'll continue when ready
 ```
 
 ### Step 1.5 — Check Required Skills

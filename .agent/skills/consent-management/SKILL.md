@@ -96,36 +96,36 @@ export function CookieConsentBanner() {
           aria-describedby="consent-description"
         >
           <div className="consent-banner__content">
-            <h3 className="consent-banner__title">🍪 Kebijakan Privasi & Cookie</h3>
+            <h3 className="consent-banner__title">🍪 Privacy & Cookie Policy</h3>
             <p id="consent-description" className="consent-banner__text">
-              Kami menggunakan cookie untuk meningkatkan pengalaman Anda. Sesuai dengan
-              UU Pelindungan Data Pribadi (UU No. 27/2022), kami memerlukan persetujuan
-              Anda sebelum memproses data pribadi untuk tujuan tertentu.
+              We use cookies to improve your experience. In accordance with
+              Indonesia's Personal Data Protection Law (UU No. 27/2022), we require your consent
+              before processing personal data for specific purposes.
             </p>
 
             {showDetails && (
               <div className="consent-banner__details">
                 <ConsentToggle
-                  label="Diperlukan"
-                  description="Cookie yang diperlukan untuk fungsi dasar situs"
+                  label="Necessary"
+                  description="Cookies required for basic site functionality"
                   checked={true}
                   disabled={true}
                 />
                 <ConsentToggle
-                  label="Analitik"
-                  description="Membantu kami memahami penggunaan situs (Google Analytics)"
+                  label="Analytics"
+                  description="Helps us understand site usage (Google Analytics)"
                   checked={preferences.analytics}
                   onChange={(v) => setPreferences({ ...preferences, analytics: v })}
                 />
                 <ConsentToggle
-                  label="Pemasaran"
-                  description="Cookie untuk iklan yang relevan (Meta Pixel, TikTok)"
+                  label="Marketing"
+                  description="Cookies for relevant advertising (Meta Pixel, TikTok)"
                   checked={preferences.marketing}
                   onChange={(v) => setPreferences({ ...preferences, marketing: v })}
                 />
                 <ConsentToggle
-                  label="Personalisasi"
-                  description="Menyesuaikan konten berdasarkan preferensi Anda"
+                  label="Personalization"
+                  description="Customizes content based on your preferences"
                   checked={preferences.personalization}
                   onChange={(v) => setPreferences({ ...preferences, personalization: v })}
                 />
@@ -134,24 +134,24 @@ export function CookieConsentBanner() {
 
             <div className="consent-banner__actions">
               <button onClick={handleRejectAll} className="btn-ghost">
-                Tolak Semua
+                Reject All
               </button>
               <button onClick={() => setShowDetails(!showDetails)} className="btn-outline">
-                {showDetails ? 'Sembunyikan' : 'Kelola Preferensi'}
+                {showDetails ? 'Hide' : 'Manage Preferences'}
               </button>
               {showDetails ? (
                 <button onClick={handleSavePreferences} className="btn-primary">
-                  Simpan Preferensi
+                  Save Preferences
                 </button>
               ) : (
                 <button onClick={handleAcceptAll} className="btn-primary">
-                  Terima Semua
+                  Accept All
                 </button>
               )}
             </div>
 
             <p className="consent-banner__link">
-              Baca selengkapnya di <a href="/kebijakan-privasi">Kebijakan Privasi</a> kami.
+              Read more in our <a href="/privacy-policy">Privacy Policy</a>.
             </p>
           </div>
         </motion.div>
@@ -467,10 +467,10 @@ function AgeGate({ onVerified }: { onVerified: (isAdult: boolean) => void }) {
   };
 
   return (
-    <div className="age-gate" role="dialog" aria-label="Verifikasi usia">
-      <h2>Verifikasi Usia</h2>
-      <p>Sesuai UU Pelindungan Data Pribadi, kami perlu memverifikasi usia Anda.</p>
-      <label htmlFor="birthdate">Tanggal Lahir</label>
+    <div className="age-gate" role="dialog" aria-label="Age verification">
+      <h2>Age Verification</h2>
+      <p>In accordance with the Personal Data Protection Law, we need to verify your age.</p>
+      <label htmlFor="birthdate">Date of Birth</label>
       <input
         type="date"
         id="birthdate"
@@ -479,7 +479,7 @@ function AgeGate({ onVerified }: { onVerified: (isAdult: boolean) => void }) {
         max={new Date().toISOString().split('T')[0]}
         required
       />
-      <button onClick={handleVerify} className="btn-primary">Verifikasi</button>
+      <button onClick={handleVerify} className="btn-primary">Verify</button>
     </div>
   );
 }
@@ -510,7 +510,7 @@ Every application MUST have a privacy settings page where users can:
 6. Contact DPO
 
 ```
-Route: /settings/privasi or /pengaturan/privasi
+Route: /settings/privacy or /settings/privasi
 ```
 
 ---

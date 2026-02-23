@@ -65,8 +65,8 @@ CREATE TABLE chatbots (
     temperature DECIMAL(3,2) DEFAULT 0.7,
     max_tokens INTEGER DEFAULT 1000,
     welcome_message TEXT,
-    fallback_message TEXT DEFAULT 'Maaf, saya tidak mengerti. Bisa diulangi?',
-    handoff_message TEXT DEFAULT 'Saya akan menghubungkan Anda dengan agent kami.',
+    fallback_message TEXT DEFAULT 'Sorry, I don''t understand. Could you rephrase that?',
+    handoff_message TEXT DEFAULT 'I will connect you with one of our agents.',
     is_active BOOLEAN DEFAULT TRUE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
@@ -220,10 +220,10 @@ const context = {
     {
       "id": "ask_order_id",
       "type": "question",
-      "message": "Boleh saya minta nomor pesanan Anda?",
+      "message": "Could I have your order number, please?",
       "variable": "order_id",
       "validation": "^ORD-\\d{8}-\\d{3}$",
-      "on_invalid": "Format nomor pesanan: ORD-XXXXXXXX-XXX",
+      "on_invalid": "Order number format: ORD-XXXXXXXX-XXX",
       "next": "lookup_order"
     },
     {
@@ -237,7 +237,7 @@ const context = {
     {
       "id": "show_status",
       "type": "response",
-      "message": "Pesanan {order_id} sedang dalam status: {order_status}",
+      "message": "Order {order_id} is currently in status: {order_status}",
       "next": "ask_more_help"
     }
   ]
@@ -249,11 +249,11 @@ const context = {
 // Buttons
 {
   "type": "buttons",
-  "text": "Apa yang bisa saya bantu?",
+  "text": "How can I help you?",
   "buttons": [
-    { "label": "Cek Status Pesanan", "value": "order_status" },
-    { "label": "Ajukan Pengembalian", "value": "refund" },
-    { "label": "Bicara dengan Agent", "value": "human_handoff" }
+    { "label": "Check Order Status", "value": "order_status" },
+    { "label": "Request a Refund", "value": "refund" },
+    { "label": "Talk to an Agent", "value": "human_handoff" }
   ]
 }
 
@@ -262,10 +262,10 @@ const context = {
   "type": "carousel",
   "items": [
     {
-      "title": "Paket Basic",
-      "subtitle": "Rp 99.000/bulan",
+      "title": "Basic Plan",
+      "subtitle": "$9.99/month",
       "image": "https://...",
-      "buttons": [{ "label": "Pilih", "value": "select_basic" }]
+      "buttons": [{ "label": "Select", "value": "select_basic" }]
     }
   ]
 }
@@ -273,21 +273,21 @@ const context = {
 // Quick replies
 {
   "type": "quick_reply",
-  "text": "Apakah masalah sudah teratasi?",
-  "replies": ["Ya, terima kasih", "Belum, butuh bantuan lagi"]
+  "text": "Has the issue been resolved?",
+  "replies": ["Yes, thank you", "Not yet, I need more help"]
 }
 ```
 
 ### 5. Human Handoff
 ```
 Bot detects handoff trigger:
-  - User says "bicara dengan agent" / "speak to human"
+  - User says "talk to an agent" / "speak to human"
   - Confidence below threshold (< 0.3) for 3 consecutive turns
   - Sentiment is very negative
   - Complex issue detected (refund, complaint)
 
 Flow:
-  Bot → "Saya akan menghubungkan Anda dengan agent kami."
+  Bot → "I will connect you with one of our agents."
   → Check agent availability
   → If available: Transfer to live chat (with conversation history)
   → If unavailable: Collect contact info, create support ticket

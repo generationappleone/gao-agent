@@ -1,38 +1,38 @@
 ---
 name: omnisocial
 description: >
-  Skill untuk mengerjakan proyek OmniSocial — platform analitik & manajemen sosial media
-  enterprise pada folder X:\Project\omnisocial\. Gunakan skill ini SETIAP KALI mengerjakan
-  task di repositori ini. Mencakup: arsitektur tiga-layer (Laravel 12 API, React 19 + TypeScript
-  FE, Python Flask AI Agent), konvensi kode per-layer, PostgreSQL schema, OAuth patterns untuk
-  10 platform sosial media, credit system, recipe guide per jenis task, dan environment setup.
+  Skill for working on the OmniSocial project — an enterprise social media analytics & management
+  platform located at X:\Project\omnisocial\. Use this skill EVERY TIME you work on tasks in this
+  repository. Covers: three-layer architecture (Laravel 12 API, React 19 + TypeScript FE,
+  Python Flask AI Agent), per-layer code conventions, PostgreSQL schema, OAuth patterns for
+  10 social media platforms, credit system, recipe guide per task type, and environment setup.
 ---
 
 # OmniSocial Platform Skill
 
-> **Lokasi Proyek:** `X:\Project\omnisocial\`
-> **Gunakan skill ini WAJIB** setiap kali mengerjakan sesuatu di repositori OmniSocial.
+> **Project Location:** `X:\Project\omnisocial\`
+> **This skill is MANDATORY** every time you work on anything in the OmniSocial repository.
 
 ---
 
 ## Quick Reference
 
-| Kebutuhan | Lokasi |
-|-----------|--------|
-| Tambah endpoint baru | [§4 Backend Patterns](#4-backend-laravel-patterns) |
-| Tambah halaman React baru | [§5 Frontend Patterns](#5-frontend-react--typescript-patterns) |
-| Tambah Python Agent feature | [§6 Python Agent Patterns](#6-python-agent-patterns) |
-| Connect platform baru | [§7 Platform Integrations](#7-platform-integrations-guide) |
-| Tambah tabel DB baru | [§8 Database Schema](#8-database-schema-overview) |
+| Need | Location |
+|------|----------|
+| Add new endpoint | [§4 Backend Patterns](#4-backend-laravel-patterns) |
+| Add new React page | [§5 Frontend Patterns](#5-frontend-react--typescript-patterns) |
+| Add Python Agent feature | [§6 Python Agent Patterns](#6-python-agent-patterns) |
+| Connect new platform | [§7 Platform Integrations](#7-platform-integrations-guide) |
+| Add new DB table | [§8 Database Schema](#8-database-schema-overview) |
 | Recipe how-to | [§9 Common Tasks](#9-common-tasks--recipes) |
 | Environment variables | [§11 Env Vars](#11-environment-variables) |
-| Jalankan project | [§12 Running Project](#12-running-the-project) |
+| Run the project | [§12 Running Project](#12-running-the-project) |
 
 ---
 
 ## 1. Overview & Architecture
 
-OmniSocial adalah **platform analitik & manajemen sosial media enterprise** dengan tiga layer utama:
+OmniSocial is an **enterprise social media analytics & management platform** with three main layers:
 
 ```
 ┌─────────────────────────────────────────────────────────────────────┐
@@ -63,9 +63,9 @@ OmniSocial adalah **platform analitik & manajemen sosial media enterprise** deng
 └─────────────────────────────────────────────────────────────────────┘
 ```
 
-### Modul-modul Utama
+### Core Modules
 
-| Kategori | Modul | Keterangan |
+| Category | Module | Description |
 |----------|-------|-----------|
 | **Social Connectors** | YouTube, Instagram, Meta/Facebook, LinkedIn (Organic+Ads), TikTok (Organic+Ads), X/Twitter (Organic+Ads), Threads, Google Ads, Website/Sitemap | OAuth 2.0, auto token refresh |
 | **AI Features** | Smart Audit, Cognitive Funnel, Content Analyzer, Keyword Agent (Trend IQ), Social Media AI, Video Processor | Powered by Google Gemini |
@@ -78,7 +78,7 @@ OmniSocial adalah **platform analitik & manajemen sosial media enterprise** deng
 ## 2. Tech Stack
 
 ### Backend (omnisocial-api/)
-| Teknologi | Versi | Package |
+| Technology | Version | Package |
 |-----------|-------|---------|
 | PHP | ^8.2 | — |
 | Laravel | ^12.0 | `laravel/framework` |
@@ -86,7 +86,7 @@ OmniSocial adalah **platform analitik & manajemen sosial media enterprise** deng
 | Google Ads SDK | ^31.1 | `googleads/google-ads-php` |
 
 ### Frontend (omnisocial-fe/)
-| Teknologi | Versi | Package |
+| Technology | Version | Package |
 |-----------|-------|---------|
 | React | ^19.2.0 | `react` |
 | TypeScript | — | `typescript` |
@@ -99,7 +99,7 @@ OmniSocial adalah **platform analitik & manajemen sosial media enterprise** deng
 | Markdown | — | `react-markdown` |
 
 ### Python Agent (omnisocial-agent/)
-| Teknologi | Versi | Package |
+| Technology | Version | Package |
 |-----------|-------|---------|
 | Python | 3.10+ | — |
 | Flask | >=2.3.0 | `flask` |
@@ -119,7 +119,7 @@ OmniSocial adalah **platform analitik & manajemen sosial media enterprise** deng
 | Database Name | `omnisocial_db` |
 | ORM (Laravel) | Eloquent |
 | ORM (Python) | SQLAlchemy |
-| Primary Key | UUID (semua tabel) |
+| Primary Key | UUID (all tables) |
 
 ---
 
@@ -131,7 +131,7 @@ X:\Project\omnisocial\
 │   ├── app/
 │   │   ├── Http/
 │   │   │   ├── Controllers/
-│   │   │   │   ├── Api/         ← Semua API controllers (extends BaseController)
+│   │   │   │   ├── Api/         ← All API controllers (extends BaseController)
 │   │   │   │   └── ActivityLogController.php
 │   │   │   └── Middleware/
 │   │   │       └── LogApiActivity.php
@@ -142,14 +142,14 @@ X:\Project\omnisocial\
 │   │       └── FunnelContentSyncService.php
 │   ├── database/migrations/     ← 37 migration files
 │   ├── routes/
-│   │   └── api.php              ← SEMUA routes di sini (prefix v1)
+│   │   └── api.php              ← ALL routes here (prefix v1)
 │   └── .env                    ← Laravel environment
 │
 ├── omnisocial-fe/               ← React 19 + TypeScript Frontend
 │   ├── pages/                   ← Route-level page components
 │   ├── components/              ← Reusable UI components
 │   ├── services/
-│   │   ├── api.ts               ← Central API client (SELALU gunakan ini)
+│   │   ├── api.ts               ← Central API client (ALWAYS use this)
 │   │   ├── geminiService.ts     ← AI operations (Gemini)
 │   │   ├── creditService.ts     ← Credit operations
 │   │   ├── youtubeService.ts    ← YouTube API
@@ -167,7 +167,7 @@ X:\Project\omnisocial\
 │   │   ├── videoProcessorService.ts← Video clip generator
 │   │   └── connectorService.ts  ← Generic connector helper
 │   ├── hooks/
-│   │   └── useCreditCheck.ts    ← Credit check hook (WAJIB untuk AI ops)
+│   │   └── useCreditCheck.ts    ← Credit check hook (REQUIRED for AI ops)
 │   ├── utils/
 │   │   └── security.ts          ← Security utilities
 │   ├── config/
@@ -202,9 +202,9 @@ X:\Project\omnisocial\
 
 ## 4. Backend (Laravel) Patterns
 
-### 4.1 Controller Pattern — WAJIB ikuti ini
+### 4.1 Controller Pattern — MUST follow this
 
-Semua controller harus `extends BaseController` dan menggunakan `sendResponse()` / `sendError()`.
+All controllers must `extends BaseController` and use `sendResponse()` / `sendError()`.
 
 ```php
 <?php
@@ -222,12 +222,12 @@ use App\Services\ActivityLogger;
 class SomeController extends BaseController
 {
     /**
-     * Ambil semua item milik user yang sedang login.
+     * Get all items belonging to the currently logged-in user.
      */
     public function index(Request $request)
     {
         try {
-            $userId = $request->user()->id; // Selalu gunakan ini untuk isolasi user
+            $userId = $request->user()->id; // Always use this for user data isolation
             $items = SomeModel::where('user_id', $userId)
                 ->orderBy('created_at', 'desc')
                 ->get();
@@ -240,7 +240,7 @@ class SomeController extends BaseController
     }
 
     /**
-     * Buat item baru.
+     * Create a new item.
      */
     public function store(Request $request)
     {
@@ -255,13 +255,13 @@ class SomeController extends BaseController
 
         try {
             $item = SomeModel::create([
-                'id'          => (string) Str::uuid(), // SELALU generate UUID
+                'id'          => (string) Str::uuid(), // ALWAYS generate UUID
                 'user_id'     => Auth::id(),
                 'name'        => $request->name,
                 'description' => $request->description,
             ]);
 
-            // Log sukses (opsional tapi sangat dianjurkan)
+            // Log success (optional but highly recommended)
             ActivityLogger::logSuccess(Auth::id(), 'some_item_created', [
                 'item_id' => $item->id,
                 'name'    => $item->name,
@@ -275,7 +275,7 @@ class SomeController extends BaseController
     }
 
     /**
-     * Update item (pastikan item milik user yang sedang login).
+     * Update item (ensure item belongs to the currently logged-in user).
      */
     public function update(Request $request, $id)
     {
@@ -288,7 +288,7 @@ class SomeController extends BaseController
         }
 
         try {
-            // PENTING: Selalu filter by user_id untuk security
+            // IMPORTANT: Always filter by user_id for security
             $item = SomeModel::where('id', $id)
                 ->where('user_id', Auth::id())
                 ->first();
@@ -306,7 +306,7 @@ class SomeController extends BaseController
     }
 
     /**
-     * Hapus item.
+     * Delete item.
      */
     public function destroy($id)
     {
@@ -339,7 +339,7 @@ class SomeController extends BaseController
 { "code": 404, "message": "...", "data": {...} }
 ```
 
-> ⚠️ **JANGAN** pernah return `response()->json()` langsung — selalu gunakan `sendResponse()` / `sendError()`.
+> ⚠️ **NEVER** return `response()->json()` directly — always use `sendResponse()` / `sendError()`.
 
 ### 4.2 Model Pattern
 
@@ -354,7 +354,7 @@ class SomeModel extends Model
 {
     protected $table = 'some_models'; // snake_case, plural
 
-    // WAJIB untuk UUID primary key
+    // REQUIRED for UUID primary key
     public $incrementing = false;
     protected $keyType = 'string';
 
@@ -364,11 +364,11 @@ class SomeModel extends Model
         'name',
         'description',
         'status',
-        'metadata', // Untuk JSON columns
+        'metadata', // For JSON columns
     ];
 
     protected $casts = [
-        'metadata'   => 'array',   // JSON column → PHP array otomatis
+        'metadata'   => 'array',   // JSON column → PHP array automatically
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
     ];
@@ -395,7 +395,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('some_models', function (Blueprint $table) {
-            $table->uuid('id')->primary();           // UUID primary key — WAJIB
+            $table->uuid('id')->primary();           // UUID primary key — REQUIRED
             $table->uuid('user_id');
             $table->foreign('user_id')
                   ->references('id')
@@ -405,10 +405,10 @@ return new class extends Migration
             $table->string('name');
             $table->text('description')->nullable();
             $table->string('status')->default('active');
-            $table->json('metadata')->nullable();    // Untuk flexible data
+            $table->json('metadata')->nullable();    // For flexible data
 
-            $table->timestamps();                    // created_at + updated_at — WAJIB
-            // TIDAK ada softDeletes() — OmniSocial pakai hard delete
+            $table->timestamps();                    // created_at + updated_at — REQUIRED
+            // NO softDeletes() — OmniSocial uses hard delete
         });
     }
 
@@ -419,23 +419,23 @@ return new class extends Migration
 };
 ```
 
-> **Konvensi Migration:**
+> **Migration Convention:**
 > - File format: `YYYY_MM_DD_HHMMSS_create_{table}_table.php`
-> - Jalankan: `php artisan migrate` (dari folder `omnisocial-api/`)
+> - Run: `php artisan migrate` (from the `omnisocial-api/` folder)
 > - Rollback: `php artisan migrate:rollback`
 
 ### 4.4 Route Registration
 
 ```php
-// routes/api.php — SEMUA routes ada di sini
+// routes/api.php — ALL routes are here
 
-// Di bagian atas file: import controller
+// At the top of the file: import controller
 use App\Http\Controllers\Api\SomeController;
 
-// Di dalam: Route::prefix('v1')->group(function () {
+// Inside: Route::prefix('v1')->group(function () {
 //            Route::middleware(['auth:sanctum', 'log.api.activity'])->group(function () {
 
-// Resource routes (tambahkan di dalam middleware group)
+// Resource routes (add inside the middleware group)
 Route::get('/some-feature', [SomeController::class, 'index']);
 Route::post('/some-feature', [SomeController::class, 'store']);
 Route::get('/some-feature/{id}', [SomeController::class, 'show']);
@@ -444,17 +444,17 @@ Route::delete('/some-feature/{id}', [SomeController::class, 'destroy']);
 ```
 
 > **Route Conventions:**
-> - Semua di prefix `/api/v1/` (otomatis lewat `RouteServiceProvider`)
+> - All prefixed with `/api/v1/` (automatically via `RouteServiceProvider`)
 > - Auth: `auth:sanctum` middleware
-> - Activity log: `log.api.activity` middleware (otomatis log ke JSON daily file)
-> - Public routes (tanpa auth): hanya `/signin`, `/login`, `/smart-audit/callback`
+> - Activity log: `log.api.activity` middleware (automatically logs to daily JSON file)
+> - Public routes (without auth): only `/signin`, `/login`, `/smart-audit/callback`
 
 ### 4.5 Activity Logger Usage
 
 ```php
 // Log success
 ActivityLogger::logSuccess(Auth::id(), 'action_name', [
-    'key' => 'value', // detail bebas dalam array
+    'key' => 'value', // any details in array
 ]);
 
 // Log failure
@@ -462,26 +462,26 @@ ActivityLogger::logFailure(Auth::id(), 'action_name_failed', [
     'error' => $e->getMessage(),
 ]);
 
-// sendError() otomatis memanggil ActivityLogger::logFailure() — tidak perlu manual
+// sendError() automatically calls ActivityLogger::logFailure() — no manual call needed
 ```
 
-Log disimpan ke `storage/logs/user_activities/YYYY-MM-DD.json` (per hari).
+Logs are saved to `storage/logs/user_activities/YYYY-MM-DD.json` (daily).
 
 ### 4.6 Auth Pattern
 
 ```php
-// Mendapatkan user yang sedang login
+// Get the currently logged-in user
 $user = Auth::user();       // User model
 $userId = Auth::id();       // UUID string
-$userId = $request->user()->id; // Alternatif (lebih eksplisit)
+$userId = $request->user()->id; // Alternative (more explicit)
 
-// WAJIB: Selalu filter query dengan user_id untuk isolasi data
+// REQUIRED: Always filter queries with user_id for data isolation
 SomeModel::where('user_id', Auth::id())->get();
 ```
 
-### 4.7 API Response Format dari Frontend
+### 4.7 API Response Format from Frontend
 
-Frontend mengharapkan format standar dari semua endpoint:
+The frontend expects a standard format from all endpoints:
 ```json
 {
   "code": 200,
@@ -494,21 +494,21 @@ Frontend mengharapkan format standar dari semua endpoint:
 
 ## 5. Frontend (React + TypeScript) Patterns
 
-### 5.1 API Client — WAJIB gunakan `apiFetch` dari `api.ts`
+### 5.1 API Client — MUST use `apiFetch` from `api.ts`
 
 ```typescript
-// services/api.ts — sudah tersedia, jangan dibuat ulang
-// apiFetch internal function yang dipakai oleh semua service
+// services/api.ts — already provided, do not recreate
+// apiFetch is an internal function used by all services
 
-// Cara menggunakan api.ts untuk feature baru:
-// 1. Tambahkan method di objek `api` dalam api.ts
-// 2. JANGAN import apiFetch langsung ke component — gunakan via service
+// How to use api.ts for a new feature:
+// 1. Add a method to the `api` object in api.ts
+// 2. DO NOT import apiFetch directly into components — use via service
 
-// Contoh: tambahkan method baru di api.ts
+// Example: add a new method in api.ts
 export const api = {
   // ... existing methods ...
   
-  // Method baru
+  // New method
   getSomeData: async (): Promise<SomeItem[]> => {
     const response = await apiFetch('/some-feature');
     return response.data || [];
@@ -538,7 +538,7 @@ export const api = {
 
 ### 5.2 Service File Pattern (Platform-specific)
 
-Jika feature membutuhkan service tersendiri, buat file baru di `services/`:
+If a feature needs its own service, create a new file in `services/`:
 
 ```typescript
 // services/someFeatureService.ts
@@ -556,7 +556,7 @@ export interface SomeItem {
 }
 
 export const someFeatureService = {
-  getAll: () => api.getSomeData(),                // Delegation ke api.ts
+  getAll: () => api.getSomeData(),                // Delegation to api.ts
   create: (data: { name: string }) => api.createSomeItem(data),
   update: (id: string, data: Partial<SomeItem>) => api.updateSomeItem(id, data),
   delete: (id: string) => api.deleteSomeItem(id),
@@ -584,7 +584,7 @@ const SomeFeaturePage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Untuk operasi AI — SELALU gunakan hook ini
+  // For AI operations — ALWAYS use this hook
   const { state: creditState, executeWithCredit, closeInsufficientModal } = useCreditCheck();
 
   useEffect(() => {
@@ -605,15 +605,15 @@ const SomeFeaturePage: React.FC = () => {
     }
   }, []);
 
-  // Untuk operasi AI: gunakan executeWithCredit
+  // For AI operations: use executeWithCredit
   const handleAiOperation = useCallback(async () => {
     const result = await executeWithCredit(
-      'text_generation' as AIActionType, // action type sesuai credit_settings
+      'text_generation' as AIActionType, // action type matching credit_settings
       async () => {
-        // AI function — di sini lakukan AI call
+        // AI function — perform AI call here
         return await someAiFunction();
       },
-      'Generated content for Some Feature' // description untuk activity log
+      'Generated content for Some Feature' // description for activity log
     );
 
     if (result) {
@@ -621,7 +621,7 @@ const SomeFeaturePage: React.FC = () => {
     }
   }, [executeWithCredit]);
 
-  // Untuk operasi non-AI (CRUD biasa)
+  // For non-AI operations (regular CRUD)
   const handleCreate = useCallback(async (name: string) => {
     try {
       const newItem = await api.createSomeItem({ name });
@@ -671,39 +671,39 @@ const SomeFeaturePage: React.FC = () => {
 export default SomeFeaturePage;
 ```
 
-### 5.4 Credit Check Hook — Cara Benar
+### 5.4 Credit Check Hook — Correct Usage
 
 ```typescript
-// useCreditCheck menyediakan executeWithCredit yang menangani:
-// 1. Check balance sebelum operasi
-// 2. Tampilkan InsufficientCreditsModal jika tidak cukup
-// 3. Jalankan AI function jika cukup
-// 4. Deduct kredit setelah operasi sukses
+// useCreditCheck provides executeWithCredit which handles:
+// 1. Check balance before operation
+// 2. Show InsufficientCreditsModal if insufficient
+// 3. Run AI function if sufficient
+// 4. Deduct credits after successful operation
 
 const { state, executeWithCredit, closeInsufficientModal } = useCreditCheck();
 
-// Eksekusi dengan credit check:
+// Execute with credit check:
 const result = await executeWithCredit(
-  'text_generation',           // AIActionType dari types.ts
-  () => callAiApi(data),       // AI function → harus return Promise<T>
+  'text_generation',           // AIActionType from types.ts
+  () => callAiApi(data),       // AI function → must return Promise<T>
   'Description for log'        // Optional: activity log description
 );
-// result = null jika kredit tidak cukup
-// result = T jika berhasil
+// result = null if credits insufficient
+// result = T if successful
 
-// State yang tersedia:
-// state.isChecking      → true saat cek kredit
-// state.isProcessing    → true saat AI sedang berjalan
-// state.error           → error message jika ada
-// state.insufficientCredits.show → true jika modal harus ditampilkan
+// Available state:
+// state.isChecking      → true while checking credits
+// state.isProcessing    → true while AI is running
+// state.error           → error message if any
+// state.insufficientCredits.show → true if modal should be shown
 ```
 
 ### 5.5 TypeScript Types
 
-Semua shared types ada di `types.ts`. Tambahkan tipe baru di sini:
+All shared types are in `types.ts`. Add new types here:
 
 ```typescript
-// types.ts — tambahkan di sini untuk shared types
+// types.ts — add shared types here
 
 export interface SomeItem {
   id: string;
@@ -712,8 +712,8 @@ export interface SomeItem {
   created_at: string;
 }
 
-// AIActionType — sesuaikan dengan data di credit_settings table
-// Nilai ini harus match dengan action_type di tabel credit_settings
+// AIActionType — must match data in credit_settings table
+// These values must match the action_type in the credit_settings table
 export type AIActionType =
   | 'content_analysis'
   | 'ad_analysis'
@@ -735,23 +735,23 @@ export type AIActionType =
 ### 5.6 API Config Constants
 
 ```typescript
-// config/apiConfig.ts — jangan hardcode URL, gunakan ini
+// config/apiConfig.ts — do not hardcode URLs, use this
 import { BASE_URL, AGENT_URL, TOKEN_KEY } from '../config/apiConfig';
 // BASE_URL  = VITE_API_URL   ?? 'http://localhost:8001/api/v1' (Laravel — port 8001!)
 // AGENT_URL = VITE_AGENT_URL ?? 'http://localhost:5001/api/v1' (Python Agent)
-// TOKEN_KEY = 'omnisocial_auth_token'  (localStorage key — BUKAN 'auth_token')
+// TOKEN_KEY = 'omnisocial_auth_token'  (localStorage key — NOT 'auth_token')
 ```
 
 ### 5.7 Auth Token Storage
 
 ```typescript
-// Login → simpan token
+// Login → save token
 localStorage.setItem('omnisocial_auth_token', token); // TOKEN_KEY = 'omnisocial_auth_token'
 
-// Logout → hapus token
+// Logout → remove token
 localStorage.removeItem('omnisocial_auth_token');
 
-// apiFetch otomatis membaca TOKEN_KEY dari localStorage dan menyertakan
+// apiFetch automatically reads TOKEN_KEY from localStorage and includes
 // header: Authorization: Bearer {token}
 ```
 
@@ -771,7 +771,7 @@ import logging
 
 logger = logging.getLogger(__name__)
 
-# WAJIB: url_prefix sesuai konvensi
+# REQUIRED: url_prefix following convention
 some_feature_bp = Blueprint('some_feature', __name__, url_prefix='/api/v1/some-feature')
 
 
@@ -780,11 +780,11 @@ def run_feature():
     """
     Run some feature.
     
-    Untuk calls dari Laravel, validasi secret key.
+    For calls from Laravel, validate secret key.
     Request JSON: { "account_id": "...", "user_id": "...", "callback_url": "..." }
     """
     try:
-        # Validasi secret key (untuk Laravel → Agent calls)
+        # Validate secret key (for Laravel → Agent calls)
         secret = request.headers.get('X-Secret-Key', '')
         if secret != AGENT_SECRET_KEY:
             return jsonify({'error': 'Unauthorized'}), 401
@@ -797,7 +797,7 @@ def run_feature():
         if not account_id:
             return jsonify({'error': 'account_id is required'}), 400
 
-        # Lakukan pekerjaan...
+        # Perform the work...
         result = {
             'status': 'completed',
             'data': {}
@@ -812,30 +812,30 @@ def run_feature():
 
 @some_feature_bp.route('/status/<job_id>', methods=['GET'])
 def get_status(job_id):
-    """Poll status untuk async jobs."""
+    """Poll status for async jobs."""
     try:
-        # Query job status dari database
+        # Query job status from database
         return jsonify({'status': 'running', 'progress': 50}), 200
     except Exception as e:
         logger.error(f"Error getting status: {e}", exc_info=True)
         return jsonify({'error': str(e)}), 500
 ```
 
-### 6.2 Register Blueprint di api_server.py
+### 6.2 Register Blueprint in api_server.py
 
 ```python
-# api_server.py — tambahkan blueprint baru di sini
+# api_server.py — add new blueprints here
 
 from api.some_feature_api import some_feature_bp
 
-# Di dalam main() atau create_app():
+# Inside main() or create_app():
 app.register_blueprint(some_feature_bp)
 ```
 
 ### 6.3 Gemini AI Integration
 
 ```python
-# Gunakan google.genai SDK (BUKAN google.generativeai)
+# Use google.genai SDK (NOT google.generativeai)
 import google.genai as genai
 from config.settings import GEMINI_API_KEY
 
@@ -863,15 +863,15 @@ response = client.models.generate_content(
 )
 ```
 
-> ⚠️ **PENTING:** Gunakan `google.genai` (bukan `google.generativeai`). Import: `import google.genai as genai`
+> ⚠️ **IMPORTANT:** Use `google.genai` (not `google.generativeai`). Import: `import google.genai as genai`
 
 ### 6.4 Database (SQLAlchemy)
 
 ```python
-# database/connection.py — sudah ada, gunakan ini
+# database/connection.py — already exists, use this
 from database.connection import get_session, get_engine
 
-# Cara menggunakan:
+# How to use:
 with get_session() as session:
     # Query
     items = session.query(SomeModel).filter_by(user_id=user_id).all()
@@ -890,31 +890,31 @@ with get_session() as session:
 ### 6.5 Configuration Pattern
 
 ```python
-# config/settings.py — semua config dibaca dari .env
+# config/settings.py — all config is read from .env
 from config.settings import (
     DB_HOST, DB_PORT, DB_DATABASE, DB_USERNAME, DB_PASSWORD,
     DATABASE_URL,
-    GEMINI_API_KEY,          # Tambahkan jika belum ada
+    GEMINI_API_KEY,          # Add if not already present
     AGENT_SECRET_KEY,
     DEFAULT_TIMEOUT,
     LOG_LEVEL,
 )
 ```
 
-Untuk menambah config baru:
+To add a new config:
 ```python
-# Di config/settings.py
+# In config/settings.py
 NEW_CONFIG = os.getenv('NEW_CONFIG', 'default_value')
 ```
 
-### 6.6 Async HTTP Calls ke Laravel Callback
+### 6.6 Async HTTP Calls to Laravel Callback
 
 ```python
 import httpx
 import asyncio
 
 async def send_callback(callback_url: str, data: dict, secret_key: str):
-    """Kirim result kembali ke Laravel via callback."""
+    """Send result back to Laravel via callback."""
     try:
         async with httpx.AsyncClient(timeout=30.0) as client:
             response = await client.post(
@@ -936,26 +936,26 @@ async def send_callback(callback_url: str, data: dict, secret_key: str):
 
 ## 7. Platform Integrations Guide
 
-### 7.1 OAuth Flow Pattern (Semua Platform)
+### 7.1 OAuth Flow Pattern (All Platforms)
 
 ```
-1. Frontend: Generate OAuth URL → redirect user ke platform
-2. Platform: User authorize → redirect ke callback URL
-3. Callback page (React): Extract auth_code dari URL params
+1. Frontend: Generate OAuth URL → redirect user to platform
+2. Platform: User authorizes → redirect to callback URL
+3. Callback page (React): Extract auth_code from URL params
 4. Frontend: POST /api/v1/connectedaccounts/{platform}/exchange
    Body: { code, redirect_uri }
 5. Laravel: Exchange code → access_token + refresh_token
-6. Laravel: Store di connected_accounts table (UUID PK)
+6. Laravel: Store in connected_accounts table (UUID PK)
 7. Frontend: Poll GET /api/v1/connectedaccounts/{platform}
 ```
 
 ### 7.2 Token Refresh Strategy
 
 ```php
-// Di setiap ConnectedAccount controller, cek token sebelum API call
+// In every ConnectedAccount controller, check token before API call
 private function getValidToken(ConnectedAccounts $account): string
 {
-    // Refresh 5 menit sebelum expiry
+    // Refresh 5 minutes before expiry
     if ($account->token_expires_at && $account->token_expires_at->subMinutes(5)->isPast()) {
         if ($account->refresh_token) {
             $newToken = $this->refreshToken($account->refresh_token);
@@ -983,20 +983,20 @@ connected_accounts:
                           -- 'x_twitter', 'x_ads', 'google_ads', 'threads'
   account_type VARCHAR    -- 'organic', 'ads'
   provider_id VARCHAR     -- Platform user ID
-  provider_name VARCHAR   -- Display name dari platform
+  provider_name VARCHAR   -- Display name from platform
   provider_email VARCHAR
   provider_avatar VARCHAR -- Avatar URL
-  account_name VARCHAR    -- Nama akun yang ditampilkan di UI
+  account_name VARCHAR    -- Account name displayed in UI
   account_handle VARCHAR  -- Handle/username (e.g. @handle)
   access_token TEXT
   refresh_token TEXT
   token_expires_at TIMESTAMP
   expires_in INTEGER      -- Token expiry duration in seconds
-  scopes TEXT             -- OAuth scopes yang diberikan
-  last_sync TIMESTAMP     -- Kapan terakhir sync data
+  scopes TEXT             -- OAuth scopes granted
+  last_sync TIMESTAMP     -- When data was last synced
   status VARCHAR          -- 'Active', 'Expired'
-  sitemap_url VARCHAR     -- Untuk website/sitemap monitoring
-  niche VARCHAR           -- Niche/industri akun
+  sitemap_url VARCHAR     -- For website/sitemap monitoring
+  niche VARCHAR           -- Account niche/industry
   created_at TIMESTAMP
   updated_at TIMESTAMP
 ```
@@ -1007,27 +1007,27 @@ connected_accounts:
 |----------|-----------|---------------|-------|
 | **YouTube** | OAuth 2.0 (Google) | ✅ Yes | exchange + `/youtube/refresh` endpoint |
 | **Instagram** | Meta OAuth | ✅ Yes (Long-lived) | via MetaController |
-| **Meta/Facebook** | Meta OAuth | ✅ Yes | Shared dengan Instagram |
+| **Meta/Facebook** | Meta OAuth | ✅ Yes | Shared with Instagram |
 | **LinkedIn Organic** | OAuth 2.0 | ✅ Yes | via LinkedInController |
-| **LinkedIn Ads** | OAuth 2.0 | ✅ Yes | exchange endpoint terpisah |
+| **LinkedIn Ads** | OAuth 2.0 | ✅ Yes | Separate exchange endpoint |
 | **TikTok Organic** | TikTok OAuth | ✅ Yes | via TikTokController |
-| **TikTok Ads** | TikTok OAuth | ✅ Yes | exchange endpoint terpisah |
-| **X/Twitter Organic** | OAuth 2.0 PKCE | ✅ Yes | PKCE: code_verifier diperlukan |
-| **X Ads** | OAuth 2.0 PKCE | ✅ Yes | PKCE: code_verifier diperlukan |
-| **Google Ads** | OAuth 2.0 | ✅ Yes | Perlu developer token |
+| **TikTok Ads** | TikTok OAuth | ✅ Yes | Separate exchange endpoint |
+| **X/Twitter Organic** | OAuth 2.0 PKCE | ✅ Yes | PKCE: code_verifier required |
+| **X Ads** | OAuth 2.0 PKCE | ✅ Yes | PKCE: code_verifier required |
+| **Google Ads** | OAuth 2.0 | ✅ Yes | Developer token required |
 | **Threads** | Meta OAuth | ✅ Yes | via ThreadsController |
 
-### 7.5 Frontend — Cara Pindahkan Token ke Backend
+### 7.5 Frontend — Sending Token to Backend
 
 ```typescript
-// services/api.ts — pattern yang digunakan semua platform
+// services/api.ts — pattern used by all platforms
 
 // 1. Exchange code → tokens
 await api.exchangeYouTubeCode(code, redirectUri);
-// atau
+// or
 await api.exchangeXTwitterCode(code, redirectUri, codeVerifier);
 
-// 2. Save connection (untuk platform dengan direct token)
+// 2. Save connection (for platforms with direct token)
 await api.saveSocialConnection('instagram', {
   provider_id: instagramUserId,
   access_token: accessToken,
@@ -1075,12 +1075,12 @@ role_permissions (pivot)
   role_id UUID FK, permission_id UUID FK
 
 connected_accounts
-  (lihat §7.3)
+  (see §7.3)
 
 scheduled_posts
   id UUID PK
   user_id UUID FK
-  connected_account_id UUID FK (nullable, untuk multi-account)
+  connected_account_id UUID FK (nullable, for multi-account)
   platform VARCHAR
   title, description TEXT
   tags JSON
@@ -1130,115 +1130,115 @@ keyword_scopes        → id, user_id, keyword, location_code, language_code
 
 ## 9. Common Tasks & Recipes
 
-### Recipe 1: Tambah Endpoint CRUD Baru
+### Recipe 1: Add a New CRUD Endpoint
 
 ```
-1. Buat migration:
+1. Create migration:
    php artisan make:migration create_{table}_table
-   → Edit sesuai §4.3 Migration Pattern (UUID PK!)
+   → Edit per §4.3 Migration Pattern (UUID PK!)
 
-2. Buat Model:
+2. Create Model:
    php artisan make:model {ModelName}
-   → Edit sesuai §4.2 Model Pattern (incrementing=false, keyType='string')
+   → Edit per §4.2 Model Pattern (incrementing=false, keyType='string')
 
-3. Buat Controller:
+3. Create Controller:
    php artisan make:controller Api/{FeatureName}Controller
-   → Edit sesuai §4.1 Controller Pattern (extends BaseController)
+   → Edit per §4.1 Controller Pattern (extends BaseController)
 
-4. Register Route di routes/api.php:
-   → Import use statement di atas file
-   → Tambahkan routes di dalam middleware group
+4. Register Route in routes/api.php:
+   → Import use statement at the top of the file
+   → Add routes inside the middleware group
 
-5. Jalankan migration:
+5. Run migration:
    php artisan migrate
 
 6. Test endpoint:
    curl -H "Authorization: Bearer {token}" http://localhost:8000/api/v1/{route}
 ```
 
-### Recipe 2: Tambah Halaman Frontend Baru
+### Recipe 2: Add a New Frontend Page
 
 ```
-1. Buat Page component: pages/{FeatureName}Page.tsx
-   → Gunakan §5.3 Page Component Pattern
+1. Create Page component: pages/{FeatureName}Page.tsx
+   → Use §5.3 Page Component Pattern
 
-2. Tambahkan API methods di services/api.ts
-   → Gunakan §5.1 API Client Pattern
+2. Add API methods in services/api.ts
+   → Use §5.1 API Client Pattern
 
-3. Jika perlu service tersendiri: services/{feature}Service.ts
-   → Gunakan §5.2 Service File Pattern
+3. If a dedicated service is needed: services/{feature}Service.ts
+   → Use §5.2 Service File Pattern
 
-4. Register route di App.tsx (atau file routing utama):
+4. Register route in App.tsx (or main routing file):
    <Route path="/feature" element={<FeaturePage />} />
 
-5. Tambahkan navigation link di sidebar/header component
+5. Add navigation link in sidebar/header component
 ```
 
-### Recipe 3: Tambah Python Agent Feature Baru
+### Recipe 3: Add a New Python Agent Feature
 
 ```
-1. Buat Blueprint: api/{feature}_api.py
-   → Gunakan §6.1 Flask Blueprint Pattern
+1. Create Blueprint: api/{feature}_api.py
+   → Use §6.1 Flask Blueprint Pattern
 
-2. Register di api_server.py:
+2. Register in api_server.py:
    from api.{feature}_api import {feature}_bp
    app.register_blueprint({feature}_bp)
 
-3. Buat business logic di {feature}_agent/ folder jika kompleks
+3. Create business logic in {feature}_agent/ folder if complex
 
-4. Tambahkan endpoint di routes/api.php (Laravel) jika butuh callback
-   (Lihat contoh: /smart-audit/callback)
+4. Add endpoint in routes/api.php (Laravel) if callback is needed
+   (See example: /smart-audit/callback)
 
-5. Test endpoint agent:
+5. Test agent endpoint:
    curl -X POST http://localhost:5001/api/v1/{feature}/run \
      -H "X-Secret-Key: {AGENT_SECRET_KEY}" \
      -H "Content-Type: application/json" \
      -d '{"account_id": "...", "user_id": "..."}'
 ```
 
-### Recipe 4: Tambah Platform Sosial Media Baru
+### Recipe 4: Add a New Social Media Platform
 
 ```
 1. Backend (Laravel):
-   a. Buat Controller: app/Http/Controllers/Api/{Platform}Controller.php
+   a. Create Controller: app/Http/Controllers/Api/{Platform}Controller.php
       - Method: exchange(Request $request) → OAuth code exchange
-      - Method: callback() → Ambil data akun
-      - Method: getProfile/getData() → Ambil data platform spesifik
-   b. Register routes di api.php:
+      - Method: callback() → Fetch account data
+      - Method: getProfile/getData() → Fetch platform-specific data
+   b. Register routes in api.php:
       - POST /connectedaccounts/{platform}/exchange
       - GET /connectedaccounts/{platform}
-   c. Store di connected_accounts table (UUID PK)
+   c. Store in connected_accounts table (UUID PK)
 
 2. Frontend:
-   a. Buat service: services/{platform}Service.ts
-   b. Tambahkan exchange method di api.ts:
+   a. Create service: services/{platform}Service.ts
+   b. Add exchange method in api.ts:
       exchange{Platform}Code: async (code, redirectUri) => ...
-   c. Buat callback page: pages/{Platform}Callback.tsx
-      - Baca code dari URL params
-      - Panggil api.exchange{Platform}Code()
-   d. Register callback route di App.tsx
+   c. Create callback page: pages/{Platform}Callback.tsx
+      - Read code from URL params
+      - Call api.exchange{Platform}Code()
+   d. Register callback route in App.tsx
 
 3. UI Integration:
-   a. Tambahkan platform di Connector/Settings page
-   b. Update getAllConnectedAccounts() response handling di frontend
+   a. Add platform in Connector/Settings page
+   b. Update getAllConnectedAccounts() response handling in frontend
 ```
 
-### Recipe 5: Tambah AI Feature dengan Credit Check
+### Recipe 5: Add an AI Feature with Credit Check
 
 ```typescript
-// 1. Definisikan action_type di credit_settings table (via migration atau seeder)
+// 1. Define action_type in credit_settings table (via migration or seeder)
 
-// 2. Tambahkan ke AIActionType union di types.ts:
+// 2. Add to AIActionType union in types.ts:
 export type AIActionType = 'existing_action' | 'new_ai_action';
 
-// 3. Implementasi di page component:
+// 3. Implement in page component:
 const { state, executeWithCredit, closeInsufficientModal } = useCreditCheck();
 
 const handleNewAiFeature = async () => {
   const result = await executeWithCredit(
     'new_ai_action',
     async () => {
-      // Panggil AI API di sini
+      // Call AI API here
       const response = await geminiService.generateSomething(data);
       return response;
     },
@@ -1247,7 +1247,7 @@ const handleNewAiFeature = async () => {
   if (result) setResult(result);
 };
 
-// 4. Tampilkan modal jika kredit tidak cukup:
+// 4. Show modal if credits are insufficient:
 {state.insufficientCredits.show && (
   <InsufficientCreditsModal onClose={closeInsufficientModal} />
 )}
@@ -1260,18 +1260,18 @@ const handleNewAiFeature = async () => {
 ### 10.1 User Data Isolation — CRITICAL
 
 ```php
-// SELALU filter dengan user_id. JANGAN pernah return data semua user.
-SomeModel::where('user_id', Auth::id())->get();    // ✅ Benar
-SomeModel::all();                                   // ❌ SALAH — kebocoran data!
+// ALWAYS filter with user_id. NEVER return data from all users.
+SomeModel::where('user_id', Auth::id())->get();    // ✅ Correct
+SomeModel::all();                                   // ❌ WRONG — data leakage!
 ```
 
-### 10.2 Secret Key untuk Agent Callback
+### 10.2 Secret Key for Agent Callback
 
 ```php
-// routes/api.php — callback route tidak pakai Sanctum auth
+// routes/api.php — callback route does not use Sanctum auth
 Route::post('/smart-audit/callback', [SmartAuditController::class, 'agentCallback']);
 
-// Di controller — validasi secret key
+// In controller — validate secret key
 $secretKey = $request->header('X-Secret-Key');
 if ($secretKey !== config('app.agent_secret_key')) {
     return $this->sendError('Unauthorized', [], 401);
@@ -1279,25 +1279,25 @@ if ($secretKey !== config('app.agent_secret_key')) {
 ```
 
 ```python
-# Python agent — kirim secret key ke Laravel callback
+# Python agent — send secret key to Laravel callback
 headers = {'X-Secret-Key': AGENT_SECRET_KEY}
 ```
 
-### 10.3 Token Penyimpanan
+### 10.3 Token Storage
 
 ```typescript
-// Frontend: token Sanctum di localStorage
-// JANGAN simpan di cookie tanpa HttpOnly flag
+// Frontend: Sanctum token in localStorage
+// DO NOT store in cookie without HttpOnly flag
 localStorage.setItem('auth_token', token);
 
-// apiFetch otomatis menambahkan header Authorization: Bearer {token}
+// apiFetch automatically adds header Authorization: Bearer {token}
 ```
 
 ### 10.4 URL Sanitization (Python Agent)
 
 ```python
-# config/settings.py — BLOCKED_HOSTS sudah didefinisikan
-# Selalu validasi URL sebelum request ke external domain
+# config/settings.py — BLOCKED_HOSTS is already defined
+# Always validate URL before requesting external domain
 from config.settings import BLOCKED_HOSTS, ALLOWED_SCHEMES
 
 def is_safe_url(url: str) -> bool:
@@ -1314,7 +1314,7 @@ def is_safe_url(url: str) -> bool:
 ### 10.5 Input Validation
 
 ```php
-// Laravel: SELALU validasi input sebelum proses
+// Laravel: ALWAYS validate input before processing
 $validator = Validator::make($request->all(), [
     'field' => 'required|string|max:255',
     'url'   => 'required|url|max:2048',
@@ -1351,7 +1351,7 @@ SANCTUM_STATEFUL_DOMAINS=localhost:5173,127.0.0.1:5173
 
 # Python Agent
 AGENT_URL=http://localhost:5001
-AGENT_SECRET_KEY=your-secret-key-here     # Harus sama dengan agent .env
+AGENT_SECRET_KEY=your-secret-key-here     # Must match the agent .env
 
 # Google OAuth (YouTube, Google Ads)
 GOOGLE_CLIENT_ID=
@@ -1383,7 +1383,7 @@ TWITTER_REDIRECT_URI=http://localhost:5173/x-callback
 ### Python Agent (`omnisocial-agent/.env`)
 
 ```env
-# Database (sama dengan Laravel)
+# Database (same as Laravel)
 DB_HOST=127.0.0.1
 DB_PORT=5432
 DB_DATABASE=omnisocial_db
@@ -1395,7 +1395,7 @@ GEMINI_API_KEY=AIza...                    # Google Gemini API key
 GEMINI_API_BASE_URL=https://generativelanguage.googleapis.com
 
 # Security
-AGENT_SECRET_KEY=your-secret-key-here    # Harus sama dengan Laravel .env
+AGENT_SECRET_KEY=your-secret-key-here    # Must match Laravel .env
 
 # Agent Config
 LOG_LEVEL=INFO
@@ -1408,7 +1408,7 @@ ALLOW_PRIVATE_IPS=false
 LARAVEL_BASE_URL=http://localhost:8000/api/v1
 ```
 
-### Frontend (`omnisocial-fe/.env` atau `config/apiConfig.ts`)
+### Frontend (`omnisocial-fe/.env` or `config/apiConfig.ts`)
 
 ```typescript
 // config/apiConfig.ts
@@ -1429,31 +1429,31 @@ export const TOKEN_KEY = 'auth_token';
 # ======================
 # 1. Database (PostgreSQL)
 # ======================
-# Pastikan PostgreSQL berjalan dan database 'omnisocial_db' sudah dibuat
+# Ensure PostgreSQL is running and the 'omnisocial_db' database is created
 
 # ======================
 # 2. Backend (Laravel API)
 # ======================
 cd X:\Project\omnisocial\omnisocial-api
 
-# Install dependencies (pertama kali)
+# Install dependencies (first time only)
 composer install
 
 # Setup environment
 copy .env.example .env
 php artisan key:generate
 
-# Jalankan migrations
+# Run migrations
 php artisan migrate
 
 # (Optional) Seed database
 php artisan db:seed
 
-# Jalankan server
+# Run server
 php artisan serve
 # → Running at http://localhost:8000
 
-# Di terminal TERPISAH: Queue worker (untuk scheduled posts)
+# In a SEPARATE terminal: Queue worker (for scheduled posts)
 php artisan queue:listen --tries=1
 
 # ======================
@@ -1461,10 +1461,10 @@ php artisan queue:listen --tries=1
 # ======================
 cd X:\Project\omnisocial\omnisocial-fe
 
-# Install dependencies (pertama kali)
+# Install dependencies (first time only)
 npm install
 
-# Jalankan dev server
+# Run dev server
 npm run dev
 # → Running at http://localhost:5173
 
@@ -1473,20 +1473,20 @@ npm run dev
 # ======================
 cd X:\Project\omnisocial\omnisocial-agent
 
-# Install dependencies (pertama kali)
+# Install dependencies (first time only)
 python -m venv venv
 .\venv\Scripts\Activate.ps1
 pip install -r requirements.txt
 
-# Jalankan agent server
+# Run agent server
 python api_server.py
 # → Running at http://localhost:5001
 
-# Jika first run, create DB tables:
+# If first run, create DB tables:
 python api_server.py --create-tables
 
 # ======================
-# 5. Landing Page (Opsional)
+# 5. Landing Page (Optional)
 # ======================
 cd X:\Project\omnisocial\landingpage
 npm install
@@ -1496,10 +1496,10 @@ npm run dev
 ### Useful Commands
 
 ```powershell
-# Laravel (port default 8001 bukan 8000 — lihat apiConfig.ts)
-php artisan serve --port=8001             # Start di port 8001
-php artisan route:list                    # Lihat semua routes
-php artisan migrate:status                # Lihat status migrations
+# Laravel (default port 8001 not 8000 — see apiConfig.ts)
+php artisan serve --port=8001             # Start on port 8001
+php artisan route:list                    # View all routes
+php artisan migrate:status                # View migration status
 php artisan migrate:rollback              # Rollback last migration
 php artisan route:clear && php artisan config:clear && php artisan cache:clear
 
@@ -1514,23 +1514,23 @@ python api_server.py --debug             # Debug mode
 
 ---
 
-## 13. Catatan Arsitektur Penting
+## 13. Important Architecture Notes
 
-1. **Python Agent berbagi database PostgreSQL** dengan Laravel — keduanya membaca/menulis ke `omnisocial_db` yang sama. Agent menggunakan SQLAlchemy secara langsung.
+1. **Python Agent shares the PostgreSQL database** with Laravel — both read/write to the same `omnisocial_db`. The Agent uses SQLAlchemy directly.
 
-2. **Callback mechanism**: Laravel memanggil Python Agent untuk memulai task long-running (audit). Agent mengirim hasil kembali ke Laravel via HTTP callback dengan `X-Secret-Key`. Frontend menunggu dengan polling.
+2. **Callback mechanism**: Laravel calls the Python Agent to start long-running tasks (audit). The Agent sends results back to Laravel via HTTP callback with `X-Secret-Key`. The Frontend waits by polling.
 
-3. **No global state management di Frontend**: Tidak ada Redux/Zustand. Setiap page mengelola state lokalnya sendiri dengan `useState`/`useReducer`. Data fetching per-component mount.
+3. **No global state management in Frontend**: No Redux/Zustand. Each page manages its own local state with `useState`/`useReducer`. Data fetching per component mount.
 
-4. **Credit System**: Setiap operasi AI wajib melewati credit check. Hapus asumsi bahwa user selalu punya kredit cukup. Selalu gunakan `useCreditCheck` hook.
+4. **Credit System**: Every AI operation must go through credit check. Do not assume the user always has sufficient credits. Always use the `useCreditCheck` hook.
 
-5. **UUID everywhere**: Semua primary key adalah UUID string, bukan integer. Jangan pernah gunakan auto-increment di tabel baru.
+5. **UUID everywhere**: All primary keys are UUID strings, not integers. Never use auto-increment in new tables.
 
-6. **Tidak ada soft delete**: OmniSocial menggunakan hard delete. Jangan tambahkan `$table->softDeletes()` kecuali ada permintaan eksplisit.
+6. **No soft delete**: OmniSocial uses hard delete. Do not add `$table->softDeletes()` unless explicitly requested.
 
-7. **Activity log otomatis**: Middleware `log.api.activity` di Laravel otomatis mencatat setiap request. `sendError()` di BaseController otomatis memanggil `ActivityLogger::logFailure()`.
+7. **Automatic activity log**: The `log.api.activity` middleware in Laravel automatically records every request. `sendError()` in BaseController automatically calls `ActivityLogger::logFailure()`.
 
 ---
 
-*Skill ini harus diupdate setiap kali ada perubahan arsitektur signifikan di proyek OmniSocial.*
-*Terakhir diupdate: 2026-02-23*
+*This skill should be updated every time there is a significant architecture change in the OmniSocial project.*
+*Last updated: 2026-02-23*

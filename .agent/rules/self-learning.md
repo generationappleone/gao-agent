@@ -33,11 +33,11 @@ When the user **corrects** the agent's output, ALWAYS learn from it.
 
 | Signal | Example | What to Record |
 |--------|---------|---------------|
-| **"Jangan seperti itu"** | "Jangan pakai `var`, pakai `const`" | Coding style preference |
-| **"Bukan begitu"** | "Bukan pakai table biasa, pakai UUID" | Technical preference |
-| **"Seharusnya..."** | "Seharusnya pakai Bahasa Indonesia untuk comment" | Language/convention preference |
-| **"Selalu..."** | "Selalu pakai snake_case untuk database" | Naming convention |
-| **"Jangan pernah..."** | "Jangan pernah pakai `any` di TypeScript" | Anti-pattern rule |
+| **"Don't do it like that"** | "Don't use `var`, use `const`" | Coding style preference |
+| **"That's not right"** | "Don't use a regular table, use UUID" | Technical preference |
+| **"It should be..."** | "Comments should be in Bahasa Indonesia" | Language/convention preference |
+| **"Always..."** | "Always use snake_case for database" | Naming convention |
+| **"Never..."** | "Never use `any` in TypeScript" | Anti-pattern rule |
 | **User edits agent's code** | User modifies the import order | Style preference |
 | **User rejects suggestion** | User says "no, I prefer X over Y" | Technology preference |
 
@@ -143,7 +143,7 @@ When the agent detects a learning opportunity:
 
 ### When User Corrects
 1. **STOP** current action
-2. **Acknowledge** the correction: `"Understood, terima kasih atas koreksinya."`
+2. **Acknowledge** the correction: `"Understood, thank you for the correction."`
 3. **Record** the correction as a new knowledge entry
 4. **Apply** the correction to current and ALL future work
 5. **Review** current task output for other violations of this new rule

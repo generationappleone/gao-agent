@@ -46,10 +46,10 @@ npm install @coreui/react @coreui/coreui @coreui/icons @coreui/icons-react
 npm install @coreui/react-pro @coreui/coreui-pro @coreui/icons @coreui/icons-react
 ```
 
-#### Import CSS — WAJIB
+#### Import CSS — REQUIRED
 
 ```tsx
-// src/index.tsx or src/main.tsx — pilih SALAH SATU:
+// src/index.tsx or src/main.tsx — choose ONE:
 
 // Option A: CoreUI CSS (recommended — includes Bootstrap + CoreUI extensions)
 import '@coreui/coreui/dist/css/coreui.min.css';
@@ -61,7 +61,7 @@ import '@coreui/coreui/dist/css/coreui.min.css';
 // import '@coreui/coreui-pro/dist/css/coreui.min.css';
 ```
 
-> ⚠️ **PENTING:** Jangan import keduanya sekaligus (CoreUI CSS + Bootstrap CSS). Pilih salah satu. CoreUI CSS sudah includes semua Bootstrap styles.
+> ⚠️ **IMPORTANT:** Do NOT import both CSS files simultaneously (CoreUI CSS + Bootstrap CSS). Choose one. CoreUI CSS already includes all Bootstrap styles.
 
 ### 1.2 Admin Template (New Project)
 
@@ -147,7 +147,7 @@ const DefaultLayout: React.FC = () => {
       {/* Sidebar — fixed left */}
       <AppSidebar />
 
-      {/* Wrapper untuk content area */}
+      {/* Wrapper for content area */}
       <div className="wrapper d-flex flex-column min-vh-100">
         {/* Header — fixed top */}
         <AppHeader />
@@ -225,7 +225,7 @@ export default React.memo(AppSidebar);
 ### 3.3 Navigation Configuration
 
 ```tsx
-// src/_nav.tsx — Definisi item navigasi sidebar
+// src/_nav.tsx — Sidebar navigation item definitions
 import React from 'react';
 import CIcon from '@coreui/icons-react';
 import {
@@ -242,7 +242,7 @@ import {
 import { CNavGroup, CNavItem, CNavTitle } from '@coreui/react';
 
 const _nav = [
-  // Simple link — satu level
+  // Simple link — single level
   {
     component: CNavItem,
     name: 'Dashboard',
@@ -483,8 +483,8 @@ const [visible, setVisible] = useState(false);
 <CModal
   visible={visible}
   onClose={() => setVisible(false)}
-  backdrop="static"    // 'static' = klik luar tidak tutup
-  keyboard={false}     // ESC tidak tutup
+  backdrop="static"    // 'static' = clicking outside does not close
+  keyboard={false}     // ESC does not close
 >
   <CModalHeader>
     <CModalTitle>Confirm Action</CModalTitle>
@@ -631,8 +631,8 @@ import {
 <CSidebar
   colorScheme="dark"       // 'dark' | 'light'
   position="fixed"         // 'fixed' | 'sticky'
-  unfoldable={false}       // Minimize ke icon-only
-  visible={sidebarShow}    // Kontrol visibility
+  unfoldable={false}       // Minimize to icon-only
+  visible={sidebarShow}    // Control visibility
   onVisibleChange={(val) => setSidebarShow(val)}
 >
   <CSidebarHeader className="border-bottom">
@@ -875,7 +875,7 @@ const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
 ### 6.1 SCSS Variables Override
 
 ```scss
-// src/scss/_variables.scss — Override SEMUA theme variables di sini
+// src/scss/_variables.scss — Override ALL theme variables here
 
 // Primary brand colors
 $primary:       #6366f1;   // Indigo
@@ -922,7 +922,7 @@ $body-color:                 #334155;
 ### 6.2 Custom SCSS
 
 ```scss
-// src/scss/_custom.scss — Custom styles SETELAH variables
+// src/scss/_custom.scss — Custom styles AFTER variables
 
 // Custom sidebar styling
 .sidebar {
@@ -1517,7 +1517,7 @@ const Login: React.FC = () => {
 ### State Management with Redux
 
 ```tsx
-// src/store.js — CoreUI template menggunakan Redux untuk sidebar state
+// src/store.js — CoreUI template uses Redux for sidebar state
 import { legacy_createStore as createStore } from 'redux';
 
 const initialState = {
@@ -1571,4 +1571,4 @@ export default store;
 
 ---
 
-*Skill ini mencakup CoreUI v5.x untuk React.js. Periksa dokumentasi resmi untuk update terbaru.*
+*This skill covers CoreUI v5.x for React.js. Check the official documentation for the latest updates.*

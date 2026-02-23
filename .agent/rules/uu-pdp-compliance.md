@@ -142,7 +142,7 @@ Rule: API responses MUST return minimum necessary PII.
 Rule: Every application MUST have a Privacy Center / Settings page
       where users can exercise all of their rights listed above.
       
-      Route: /settings/privasi or /pengaturan/privasi
+      Route: /settings/privacy or /settings/privasi
 ```
 
 ---

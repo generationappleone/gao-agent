@@ -68,7 +68,7 @@ npm run build
 npm run preview
 ```
 
-> ⚠️ **Windows Users:** Jika ada masalah saat clone, letakkan repository dekat root drive (contoh: `C:\Projects\`).
+> ⚠️ **Windows Users:** If you encounter issues when cloning, place the repository near the root drive (e.g., `C:\Projects\`).
 
 ### Tech Stack Bundled
 
@@ -563,7 +563,7 @@ function App() {
         <Route path="/auth/signin" element={<SignIn />} />
         <Route path="/auth/signup" element={<SignUp />} />
 
-        {/* Dashboard routes — dengan AppLayout */}
+        {/* Dashboard routes — with AppLayout */}
         <Route element={<AppLayout />}>
           <Route index element={<EcommerceDashboard />} />
           <Route path="/profile" element={<Profile />} />
@@ -668,7 +668,7 @@ const DarkModeSwitcher: React.FC = () => {
 
 **Tailwind dark: prefix usage:**
 ```tsx
-// Selalu gunakan dark: prefix untuk semua element
+// Always use the dark: prefix for all elements
 <div className="bg-white dark:bg-gray-800">
   <h1 className="text-gray-900 dark:text-white">Title</h1>
   <p className="text-gray-600 dark:text-gray-400">Description</p>
@@ -869,7 +869,7 @@ const series = [65, 34, 12, 56];
 
 ```tsx
 // src/components/common/ComponentCard.tsx
-// Digunakan untuk wrap contoh component di halaman showcase
+// Used to wrap example components on showcase pages
 
 interface ComponentCardProps {
   title: string;
@@ -1366,10 +1366,10 @@ const dropdownRef = useClickOutside<HTMLDivElement>(() => setOpen(false));
 ## 11. Adding New Pages — Recipe
 
 ```
-1. Buat page component:
+1. Create a page component:
    src/pages/NewFeature/NewFeaturePage.tsx
 
-2. Gunakan layout konsisten:
+2. Use consistent layout:
    import PageBreadcrumb from '../../components/common/PageBreadcrumb';
    import ComponentCard from '../../components/common/ComponentCard';
 
@@ -1382,13 +1382,13 @@ const dropdownRef = useClickOutside<HTMLDivElement>(() => setOpen(false));
      </>
    );
 
-3. Register route di App.tsx:
+3. Register route in App.tsx:
    <Route path="/new-feature" element={<NewFeaturePage />} />
 
-4. Tambahkan menu item di Sidebar:
+4. Add menu item in Sidebar:
    { label: 'New Feature', icon: <FeatureIcon />, path: '/new-feature' }
 
-5. Pastikan dark mode: gunakan dark: prefix di SEMUA element.
+5. Ensure dark mode: use the dark: prefix on ALL elements.
 ```
 
 ---
@@ -1488,4 +1488,4 @@ fontFamily: {
 
 ---
 
-*Skill ini mencakup TailAdmin v2.x untuk React.js dengan Tailwind CSS v4. Periksa GitHub repository untuk update terbaru.*
+*This skill covers TailAdmin v2.x for React.js with Tailwind CSS v4. Check the GitHub repository for the latest updates.*

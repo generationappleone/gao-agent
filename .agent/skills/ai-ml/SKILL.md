@@ -116,7 +116,7 @@ qa_chain = RetrievalQA.from_chain_type(
     return_source_documents=True
 )
 
-result = qa_chain({"query": "Bagaimana cara mengajukan refund?"})
+result = qa_chain({"query": "How do I request a refund?"})
 ```
 
 ### Structured Output

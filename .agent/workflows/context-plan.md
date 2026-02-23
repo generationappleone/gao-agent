@@ -142,53 +142,53 @@ Before creating any plan, MUST read the project context:
 
 If context files don't exist, inform the user:
 ```
-⚠️ Project context belum di-generate.
-Saya sarankan jalankan /context-init terlebih dahulu agar plan lebih akurat.
-Saya akan analisis langsung dari source code.
+⚠️ Project context has not been generated yet.
+I recommend running /context-init first for a more accurate plan.
+I'll analyze directly from the source code.
 ```
 
 ### Step 1.2 — Analyze the User's Request
 
 Break down the request into:
 
-1. **What** — Apa yang diminta? (feature, fix, refactor, migration, dll)
-2. **Why** — Kenapa ini diperlukan? (business value, technical debt, dll)
-3. **Scope** — Seberapa luas perubahannya? (1 file, 1 module, multi-service)
-4. **Impact** — Apa yang terpengaruh? (database, API, UI, infrastructure)
-5. **Constraints** — Batasan apa yang ada? (deadline, backward compatibility, dll)
+1. **What** — What is being requested? (feature, fix, refactor, migration, etc.)
+2. **Why** — Why is this needed? (business value, technical debt, etc.)
+3. **Scope** — How wide is the change? (1 file, 1 module, multi-service)
+4. **Impact** — What is affected? (database, API, UI, infrastructure)
+5. **Constraints** — What constraints exist? (deadline, backward compatibility, etc.)
 
 ### Step 1.3 — Ask Clarifying Questions (MANDATORY)
 
 **ALWAYS ask clarifying questions** if any of the following is unclear:
 
 ```markdown
-❓ Klarifikasi Dibutuhkan
+❓ Clarification Needed
 
-Untuk membuat plan yang akurat, saya perlu informasi tambahan:
+To create an accurate plan, I need additional information:
 
-1. [Pertanyaan spesifik tentang fungsionalitas]
-2. [Pertanyaan tentang skala/scope]
-3. [Pertanyaan tentang batasan/deadline]
-4. [Pertanyaan tentang integrasi dengan sistem lain]
-5. [Pertanyaan tentang target user/environment]
+1. [Specific question about functionality]
+2. [Question about scale/scope]
+3. [Question about constraints/deadline]
+4. [Question about integration with other systems]
+5. [Question about target user/environment]
 
-Informasi ini akan membantu saya membuat plan yang lebih presisi.
+This information will help me create a more precise plan.
 ```
 
 **Mandatory questions to consider asking:**
-- Apakah ada deadline atau timeline?
-- Apakah harus backward compatible?
-- Apakah ada external services/APIs yang terlibat?
-- Siapa target user dari fitur ini?
-- Apakah ada referensi/mockup/wireframe?
-- Apakah fitur ini perlu real-time?
-- Bagaimana handling untuk edge cases?
-- Environment apa? (development, staging, production)
+- Is there a deadline or timeline?
+- Does it need to be backward compatible?
+- Are there external services/APIs involved?
+- Who is the target user for this feature?
+- Are there any references/mockups/wireframes?
+- Does this feature need real-time capabilities?
+- How should edge cases be handled?
+- What environment? (development, staging, production)
 
 **Rules:**
 - Maximum 5 clarifying questions per plan
 - Questions must be specific to the plan being created
-- Always provide option to skip: "Atau saya bisa buat plan berdasarkan asumsi terlebih dahulu"
+- Always provide option to skip: "Or I can create a plan based on assumptions first"
 - If user provides enough information (90%+ confidence), proceed with minor assumptions noted
 
 ### Step 1.4 — Research (If Needed)
@@ -236,24 +236,24 @@ If ANY required skill is missing, inform the user:
 ```markdown
 ⚠️ Skill Gap Detected
 
-Plan ini memerlukan teknologi yang belum memiliki skill file:
+This plan requires technologies that don't have a skill file yet:
 
 | # | Technology | Needed For | Status |
 |---|-----------|-----------|--------|
 | 1 | **Pusher** | Real-time notifications | ❌ Missing |
 | 2 | **Stripe** | Payment processing | ❌ Missing |
 
-Tanpa skill file, agent AI tidak memiliki panduan best practice yang terstruktur
-untuk teknologi tersebut. Ini bisa menyebabkan implementasi yang kurang optimal.
+Without a skill file, the AI agent does not have structured best-practice guidance
+for these technologies. This could result in a less optimal implementation.
 
-**Pilihan:**
+**Options:**
 
-1. 📝 **Anda tambahkan skill** — Buat file `.agent/skills/[name]/SKILL.md` secara manual
-2. 🤖 **Saya buatkan skill** — Saya akan riset dari sumber kredibel dan generate skill file yang komprehensif
-3. ⏭️ **Lanjut tanpa skill** — Saya akan tetap membuat plan tapi tanpa panduan terstruktur (tidak disarankan)
-4. 🤖📦 **Buatkan semua sekaligus** — Saya buatkan semua skill yang missing sebelum lanjut ke plan
+1. 📝 **You add the skill** — Create the file `.agent/skills/[name]/SKILL.md` manually
+2. 🤖 **I'll create the skill** — I'll research from credible sources and generate a comprehensive skill file
+3. ⏭️ **Continue without skill** — I'll still create the plan but without structured guidance (not recommended)
+4. 🤖📦 **Create all at once** — I'll create all missing skills before proceeding to the plan
 
-Pilih opsi mana?
+Which option do you prefer?
 ```
 
 ### Step 1.5.4 — Auto-Generate Missing Skills (If User Chooses Option 2 or 4)
@@ -731,9 +731,9 @@ Determine which test types are needed based on what this plan implements:
 | Datadog | Synthetic tests | ✅/❌ | `DD_API_KEY` | `.agent/skills/datadog/` |
 | PagerDuty | Alert on failures | ✅/❌ | Routing key | `.agent/skills/pagerduty/` |
 
-⚠️ For Kategori 2 & 3 missing tools, inform the user:
+⚠️ For Category 2 & 3 missing tools, inform the user:
 ```
-Tools berikut perlu disediakan/di-install manual:
+The following tools need to be provided/installed manually:
 🟡 Manual Install: [Tool] — [Purpose] — [Install guide]
 🔴 API Key Needed: [Tool] — Set [ENV_VAR] in .env
 ```

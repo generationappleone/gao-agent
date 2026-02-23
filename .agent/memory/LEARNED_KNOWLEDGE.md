@@ -78,7 +78,7 @@ Creating or updating any skills, workflows, or rules in .agent/ directory.
 **Scope:** Global
 
 #### 📝 What Was Learned
-User explicitly requested that all agent processes must be "tajam, mendalam, detail, jelas, lengkap" (sharp, deep, detailed, clear, complete). User does not tolerate shallow or minimal output.
+User explicitly requested that all agent processes must be sharp, deep, detailed, clear, and complete. User does not tolerate shallow or minimal output.
 
 #### 💡 Apply When
 Every task — code, documentation, analysis, planning, debugging.
