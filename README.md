@@ -4,10 +4,10 @@
 
 ### **Generative AI Operations — Intelligent Coding Agent Framework**
 
-*Enterprise-grade AI coding agent with 364 skills, 18 enforced rules, 19 automated workflows, self-learning memory, and full-stack development capabilities across 10+ languages and 30+ frameworks.*
+*Enterprise-grade AI coding agent with 365 skills, 19 enforced rules, 19 automated workflows, self-learning memory, and full-stack development capabilities across 10+ languages and 30+ frameworks.*
 
 [![Skills](https://img.shields.io/badge/Skills-365-blue?style=for-the-badge&logo=bookstack&logoColor=white)](#-skills-library-365)
-[![Rules](https://img.shields.io/badge/Rules-18-red?style=for-the-badge&logo=shield&logoColor=white)](#-mandatory-rules-18)
+[![Rules](https://img.shields.io/badge/Rules-19-red?style=for-the-badge&logo=shield&logoColor=white)](#-mandatory-rules-19)
 [![Workflows](https://img.shields.io/badge/Workflows-19-green?style=for-the-badge&logo=githubactions&logoColor=white)](#-workflows-19)
 [![Memory](https://img.shields.io/badge/Memory-Self--Learning-purple?style=for-the-badge&logo=brain&logoColor=white)](#-memory-system)
 [![License](https://img.shields.io/badge/License-Proprietary-orange?style=for-the-badge&logo=lock&logoColor=white)](#-license)
@@ -26,8 +26,8 @@
 - [Key Differentiators](#-key-differentiators)
 - [Architecture](#-architecture)
 - [Getting Started](#-getting-started)
-- [Mandatory Rules (17)](#-mandatory-rules-17)
-- [Workflows (18)](#-workflows-18)
+- [Mandatory Rules (19)](#-mandatory-rules-19)
+- [Workflows (19)](#-workflows-19)
 - [Skills Library (365)](#-skills-library-365)
 - [Memory System](#-memory-system)
 - [How It Works](#-how-it-works)
@@ -49,7 +49,7 @@
 | Generates code on demand | Generates code **with enforced security, architecture, and quality rules** |
 | No memory between sessions | **Self-learning memory** — learns from corrections and never repeats mistakes |
 | Generic responses | **Context-aware** — reads your entire codebase before writing a single line |
-| Inconsistent patterns | **17 mandatory rules** ensure consistent output across ALL tasks |
+| Inconsistent patterns | **19 mandatory rules** ensure consistent output across ALL tasks |
 | Limited framework knowledge | **365 deep technical skills** covering 30+ frameworks in production detail |
 | Manual workflows | **18 automated workflows** from planning to deployment |
 | No compliance awareness | **Built-in compliance**: ISO 27001, NIST CSF, CIS Controls, UU PDP/GDPR |
@@ -58,10 +58,11 @@
 
 ## 🏆 Key Differentiators
 
-### 1. 🧠 Self-Learning Memory
+### 1. 🧠 Self-Learning Memory & Auto-Handoff
 GAO Agent **remembers and learns** from every interaction:
 - **Error Memory** — Every mistake is logged with root cause, correct approach, and prevention rule. The agent **never makes the same mistake twice.**
 - **Learned Knowledge** — User preferences, corrections, coding style, and project conventions are recorded and applied proactively in ALL future tasks.
+- **Auto-Recovery Protocol** — Seamlessly switch AI models mid-task without context amnesia. The agent tracks state in `ACTIVE_TASK.md` and picks up exactly where the last model left off.
 
 ### 2. 🔒 Security-First by Design
 Security is not an afterthought — it's enforced at every layer:
@@ -101,7 +102,7 @@ Built with Indonesian digital ecosystem in mind:
 │
 ├── AGENTS.md                        # Master configuration — rules registry, skill index, conventions
 │
-├── rules/                           # 17 mandatory coding & quality rules
+├── rules/                           # 19 mandatory coding & quality rules
 │   ├── deep-thinking.md                # Deep analysis, anti-hallucination, quality checklist (HIGHEST)
 │   ├── error-memory.md                 # Mistake logging & learning — never repeat errors
 │   ├── self-learning.md                # Adaptive learning from user preferences & corrections
@@ -118,7 +119,9 @@ Built with Indonesian digital ecosystem in mind:
 │   ├── architecture-enforcement.md     # Architecture pattern validation
 │   ├── adaptive-tdd.md                 # Test-driven development rules
 │   ├── continuous-execution.md         # Auto-proceed between workflow stages
-│   └── verification-gate.md            # Mandatory verification before completion claims
+│   ├── verification-gate.md            # Mandatory verification before completion claims
+│   ├── memory-pruning.md               # Rules for pruning ERROR_LOG and LEARNED_KNOWLEDGE
+│   └── unicode-encoding.md             # Unicode & Encoding Standards (UTF-8)
 │
 ├── workflows/                       # 18 automated development workflows
 │   ├── context-init.md                 # Full project analysis & documentation generation
@@ -234,7 +237,7 @@ This automatically runs: **Plan → Work → Build → Test → Review → Deplo
 
 ---
 
-## 🔒 Mandatory Rules (17)
+## 🔒 Mandatory Rules (19)
 
 Every action performed by GAO Agent must comply with these rules. **They are non-negotiable and enforced automatically.**
 
@@ -279,6 +282,8 @@ Every action performed by GAO Agent must comply with these rules. **They are non
 | # | Rule | File | Purpose |
 |---|------|------|---------|
 | 17 | **Continuous Execution** | `continuous-execution.md` | Auto-proceed between workflow stages, no unnecessary pauses |
+| 18 | **Memory Pruning** | `memory-pruning.md` | Archiving logs and removing stale entries |
+| 19 | **Unicode & Encoding** | `unicode-encoding.md` | Prevention of unicode corruption across IDEs |
 
 ### Deep Thinking Checklist (Applied Before EVERY Action)
 
@@ -793,7 +798,7 @@ When GAO Agent encounters common architectural decisions, it follows these defau
 | Metric | Count |
 |--------|-------|
 | **Total Skill Directories** | 365 |
-| **Mandatory Rules** | 18 |
+| **Mandatory Rules** | 19 |
 | **Automated Workflows** | 19 |
 | **Memory Files** | 2 (Error Log + Learned Knowledge) |
 | **Languages Supported** | 11 (JS, TS, Python, Java, Go, PHP, C#, Dart, Rust, Kotlin, Swift) |

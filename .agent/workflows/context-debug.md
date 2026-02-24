@@ -21,6 +21,13 @@ The user triggers this workflow by:
 
 ---
 
+## Phase 0: State Recovery (Auto-Handoff)
+// turbo
+1. Check if `.agent/context/ACTIVE_TASK.md` exists.
+2. If it exists AND is not marked as completed, read it immediately.
+3. Acknowledge the exact last state and resume execution natively from that point without asking the user.
+4. Every time you finish a step or reach rate limits, proactively update `ACTIVE_TASK.md` with current progress.
+
 ## Phase 1: Reproduce & Understand
 
 ### Step 1.1 — Load Debugging Skill

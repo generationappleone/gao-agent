@@ -1,0 +1,18 @@
+# .editorconfig
+# Proactively prevents Unicode corruption (Mojibake) across different IDEs & AI tools
+root = true
+
+[*]
+# Force UTF-8 without Byte Order Mark (BOM)
+charset = utf-8
+end_of_line = lf
+insert_final_newline = true
+trim_trailing_whitespace = true
+
+[*.{bat,cmd,ps1}]
+# Windows scripts generally prefer CRLF
+end_of_line = crlf
+
+[*.md]
+# Don't aggressively trim trailing whitespace in markdown (since spaces are used for manual line breaks)
+trim_trailing_whitespace = false
