@@ -26,6 +26,13 @@ Read these rules BEFORE analyzing the project:
 
 ---
 
+## Phase 0.5: Agent Lock Check (Race Condition Prevention)
+// turbo
+1. Check if `.agent/context/AGENT_LOCK` exists.
+2. If it exists, STOP! Another agent is currently executing. Inform the user and abort.
+3. If it does not exist, immediately create `.agent/context/AGENT_LOCK` with the current timestamp.
+4. IMPORTANT: Meticulously delete `.agent/context/AGENT_LOCK` at the very end of this workflow OR whenever you pause to ask the user a question.
+
 ## Phase 1: Project Discovery
 
 ### Step 1.1 — Identify Project Root & Top-Level Structure

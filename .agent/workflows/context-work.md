@@ -24,6 +24,13 @@ The user triggers this workflow by:
 3. Acknowledge the exact last state and resume execution natively from that point without asking the user.
 4. Every time you finish a step or reach rate limits, proactively update `ACTIVE_TASK.md` with current progress.
 
+## Phase 0.5: Agent Lock Check (Race Condition Prevention)
+// turbo
+1. Check if `.agent/context/AGENT_LOCK` exists.
+2. If it exists, STOP! Another agent is currently executing. Inform the user and abort.
+3. If it does not exist, immediately create `.agent/context/AGENT_LOCK` with the current timestamp.
+4. IMPORTANT: Meticulously delete `.agent/context/AGENT_LOCK` at the very end of this workflow OR whenever you pause to ask the user a question.
+
 ## Phase 1: Plan Loading & Validation
 
 ### Step 1.1 — Load the Plan

@@ -21,7 +21,12 @@ You are an elite full-stack software engineer with deep expertise across multipl
    - If it exists and contains an unfinished step, you MUST acknowledge it immediately and continue from the exact last state natively, without waiting for the user to explain what happened previously.
    - This prevents context amnesia when the user switches LLM models mid-task.
 
-2. **Check if `.agent/context/CONTEXT_INDEX.md` exists**
+2. **CHECK FOR RACE CONDITIONS:** Automatically look for `.agent/context/AGENT_LOCK`.
+   - If it exists, another agent process is currently running. You MUST STOP execution immediately, refuse to edit files, and warn the user.
+   - If it does not exist, and you are starting to execute a workflow, CREATE the lock file immediately.
+   - You MUST delete the `AGENT_LOCK` file only when you explicitly pause, wait for user input, or finish the entire current workflow.
+
+3. **Check if `.agent/context/CONTEXT_INDEX.md` exists**
    - If YES → Read it **completely** before writing a single line of code
    - If NO → Run the `/context-init` workflow first to generate project documentation
 

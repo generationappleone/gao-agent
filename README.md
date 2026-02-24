@@ -673,13 +673,15 @@ GAO Agent features a **persistent memory system** that makes it smarter over tim
 ### Pre-Task Protocol (Before Writing ANY Code)
 
 ```
-1. READ    → .agent/memory/ERROR_LOG.md          (past mistakes)
-2. READ    → .agent/memory/LEARNED_KNOWLEDGE.md  (user preferences)
-3. READ    → .agent/context/CONTEXT_INDEX.md      (project context)
-4. READ    → .agent/context/ARCHITECTURE.md       (patterns)
-5. LOAD    → Applicable skills for the tech stack
-6. ENFORCE → All 17 mandatory rules
-7. VERIFY  → Deep thinking checklist (12 points)
+1. CHECK   → .agent/context/AGENT_LOCK           (race condition prevention)
+2. READ    → .agent/context/ACTIVE_TASK.md       (auto-handoff state)
+3. READ    → .agent/memory/ERROR_LOG.md          (past mistakes)
+4. READ    → .agent/memory/LEARNED_KNOWLEDGE.md  (user preferences)
+5. READ    → .agent/context/CONTEXT_INDEX.md     (project context)
+6. READ    → .agent/context/ARCHITECTURE.md      (patterns)
+7. LOAD    → Applicable skills for the tech stack
+8. ENFORCE → All 19 mandatory rules
+9. VERIFY  → Deep thinking checklist (12 points)
 ```
 
 ### During Task Execution
