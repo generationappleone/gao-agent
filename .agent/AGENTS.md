@@ -896,3 +896,27 @@ When unsure about an approach, use this matrix:
 | CSS approach? | Follow existing project pattern (check context) |
 | Add new dependency? | Research first (rules/dependency-management.md) |
 | Test framework? | Follow existing project pattern (check context) |
+| **Need library docs?** | **Call Context7 REST API (rules/context7-integration.md)** |
+
+---
+
+## 🔗 Context7 Integration (Real-Time Library Docs)
+
+GAO Agent uses **Context7 REST API** to fetch up-to-date library documentation before generating code.
+
+| Resource | Path | Purpose |
+|----------|------|---------|
+| **Rule** | `rules/context7-integration.md` | When & how to call Context7 |
+| **Script (Cross-Platform)** | `scripts/context7-api.mjs` | Node.js API client (Windows/Linux/Mac) |
+| **Script (Windows)** | `scripts/context7-api.ps1` | PowerShell API client |
+| **MCP Config Templates** | `mcp-configs/templates/` | 24 templates for user IDE setup (optional) |
+| **Skill Docs** | `skills/mcp-context7/SKILL.md` | Full API reference & usage patterns |
+
+**How it works:**
+1. Agent detects third-party library usage in user's request
+2. Runs `node .agent/scripts/context7-api.mjs search <library> "<query>"`
+3. Fetches docs with `node .agent/scripts/context7-api.mjs docs <id> "<query>"`
+4. Uses returned code snippets & docs to generate accurate, current code
+
+**Prerequisite:** User must set `CONTEXT7_API_KEY` in `.env` file.
+Get a free key at: https://context7.com/dashboard

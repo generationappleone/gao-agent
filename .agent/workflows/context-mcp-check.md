@@ -174,10 +174,12 @@ For each failed or warning server, provide:
 
 ---
 
-## Phase 6: Auto-Setup MCP Servers
+## Phase 6: Auto-Setup MCP Servers (OPTIONAL — User-Initiated Only)
 
-> This phase runs when the user requests setup (e.g., `/context-mcp-check --setup`)
-> or when Phase 4 reveals that no MCP servers are configured.
+> **⚠️ This phase ONLY runs when the user explicitly requests `--setup`.**
+> The agent should NEVER auto-trigger this phase.
+> GAO Agent itself uses the REST API (Phase 7), NOT MCP.
+> MCP setup here is for the USER's personal IDE experience only.
 
 ### Step 6.1 — Detect AI Client
 // turbo
@@ -245,14 +247,78 @@ Next: Try adding "use context7" to your next prompt!
 
 ---
 
+## Phase 7: Context7 REST API Verification (Primary Method)
+
+> **This is the PRIMARY way GAO Agent accesses Context7.**
+> The agent should ALWAYS use this method instead of MCP.
+> MCP is optional and only for user's personal IDE setup.
+
+### Step 7.1 — Check API Key Availability
+// turbo
+```bash
+# Check if CONTEXT7_API_KEY is set in environment
+echo $CONTEXT7_API_KEY
+
+# Check if .env file has the key
+grep "CONTEXT7_API_KEY" .env 2>/dev/null
+```
+
+### Step 7.2 — Test REST API Connection
+// turbo
+If API key is available, test the connection using the built-in script:
+
+```bash
+# Cross-platform test (Node.js)
+node .agent/scripts/context7-api.mjs search react "hooks"
+
+# Windows alternative (PowerShell)
+.\.agent\scripts\context7-api.ps1 -Action search -LibraryName "react" -Query "hooks"
+```
+
+### Step 7.3 — Report REST API Status
+```markdown
+✅ Context7 REST API Status:
+
+  API Key:     ✅ Set (from .env)
+  Search API:  ✅ Working (found /facebook/react)
+  Docs API:    ✅ Working (returned code snippets)
+
+  Script:      .agent/scripts/context7-api.mjs (cross-platform)
+  Alternative: .agent/scripts/context7-api.ps1 (Windows)
+
+  The agent can now fetch real-time library documentation
+  via REST API — no MCP setup required!
+```
+
+If API key is NOT set:
+```markdown
+⚠️ Context7 REST API Status:
+
+  API Key: ❌ Not found
+  
+  To enable Context7:
+  1. Get a free API key at: https://context7.com/dashboard
+  2. Add to .env file: CONTEXT7_API_KEY=your_key_here
+  3. Run /context-mcp-check again to verify
+```
+
+---
+
 ## When to Use
 - After initial project setup
 - When MCP tools are not responding
 - After changing environment variables
 - When adding a new MCP integration
 - Periodic health checks
-- **Setting up MCP servers for the first time** (`--setup` flag)
+- **Verifying Context7 REST API connection**
+- **Setting up MCP servers for the first time** (`--setup` flag, optional)
 
 ## When to Skip
 - No MCP servers are configured or needed
 - Working on a project without external integrations
+
+## Important Notes
+- **GAO Agent accesses Context7 via REST API**, NOT via MCP
+- MCP setup (Phase 6) is OPTIONAL and only for user's personal IDE experience
+- The agent should NEVER auto-trigger MCP setup; only run Phase 6 when user explicitly requests `--setup`
+- Always prefer Phase 7 (REST API) over Phase 6 (MCP) for agent-internal use
