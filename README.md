@@ -26,6 +26,7 @@
 - [Key Differentiators](#-key-differentiators)
 - [Architecture](#-architecture)
 - [Getting Started](#-getting-started)
+  - [Context7 MCP Setup](#step-5-configure-context7-mcp-recommended)
 - [Mandatory Rules (19)](#-mandatory-rules-19)
 - [Workflows (19)](#-workflows-19)
 - [Skills Library (365)](#-skills-library-365)
@@ -237,13 +238,83 @@ This automatically runs: **Plan → Work → Build → Test → Review → Deplo
 
 #### Step 5: Configure Context7 MCP (Recommended)
 
-GAO Agent provides config templates for 24+ AI clients to use **Context7** (real-time, up-to-date library documentation) to eliminate hallucination.
+GAO Agent ships with **Context7 MCP** — a real-time documentation engine that fetches up-to-date, version-specific library docs directly into AI context, eliminating hallucination and outdated API usage.
+
+##### Quick Start (Works Out-of-the-Box)
+
+Context7 uses **Local Mode by default** — no API key, no sign-up, just copy and go:
+
+**Google Antigravity** (`.mcp.json` already included at project root):
+```json
+{
+  "mcpServers": {
+    "context7": {
+      "command": "npx",
+      "args": ["-y", "@upstash/context7-mcp"]
+    }
+  }
+}
+```
+
+**Other IDEs** — copy the matching template from `.agent/mcp-configs/templates/`:
+
+| AI Client | Template File | Where to Copy |
+|-----------|---------------|---------------|
+| **Google Antigravity** ⭐ | `antigravity.mcp.json` | `.mcp.json` (project root) |
+| **Cursor** | `cursor.mcp.json` | `~/.cursor/mcp.json` or `.cursor/mcp.json` |
+| **VS Code** | `vscode.mcp.json` | `.vscode/mcp.json` |
+| **Claude Code** | `claude-code.md` | Via CLI: `claude mcp add` |
+| **Claude Desktop** | `claude-desktop.mcp.json` | `claude_desktop_config.json` |
+| **Windsurf** | `windsurf.mcp.json` | Customizations > MCP config |
+| **Gemini CLI** | `gemini-cli.json` | `~/.gemini/settings.json` |
+| **GitHub Copilot** | `copilot.mcp.json` | `.vscode/mcp.json` |
+| **JetBrains** | `jetbrains.mcp.json` | MCP settings panel |
+| **Visual Studio 2022** | `visual-studio.mcp.json` | `.mcp.json` (project root) |
+| **+ 14 more** | See [`.agent/mcp-configs/README.md`](.agent/mcp-configs/README.md) | Various |
+
+> **All templates use Local Mode by default — no API key required!**
+> For higher rate limits, add `"--api-key", "YOUR_KEY"` to the `args` array.
+> Get a free key at [context7.com/dashboard](https://context7.com/dashboard).
+
+##### Using Context7 in Prompts
+
+Once configured, add `use context7` to any prompt to fetch real-time docs:
+
+```
+Create a Next.js 15 app with server actions. use context7
+Implement Prisma schema with relations. use context7
+How do I set up Laravel middleware? use context7
+```
+
+Or set an **auto-invoke rule** in your AI client so you never need to type it:
+```
+Always use Context7 MCP when I need library/API documentation,
+code generation, setup or configuration steps.
+```
+
+##### Context7 REST API (For Scripts & CI/CD)
+
+For programmatic access, Context7 also provides a REST API (requires API key):
+
+```bash
+# Search for a library
+curl -X GET "https://context7.com/api/v2/libs/search?libraryName=next.js&query=setup+ssr" \
+  -H "Authorization: Bearer CONTEXT7_API_KEY"
+
+# Fetch documentation
+curl -X GET "https://context7.com/api/v2/context?libraryId=/vercel/next.js&query=middleware&type=json" \
+  -H "Authorization: Bearer CONTEXT7_API_KEY"
+```
+
+> See full REST API documentation in [`.agent/skills/mcp-context7/SKILL.md`](.agent/skills/mcp-context7/SKILL.md).
+
+##### Auto-Setup via Workflow
+
+Run the auto-setup workflow to detect your IDE and generate the config automatically:
 
 ```
 /context-mcp-check --setup
 ```
-
-*(See [MCP Server Integrations](#mcp-server-integrations-65) for more details).*
 
 ---
 

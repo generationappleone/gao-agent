@@ -1,24 +1,24 @@
 {
     "_comment": [
         "GAO Agent — Context7 MCP Config for VS Code",
+        "Running in LOCAL mode (no API key required for basic usage)",
         "",
         "Setup:",
         "  1. Copy the 'mcp' section into .vscode/mcp.json (workspace)",
         "     OR into your user settings.json",
-        "  2. Replace YOUR_API_KEY with your key from https://context7.com/dashboard",
-        "  3. Restart VS Code to activate",
+        "  2. Restart VS Code to activate",
         "",
-        "Docs: https://code.visualstudio.com/docs/copilot/chat/mcp-servers",
-        "Context7: https://context7.com/docs/resources/all-clients"
+        "To get higher rate limits, add your API key from https://context7.com/dashboard :",
+        "\"args\": [\"-y\", \"@upstash/context7-mcp\", \"--api-key\", \"YOUR_KEY_HERE\"]"
     ],
     "mcp": {
         "servers": {
             "context7": {
-                "type": "http",
-                "url": "https://mcp.context7.com/mcp",
-                "headers": {
-                    "CONTEXT7_API_KEY": "YOUR_API_KEY"
-                }
+                "command": "npx",
+                "args": [
+                    "-y",
+                    "@upstash/context7-mcp"
+                ]
             }
         }
     }

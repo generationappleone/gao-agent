@@ -1,12 +1,7 @@
 {
     "_comment": [
-        "GAO Agent — Context7 MCP Config for Cursor",
+        "GAO Agent — Context7 MCP Config for Google Antigravity",
         "Running in LOCAL mode (no API key required for basic usage)",
-        "",
-        "Setup:",
-        "  1. Copy this file to ~/.cursor/mcp.json (global)",
-        "     OR to .cursor/mcp.json in your project root (per-project)",
-        "  2. Restart Cursor to activate",
         "",
         "To get higher rate limits, add your API key from https://context7.com/dashboard :",
         "\"args\": [\"-y\", \"@upstash/context7-mcp\", \"--api-key\", \"YOUR_KEY_HERE\"]"

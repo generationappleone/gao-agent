@@ -43,22 +43,22 @@ Output: Up-to-date documentation + code examples for Next.js middleware
 
 ## Configuration
 
-### Remote Server Connection (Recommended)
+### Local Server Connection (Default — No API Key Required)
 
 ```json
 {
   "mcpServers": {
     "context7": {
-      "url": "https://mcp.context7.com/mcp",
-      "headers": {
-        "CONTEXT7_API_KEY": "YOUR_API_KEY"
-      }
+      "command": "npx",
+      "args": ["-y", "@upstash/context7-mcp"]
     }
   }
 }
 ```
 
-### Local Server Connection
+> **This is the default mode.** Works out-of-the-box without any API key. Rate limits are IP-based.
+
+### Remote Server Connection (Optional — Higher Rate Limits)
 
 ```json
 {
@@ -71,7 +71,16 @@ Output: Up-to-date documentation + code examples for Next.js middleware
 }
 ```
 
-> **Note:** Get a free API key at [context7.com/dashboard](https://context7.com/dashboard) for higher rate limits.
+> Get a free API key at [context7.com/dashboard](https://context7.com/dashboard) for higher rate limits and priority access.
+
+### REST API (Direct HTTP — Requires API Key)
+
+For scripts, CI/CD, and programmatic usage. See [Context7 REST API v2](#context7-rest-api-v2) section below.
+
+```bash
+curl -X GET "https://context7.com/api/v2/libs/search?libraryName=next.js&query=setup" \
+  -H "Authorization: Bearer CONTEXT7_API_KEY"
+```
 
 ## GAO Agent Integration
 
@@ -80,8 +89,9 @@ Output: Up-to-date documentation + code examples for Next.js middleware
 1. Browse templates in `.agent/mcp-configs/templates/`
 2. Find the template matching your AI client (see table below)
 3. Copy to the correct location for your client
-4. Replace `YOUR_API_KEY` with your key from [context7.com/dashboard](https://context7.com/dashboard)
-5. Validate with `/context-mcp-check context7`
+4. **Done!** — Templates use Local Mode by default (no API key needed)
+5. *(Optional)* Add `--api-key YOUR_KEY` for higher rate limits
+6. Validate with `/context-mcp-check context7`
 
 ### Templates per AI Client
 
@@ -96,7 +106,7 @@ Output: Up-to-date documentation + code examples for Next.js middleware
 | **Gemini CLI** | `gemini-cli.json` | `~/.gemini/settings.json` |
 | **20+ more** | See `.agent/mcp-configs/README.md` | Various |
 
-### Environment Variable
+### Environment Variable (for REST API)
 
 ```bash
 # Set in .env file (never commit!)
@@ -152,8 +162,188 @@ Context7 supports thousands of popular libraries including:
 - Combine with `resolve-library-id` first to ensure correct library matching
 - Useful for rapidly evolving frameworks (React, Next.js, etc.)
 - Context7 supplements (not replaces) GAO Agent skill files
+- Use MCP transport for interactive AI sessions; use REST API for scripts, CI/CD, or when MCP is unavailable
+
+---
+
+## Context7 REST API v2
+
+> **When to use the REST API instead of MCP:**
+> - When building scripts, CI/CD pipelines, or automation tools
+> - When the MCP transport is not available in your environment
+> - When you need programmatic access to library documentation
+> - When integrating Context7 into custom applications
+
+### Authentication
+
+All REST API calls require an API key from [context7.com/dashboard](https://context7.com/dashboard):
+
+```
+Authorization: Bearer CONTEXT7_API_KEY
+```
+
+### Endpoint 1: Search Libraries
+
+Search for libraries and get their Context7-compatible IDs.
+
+```
+GET https://context7.com/api/v2/libs/search
+```
+
+**Parameters:**
+
+| Parameter | Required | Type | Description |
+|-----------|----------|------|-------------|
+| `libraryName` | Yes | string | Library name to search for (e.g., `next.js`, `react`, `laravel`) |
+| `query` | No | string | User query to rank results by relevance |
+
+**Example Request:**
+
+```bash
+curl -X GET "https://context7.com/api/v2/libs/search?libraryName=next.js&query=setup+ssr" \
+  -H "Authorization: Bearer CONTEXT7_API_KEY"
+```
+
+**Example Response:**
+
+```json
+{
+  "results": [
+    {
+      "id": "/vercel/next.js",
+      "title": "Next.js",
+      "description": "Next.js enables you to create full-stack web...",
+      "branch": "canary",
+      "lastUpdateDate": "2025-11-17T22:20:15.784Z",
+      "state": "finalized",
+      "totalTokens": 824953,
+      "totalSnippets": 3336,
+      "stars": 131745,
+      "trustScore": 10,
+      "benchmarkScore": 91.1,
+      "versions": ["v14.3.0-canary.87", "v13.5.11", "v15.1.8"]
+    }
+  ]
+}
+```
+
+### Endpoint 2: Get Context / Documentation
+
+Fetch up-to-date, LLM-reranked documentation for a specific library.
+
+```
+GET https://context7.com/api/v2/context
+```
+
+**Parameters:**
+
+| Parameter | Required | Type | Description |
+|-----------|----------|------|-------------|
+| `libraryId` | Yes | string | Context7-compatible library ID (e.g., `/vercel/next.js`) |
+| `query` | Yes | string | Natural language question or task |
+| `type` | No | enum | Response format: `json` or `txt` (default: `txt`) |
+
+**Example Request:**
+
+```bash
+curl -X GET "https://context7.com/api/v2/context?libraryId=/vercel/next.js&query=middleware+authentication&type=json" \
+  -H "Authorization: Bearer CONTEXT7_API_KEY"
+```
+
+**Example Response (JSON format):**
+
+```json
+{
+  "codeSnippets": [
+    {
+      "codeTitle": "Middleware Example",
+      "codeDescription": "Next.js middleware for authentication",
+      "codeLanguage": "typescript",
+      "codeTokens": 150,
+      "codeId": "https://nextjs.org/docs/app/building/middleware",
+      "pageTitle": "Middleware - Next.js",
+      "codeList": [
+        {
+          "language": "typescript",
+          "code": "import { NextResponse } from 'next/server'..."
+        }
+      ]
+    }
+  ],
+  "infoSnippets": [
+    {
+      "pageId": "https://nextjs.org/docs/app/building/middleware",
+      "breadcrumb": "Docs > App Router > Building > Middleware",
+      "content": "Middleware allows you to run code before a request...",
+      "contentTokens": 200
+    }
+  ]
+}
+```
+
+### REST API Usage in GAO Agent Workflows
+
+GAO Agent can use the REST API directly within workflows and scripts:
+
+**PowerShell (Windows):**
+
+```powershell
+# Search for a library
+$headers = @{ "Authorization" = "Bearer $env:CONTEXT7_API_KEY" }
+$response = Invoke-RestMethod -Uri "https://context7.com/api/v2/libs/search?libraryName=react&query=hooks" -Headers $headers
+$response.results | Select-Object id, title, stars
+
+# Fetch documentation
+$docs = Invoke-RestMethod -Uri "https://context7.com/api/v2/context?libraryId=/facebook/react&query=useEffect+cleanup&type=json" -Headers $headers
+$docs.codeSnippets | ForEach-Object { $_.codeTitle }
+```
+
+**Bash / curl:**
+
+```bash
+# Search for a library
+curl -s "https://context7.com/api/v2/libs/search?libraryName=laravel&query=eloquent" \
+  -H "Authorization: Bearer $CONTEXT7_API_KEY" | jq '.results[].id'
+
+# Fetch documentation
+curl -s "https://context7.com/api/v2/context?libraryId=/laravel/docs&query=middleware&type=txt" \
+  -H "Authorization: Bearer $CONTEXT7_API_KEY"
+```
+
+**Node.js (fetch):**
+
+```javascript
+const API_KEY = process.env.CONTEXT7_API_KEY;
+const headers = { 'Authorization': `Bearer ${API_KEY}` };
+
+// Search
+const search = await fetch(
+  'https://context7.com/api/v2/libs/search?libraryName=prisma&query=migrations',
+  { headers }
+);
+const { results } = await search.json();
+
+// Get docs
+const docs = await fetch(
+  `https://context7.com/api/v2/context?libraryId=${results[0].id}&query=schema+design&type=json`,
+  { headers }
+);
+const { codeSnippets, infoSnippets } = await docs.json();
+```
+
+### MCP vs REST API — Comparison
+
+| Feature | MCP Transport | REST API |
+|---------|--------------|----------|
+| **Setup** | Config file + restart IDE | API key + HTTP call |
+| **API Key Required** | No (local mode) | Yes (always) |
+| **Best For** | Interactive AI coding sessions | Scripts, CI/CD, automation |
+| **Rate Limits** | IP-based (free) or API key | API key required |
+| **Response** | Streamed via MCP protocol | JSON or plain text |
+| **GAO Agent Support** | `.mcp.json` + 24 templates | Direct HTTP calls in workflows |
 
 ## References
 - [Context7 GitHub](https://github.com/upstash/context7)
 - [Context7 All Clients](https://context7.com/docs/resources/all-clients)
+- [Context7 API Documentation](https://context7.com/docs)
 - [GAO Agent MCP Config Templates](../../mcp-configs/README.md)

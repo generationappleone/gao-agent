@@ -4,19 +4,19 @@
         "",
         "Setup:",
         "  1. Copy this file to your project root as .mcp.json",
-        "     OR open: Agent Session > ... > MCP Servers > View raw config",
-        "  2. Replace YOUR_API_KEY with your key from https://context7.com/dashboard",
-        "  3. Restart Antigravity to activate",
+        "  2. Restart Antigravity to activate",
         "",
-        "Docs: https://antigravity.google/docs/mcp",
-        "Context7: https://context7.com/docs/resources/all-clients"
+        "Note: This uses local mode (no API key required).",
+        "For higher rate limits, add your API key from https://context7.com/dashboard",
+        "Example: \"args\": [\"-y\", \"@upstash/context7-mcp\", \"--api-key\", \"YOUR_KEY\"]"
     ],
     "mcpServers": {
         "context7": {
-            "serverUrl": "https://mcp.context7.com/mcp",
-            "headers": {
-                "CONTEXT7_API_KEY": "YOUR_API_KEY"
-            }
+            "command": "npx",
+            "args": [
+                "-y",
+                "@upstash/context7-mcp"
+            ]
         }
     }
 }
