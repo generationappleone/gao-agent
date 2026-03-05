@@ -1,0 +1,14 @@
+{
+    "_comment": "GAO Agent — Context7 MCP Config for JetBrains AI Assistant. Setup: Settings > Tools > AI Assistant > MCP > + Add > As JSON. Docs: https://www.jetbrains.com/help/ai-assistant/configure-an-mcp-server.html",
+    "mcpServers": {
+        "context7": {
+            "command": "npx",
+            "args": [
+                "-y",
+                "@upstash/context7-mcp",
+                "--api-key",
+                "YOUR_API_KEY"
+            ]
+        }
+    }
+}

@@ -1,0 +1,22 @@
+{
+    "_comment": [
+        "GAO Agent — Context7 MCP Config for Cursor",
+        "",
+        "Setup:",
+        "  1. Copy this file to ~/.cursor/mcp.json (global)",
+        "     OR to .cursor/mcp.json in your project root (per-project)",
+        "  2. Replace YOUR_API_KEY with your key from https://context7.com/dashboard",
+        "  3. Restart Cursor to activate",
+        "",
+        "Docs: https://docs.cursor.com/context/model-context-protocol",
+        "Context7: https://context7.com/docs/resources/all-clients"
+    ],
+    "mcpServers": {
+        "context7": {
+            "url": "https://mcp.context7.com/mcp",
+            "headers": {
+                "CONTEXT7_API_KEY": "YOUR_API_KEY"
+            }
+        }
+    }
+}

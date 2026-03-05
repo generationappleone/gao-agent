@@ -1,0 +1,17 @@
+{
+    "_comment": "GAO Agent — Context7 MCP Config for Kiro. Setup: Kiro > MCP Servers > + Add > paste this config. Docs: https://kiro.dev/docs/mcp/configuration/",
+    "mcpServers": {
+        "Context7": {
+            "command": "npx",
+            "args": [
+                "-y",
+                "@upstash/context7-mcp",
+                "--api-key",
+                "YOUR_API_KEY"
+            ],
+            "env": {},
+            "disabled": false,
+            "autoApprove": []
+        }
+    }
+}

@@ -1,0 +1,15 @@
+# GAO Agent — Context7 MCP Config for OpenAI Codex
+# File: Codex configuration file (TOML format)
+# Docs: https://github.com/openai/codex
+
+# Remote Server Connection (Recommended)
+[mcp_servers.context7]
+url = "https://mcp.context7.com/mcp"
+http_headers = { "CONTEXT7_API_KEY" = "YOUR_API_KEY" }
+startup_timeout_ms = 40_000
+
+# Local Server Connection (Alternative)
+# [mcp_servers.context7]
+# args = ["-y", "@upstash/context7-mcp", "--api-key", "YOUR_API_KEY"]
+# command = "npx"
+# startup_timeout_ms = 20_000

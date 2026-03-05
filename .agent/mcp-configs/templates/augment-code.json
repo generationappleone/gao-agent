@@ -1,0 +1,17 @@
+{
+    "_comment": "GAO Agent — Context7 MCP Config for Augment Code. Setup: hamburger menu > Settings > Advanced > Edit in settings.json. Add to augment.advanced object.",
+    "augment.advanced": {
+        "mcpServers": [
+            {
+                "name": "context7",
+                "command": "npx",
+                "args": [
+                    "-y",
+                    "@upstash/context7-mcp",
+                    "--api-key",
+                    "YOUR_API_KEY"
+                ]
+            }
+        ]
+    }
+}

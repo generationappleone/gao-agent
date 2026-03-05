@@ -1,0 +1,8 @@
+{
+    "_comment": "GAO Agent — Context7 MCP Config for Trae. Docs: https://docs.trae.ai/ide/model-context-protocol",
+    "mcpServers": {
+        "context7": {
+            "url": "https://mcp.context7.com/mcp"
+        }
+    }
+}

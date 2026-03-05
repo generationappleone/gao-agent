@@ -801,6 +801,20 @@ MCP (Model Context Protocol) servers extend the agent's capabilities by connecti
 | MCP — ServiceBricks | `skills/mcp-servicebricks/` | Microservice building blocks, API gateways |
 | MCP — pgEdge | `skills/mcp-pgedge/` | Distributed PostgreSQL, multi-master replication |
 
+### MCP Config Management
+
+Ready-to-use configuration templates for connecting MCP servers to 24 AI coding clients.
+
+| Resource | Path | Purpose |
+|----------|------|---------|
+| README | `mcp-configs/README.md` | Setup guide, client table, security notes |
+| API Key Template | `mcp-configs/.env.mcp.example` | Template env vars for all MCP API keys |
+| Config Templates | `mcp-configs/templates/` | 24 config files for all supported AI clients |
+
+**Supported AI Clients:** Google Antigravity, Cursor, VS Code, Claude Code, Claude Desktop, Windsurf, Gemini CLI, OpenAI Codex, GitHub Copilot, JetBrains, Kiro, Kilo Code, Roo Code, Cline, Augment Code, Opencode, Zed, Warp, Qwen Code, Amazon Q, LM Studio, Visual Studio 2022, Trae, Windows CMD.
+
+**Setup:** Run `/context-mcp-check --setup` or manually copy templates from `mcp-configs/templates/`.
+
 ---
 
 ## 📐 Code Writing Standards

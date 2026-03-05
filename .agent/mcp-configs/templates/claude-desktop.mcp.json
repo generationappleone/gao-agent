@@ -1,0 +1,28 @@
+{
+    "_comment": [
+        "GAO Agent — Context7 MCP Config for Claude Desktop",
+        "",
+        "Setup:",
+        "  macOS: ~/Library/Application Support/Claude/claude_desktop_config.json",
+        "  Windows: %APPDATA%/Claude/claude_desktop_config.json",
+        "",
+        "  1. Open/create the config file at the path above",
+        "  2. Merge the mcpServers section into your existing config",
+        "  3. Replace YOUR_API_KEY with your key from https://context7.com/dashboard",
+        "  4. Restart Claude Desktop to activate",
+        "",
+        "Docs: https://modelcontextprotocol.io/quickstart/user",
+        "Context7: https://context7.com/docs/resources/all-clients"
+    ],
+    "mcpServers": {
+        "context7": {
+            "command": "npx",
+            "args": [
+                "-y",
+                "@upstash/context7-mcp",
+                "--api-key",
+                "YOUR_API_KEY"
+            ]
+        }
+    }
+}

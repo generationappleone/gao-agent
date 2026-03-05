@@ -1,0 +1,13 @@
+{
+    "_comment": "GAO Agent — Context7 MCP Config for Visual Studio 2022. Docs: https://learn.microsoft.com/visualstudio/ide/mcp-servers",
+    "inputs": [],
+    "servers": {
+        "context7": {
+            "type": "http",
+            "url": "https://mcp.context7.com/mcp",
+            "headers": {
+                "CONTEXT7_API_KEY": "YOUR_API_KEY"
+            }
+        }
+    }
+}

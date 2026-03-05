@@ -1,0 +1,12 @@
+{
+    "_comment": "GAO Agent — Context7 MCP Config for Qwen Code. File: ~/.qwen/settings.json or .qwen/settings.json. Docs: https://qwenlm.github.io/qwen-code-docs/en/users/features/mcp/",
+    "mcpServers": {
+        "context7": {
+            "httpUrl": "https://mcp.context7.com/mcp",
+            "headers": {
+                "CONTEXT7_API_KEY": "YOUR_API_KEY",
+                "Accept": "application/json, text/event-stream"
+            }
+        }
+    }
+}

@@ -1,0 +1,12 @@
+{
+    "_comment": "GAO Agent — Context7 MCP Config for Cline. Setup: MCP Servers > Remote Servers > Edit Configuration. Docs: https://cline.bot/mcp-marketplace",
+    "mcpServers": {
+        "context7": {
+            "url": "https://mcp.context7.com/mcp",
+            "type": "streamableHttp",
+            "headers": {
+                "Authorization": "Bearer YOUR_API_KEY"
+            }
+        }
+    }
+}

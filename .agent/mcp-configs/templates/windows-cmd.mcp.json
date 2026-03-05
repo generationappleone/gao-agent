@@ -1,0 +1,18 @@
+{
+    "_comment": "GAO Agent — Context7 MCP Config: Windows CMD Wrapper. Use this when your AI client on Windows cannot run npx directly. Replace YOUR_API_KEY with your key from https://context7.com/dashboard",
+    "mcpServers": {
+        "context7": {
+            "command": "cmd",
+            "args": [
+                "/c",
+                "npx",
+                "-y",
+                "@upstash/context7-mcp",
+                "--api-key",
+                "YOUR_API_KEY"
+            ],
+            "disabled": false,
+            "autoApprove": []
+        }
+    }
+}

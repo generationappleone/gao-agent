@@ -235,6 +235,16 @@ For the complete end-to-end development lifecycle:
 
 This automatically runs: **Plan → Work → Build → Test → Review → Deploy**
 
+#### Step 5: Configure Context7 MCP (Recommended)
+
+GAO Agent provides config templates for 24+ AI clients to use **Context7** (real-time, up-to-date library documentation) to eliminate hallucination.
+
+```
+/context-mcp-check --setup
+```
+
+*(See [MCP Server Integrations](#mcp-server-integrations-65) for more details).*
+
 ---
 
 ## 🔒 Mandatory Rules (19)
@@ -521,7 +531,15 @@ GAO Agent includes **365 deep technical skill directories**, each containing pro
 
 ### MCP Server Integrations (65+)
 
-GAO Agent includes **65+ Model Context Protocol (MCP) server skills** for direct integration with external tools and services:
+GAO Agent includes **65+ Model Context Protocol (MCP) server skills** for direct integration with external tools and services.
+
+**⚡ Context7 & MCP Configuration Templates**
+GAO Agent provides ready-to-use configuration templates for [Context7](https://context7.com) (up-to-date library documentation) and other MCP servers across **24 AI coding clients** (Google Antigravity, Cursor, VS Code, Claude, Windsurf, etc.).
+
+**How to setup Context7 / MCP servers:**
+1. Run the auto-setup workflow: `/context-mcp-check --setup`
+2. Or browse the templates manually in: `.agent/mcp-configs/templates/`
+3. Add your API keys to `.env` (use `.agent/mcp-configs/.env.mcp.example` as a starting point)
 
 | Category | MCP Skills |
 |----------|-----------|

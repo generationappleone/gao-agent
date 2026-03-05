@@ -174,12 +174,84 @@ For each failed or warning server, provide:
 
 ---
 
+## Phase 6: Auto-Setup MCP Servers
+
+> This phase runs when the user requests setup (e.g., `/context-mcp-check --setup`)
+> or when Phase 4 reveals that no MCP servers are configured.
+
+### Step 6.1 — Detect AI Client
+// turbo
+Detect which AI client is being used by checking project/system files:
+
+```
+Detection Rules:
+  .mcp.json (project root)        → Google Antigravity
+  .cursor/ directory              → Cursor
+  .vscode/ directory              → VS Code
+  CLAUDE.md                       → Claude Code
+  .kilocode/ directory            → Kilo Code
+  .github/copilot/ directory      → GitHub Copilot
+  .qwen/ directory                → Qwen Code
+
+If multiple detected    → Ask user to choose
+If none detected        → Ask user which client they use
+```
+
+### Step 6.2 — Present Available Templates
+List available config templates from `.agent/mcp-configs/templates/`:
+
+```markdown
+📦 Available MCP Config Templates:
+
+| # | AI Client | Template | Status |
+|---|-----------|----------|--------|
+| 1 | Google Antigravity | antigravity.mcp.json | Ready |
+| 2 | Cursor | cursor.mcp.json | Ready |
+| 3 | VS Code | vscode.mcp.json | Ready |
+| ... | ... | ... | ... |
+
+Which MCP servers would you like to configure?
+1. Context7 only (recommended for start)
+2. All available MCP servers
+3. Custom selection
+```
+
+### Step 6.3 — Generate Config File
+Based on detected client and user selection:
+
+1. Read the selected template from `.agent/mcp-configs/templates/`
+2. Ask user for required API keys
+3. Replace `YOUR_API_KEY` placeholders with actual keys
+4. Write config file to the correct location for the detected client
+5. Copy `.agent/mcp-configs/.env.mcp.example` to `.env` if not exists
+
+### Step 6.4 — Validate New Configuration
+After config is generated:
+
+1. Run Phase 3 connectivity check on newly configured servers
+2. Report success/failure
+3. If failed, suggest troubleshooting from Phase 5
+
+```markdown
+✅ MCP Setup Complete!
+
+Configured: Context7
+Client: Google Antigravity
+Config file: .mcp.json
+Status: ✅ Connected
+
+Next: Try adding "use context7" to your next prompt!
+```
+
+---
+
 ## When to Use
 - After initial project setup
 - When MCP tools are not responding
 - After changing environment variables
 - When adding a new MCP integration
 - Periodic health checks
+- **Setting up MCP servers for the first time** (`--setup` flag)
 
 ## When to Skip
 - No MCP servers are configured or needed
