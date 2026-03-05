@@ -1,0 +1,28 @@
+# ============================================================
+# GAO Agent — .gitignore
+# ============================================================
+
+# ----- User-specific MCP config (each user sets up their own) -----
+.mcp.json
+.vscode/mcp.json
+.cursor/mcp.json
+
+# ----- Environment variables (NEVER commit secrets) -----
+.env
+.env.local
+.env.*.local
+.agent/mcp-configs/.env.mcp
+
+# ----- OS files -----
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ----- IDE / Editor -----
+.idea/
+*.swp
+*.swo
+*~
+
+# ----- Agent runtime files -----
+.agent/context/AGENT_LOCK

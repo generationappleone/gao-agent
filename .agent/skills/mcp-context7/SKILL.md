@@ -84,16 +84,56 @@ curl -X GET "https://context7.com/api/v2/libs/search?libraryName=next.js&query=s
 
 ## GAO Agent Integration
 
-### Quick Setup
+### Internal Usage (Agent calls Context7 REST API directly)
+
+GAO Agent has **built-in scripts** to fetch documentation from Context7 REST API.
+This does NOT require MCP setup — the agent calls the API directly.
+
+**Prerequisites:** Set `CONTEXT7_API_KEY` in your `.env` file:
+```bash
+# .env (never commit!)
+CONTEXT7_API_KEY=your_api_key_here
+```
+
+**Cross-Platform Script (Node.js — works on Windows/Linux/Mac):**
+
+`.agent/scripts/context7-api.mjs`
+
+```bash
+# Search for a library → get its Context7 ID
+node .agent/scripts/context7-api.mjs search next.js "server actions"
+
+# Fetch documentation for a specific library
+node .agent/scripts/context7-api.mjs docs /vercel/next.js "middleware authentication"
+```
+
+**Windows-Only Alternative (PowerShell):**
+
+`.agent/scripts/context7-api.ps1`
+
+```powershell
+.\.agent\scripts\context7-api.ps1 -Action search -LibraryName "next.js" -Query "server actions"
+.\.agent\scripts\context7-api.ps1 -Action docs -LibraryId "/vercel/next.js" -Query "middleware authentication"
+```
+
+**When the agent should use this:**
+- Before generating code for third-party libraries
+- When the user asks about a specific framework/library API
+- When verifying if an API or pattern is still current
+- In `/context-work` and `/context-plan` workflows for accurate code generation
+
+### User MCP Setup (Optional — User's Responsibility)
+
+Users who want MCP-based Context7 in their IDE can set it up themselves using the templates:
 
 1. Browse templates in `.agent/mcp-configs/templates/`
-2. Find the template matching your AI client (see table below)
-3. Copy to the correct location for your client
-4. **Done!** — Templates use Local Mode by default (no API key needed)
-5. *(Optional)* Add `--api-key YOUR_KEY` for higher rate limits
-6. Validate with `/context-mcp-check context7`
+2. Copy the template matching your AI client to the correct location
+3. **Done!** — Templates use Local Mode by default (no API key needed)
+4. *(Optional)* Add `--api-key YOUR_KEY` for higher rate limits
+5. Validate with `/context-mcp-check context7`
 
-### Templates per AI Client
+> ⚠️ **Important:** `.mcp.json` is user-specific and should NOT be committed to git.
+> It is already listed in `.gitignore`.
 
 | Client | Template | Config Location |
 |--------|----------|-----------------|
@@ -105,13 +145,6 @@ curl -X GET "https://context7.com/api/v2/libs/search?libraryName=next.js&query=s
 | **Windsurf** | `windsurf.mcp.json` | Via UI |
 | **Gemini CLI** | `gemini-cli.json` | `~/.gemini/settings.json` |
 | **20+ more** | See `.agent/mcp-configs/README.md` | Various |
-
-### Environment Variable (for REST API)
-
-```bash
-# Set in .env file (never commit!)
-CONTEXT7_API_KEY=your_api_key_here
-```
 
 Template: `.agent/mcp-configs/.env.mcp.example`
 
