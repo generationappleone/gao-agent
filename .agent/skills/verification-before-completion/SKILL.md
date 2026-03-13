@@ -112,6 +112,9 @@ Run the command. Read the output. THEN claim the result.
 
 This is non-negotiable.
 
+> **"Violating the letter of this rule is violating the spirit."**
+> Finding creative ways to "technically" verify without actually running commands defeats the purpose of verification. The discipline IS the point.
+
 ## Integration
 
 **This skill is used by:**
@@ -121,3 +124,8 @@ This is non-negotiable.
 **Pairs with:**
 - **test-driven-development** — TDD verification cycle
 - **systematic-debugging** — Verify fix actually works
+
+**This skill is governed by:**
+- `rules/verification-gate.md` — Hard enforcement rule
+- `rules/skill-routing.md` — Master controller hook
+- `skills/using-gao-agent/SKILL.md` — Skill type: **RIGID**

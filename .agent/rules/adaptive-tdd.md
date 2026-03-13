@@ -59,3 +59,9 @@ In balanced mode, these are acceptable WITHOUT test-first:
 - Use `test-driven-development` skill for detailed process
 - Pairs with `verification-gate` rule for completion claims
 - Bug fixes require a failing test reproducing the bug before fixing
+
+---
+
+> **For complete TDD methodology, anti-patterns, and examples, see `skills/test-driven-development/SKILL.md`.**
+> See also `skills/test-driven-development/testing-anti-patterns.md` for common testing mistakes with gate functions.
+> This rule defines WHAT must happen (enforcement). The skill defines HOW to do it (methodology).

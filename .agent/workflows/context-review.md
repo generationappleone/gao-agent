@@ -49,6 +49,11 @@ The user triggers this workflow by:
 6. Read `.agent/rules/deep-thinking.md` — deep analysis standards (MANDATORY)
 7. Read `.agent/rules/developer-security.md` — security rules (MANDATORY)
 
+**Advanced options (subagent review):**
+- `skills/requesting-code-review/SKILL.md` — Dispatch review to subagent (structured templates)
+- `skills/receiving-code-review/SKILL.md` — Process review feedback (5 response types)
+> These are optional. Use when subagent dispatch is available for parallel review or when review requires specialized perspective.
+
 ### Step 1.2 — Determine Review Scope
 
 Ask the user (or auto-detect from context):

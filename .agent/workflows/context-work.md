@@ -121,6 +121,24 @@ If the user chooses option 2 (agent creates the skill):
 - The skill MUST follow all applicable rules (security, SOLID, database design, etc.)
 - Present the generated skill to the user for review before continuing
 
+### Step 1.5b — Execution Mode Selection
+// turbo
+Determine the best execution mode for this plan:
+
+| Condition | Mode | Skill Reference |
+|-----------|------|----------------|
+| Subagents available AND 3+ independent tasks | **SDD** (Subagent-Driven Development) | `skills/subagent-driven-development/SKILL.md` |
+| 5+ independent tasks, no shared files | **Swarm** (parallel execution) | `skills/executing-plans/SKILL.md` (swarm section) |
+| Default / tightly coupled tasks | **Sequential** | `skills/executing-plans/SKILL.md` (default) |
+
+> **SDD is preferred** when subagents are available. Fresh context per task prevents context fatigue.
+
+Announce the selected mode:
+```markdown
+🔀 Execution Mode: [SDD/Swarm/Sequential]
+Reason: [Why this mode was selected]
+```
+
 ### Step 1.6 — Verify All Rules Loaded
 // turbo
 Load and confirm all rules from `.agent/rules/`:
@@ -130,6 +148,7 @@ find .agent/rules -name "*.md" | sort
 ```
 
 All rules are MANDATORY during execution:
+- `skill-routing.md` — **Master controller hook** (ensures using-gao-agent is active)
 - `solid-principles.md` — Code structure
 - `developer-security.md` — Security practices
 - `database-design.md` — Database conventions

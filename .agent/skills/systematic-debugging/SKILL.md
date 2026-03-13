@@ -165,10 +165,17 @@ When you have a large code change that broke something:
 
 ### Defense in Depth
 
-After fixing, add:
-- Input validation at boundaries
-- Assertions for assumptions
-- Logging for future diagnostics
+After fixing, add validation layers. See `systematic-debugging/defense-in-depth.md` for the full 4-layer validation strategy.
+
+## Supporting Technique Documents
+
+These companion documents provide detailed techniques referenced in the phases above:
+
+| Document | Technique | Best For |
+|----------|-----------|----------|
+| `root-cause-tracing.md` | 5-level backward tracing | Recurring bugs, "fix keeps coming back" |
+| `defense-in-depth.md` | 4-layer validation | Preventing bugs from reaching production |
+| `condition-based-waiting.md` | Replace arbitrary timeouts | Flaky tests, intermittent failures |
 
 ## Integration
 
@@ -178,3 +185,7 @@ After fixing, add:
 
 **This skill feeds into:**
 - **knowledge-compounding** — Document the solution after fixing
+
+**This skill is governed by:**
+- `rules/skill-routing.md` — Master controller hook
+- `skills/using-gao-agent/SKILL.md` — Skill type: **RIGID** (root cause before fixes)

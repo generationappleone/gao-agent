@@ -26,6 +26,8 @@ Evaluate whether brainstorming is needed:
 **If requirements are already clear:**
 Suggest: "Your requirements are detailed enough to proceed directly to planning. Should I run the plan workflow instead, or explore the idea further?"
 
+> ⚠️ **<HARD-GATE>** If the user says "yes, brainstorm" — you MUST complete the ENTIRE brainstorming process before writing ANY code. No exceptions. No "let me just scaffold it first." DESIGN → PLAN → CODE. Always in this order. **</HARD-GATE>**
+
 ### Phase 1: Understand the Idea
 
 **1.1 Local Research (Lightweight)**
@@ -59,6 +61,23 @@ Ask questions **one at a time** to understand the idea:
 If the idea involves frontend/UI work (pages, components, dashboards, landing pages):
 - Announce: "This involves UI work. I'll use the ui-ux-pro-max skill for design intelligence."
 - Include design system recommendations in the brainstorm document
+
+### Phase 1.5: Scope Assessment
+
+After understanding the idea, assess scope:
+
+**Single subsystem:** Proceed normally to Phase 2.
+
+**Multi-subsystem (2+ distinct areas):**
+1. Decompose into subsystem specs
+2. Design each subsystem separately
+3. Define interfaces between subsystems
+4. Present consolidated design
+
+**Signs of multi-subsystem scope:**
+- "We need changes to both the API and the frontend"
+- "This affects the database, the queue, and the notification system"
+- "Users AND admins need different interfaces for this"
 
 ### Phase 2: Explore Approaches
 
@@ -99,6 +118,22 @@ docs/brainstorms/YYYY-MM-DD-<topic>-brainstorm.md
 2. **Proceed to planning** — Run the plan workflow (will auto-detect this brainstorm)
 3. **Done for now** — Return later
 
+### Phase 4.5: Spec Review (Optional — Subagent)
+
+If subagent dispatch is available, offer to run a spec review:
+
+"Would you like me to dispatch a spec reviewer to validate this design? This catches completeness and consistency issues before planning."
+
+If yes, use `brainstorming/spec-document-reviewer-prompt.md` template.
+
+Review loop: max **3 iterations** to converge.
+
+### Phase 4.6: Visual Companion Offer
+
+If the idea involves UI/visual components:
+
+"Would you like me to generate a visual mockup using the image generation tool? This helps validate the design before planning."
+
 ## Key Principles
 
 - **One question at a time** — Don't overwhelm with question lists
@@ -117,6 +152,10 @@ docs/brainstorms/YYYY-MM-DD-<topic>-brainstorm.md
 | "This is too simple to brainstorm" | Simple features have hidden complexity. |
 | "Let me just start coding" | Plan before code. Always. |
 | "I'll ask all my questions at once" | One at a time. Respect cognitive load. |
+| "I can code and brainstorm at the same time" | <HARD-GATE> violation. Design THEN code. |
+| "Let me scaffold the project structure first" | Structure comes from the plan, not the brainstorm. |
+| "The user seems impatient, skip to coding" | Shortcuts cost 3x in rework. |
+| "I already designed something similar before" | Every project is different. Start fresh. |
 
 ## Integration
 
@@ -124,3 +163,9 @@ docs/brainstorms/YYYY-MM-DD-<topic>-brainstorm.md
 - **writing-plans** — Creates the plan from this design
 - **knowledge-compounding** — Solutions reference brainstorm decisions
 - **ui-ux-pro-max** — Provides design intelligence when idea involves frontend
+- **spec-document-reviewer-prompt.md** — Spec review via subagent (Phase 4.5)
+- **subagent-driven-development** — Dispatches spec reviewer as subagent
+
+**This skill is governed by:**
+- `rules/skill-routing.md` — Master controller hook
+- `skills/using-gao-agent/SKILL.md` — Skill type: **RIGID** (hard gate)

@@ -52,6 +52,7 @@ Load project understanding:
 Read relevant testing skills based on detected framework:
 - `skills/unit-testing/SKILL.md` — Unit testing patterns (AAA, mocking, fixtures)
 - `skills/playwright/SKILL.md` or `skills/cypress/SKILL.md` — E2E testing (if frontend)
+- `skills/playwright-cli/SKILL.md` — CLI-based E2E testing (more token-efficient alternative)
 - `skills/security-audit/SKILL.md` — Security testing patterns
 - `skills/load-testing/SKILL.md` — Performance testing (if applicable)
 - `skills/accessibility-testing/SKILL.md` — A11y testing (if frontend)

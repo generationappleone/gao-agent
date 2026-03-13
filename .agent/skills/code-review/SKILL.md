@@ -178,5 +178,7 @@ When reviewing your own code (before asking for external review):
 - **review workflow** — Full review pipeline
 
 **This skill pairs with:**
+- **requesting-code-review** — Dispatching review requests (human or subagent)
+- **receiving-code-review** — Processing review feedback (5 response types)
 - **verification-before-completion** — Verify findings are accurate
 - **knowledge-compounding** — Document recurring review patterns

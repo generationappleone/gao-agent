@@ -143,6 +143,102 @@ vendor/
 
 ---
 
+## GitHub Templates
+
+### Pull Request Template
+
+Create `.github/PULL_REQUEST_TEMPLATE.md`:
+
+```markdown
+## Summary
+[Brief description of changes]
+
+## Type of Change
+- [ ] 🐛 Bug fix
+- [ ] ✨ New feature
+- [ ] 🔧 Refactor
+- [ ] 📚 Documentation
+- [ ] 🔒 Security patch
+
+## Checklist
+- [ ] Tests pass locally
+- [ ] Code follows project conventions
+- [ ] Self-review completed
+- [ ] Documentation updated (if applicable)
+```
+
+### Issue Templates (YAML)
+
+Create `.github/ISSUE_TEMPLATE/bug_report.yml`:
+
+```yaml
+name: 🐛 Bug Report
+description: Report a bug
+labels: [bug, triage]
+body:
+  - type: textarea
+    attributes:
+      label: Description
+      description: Clear description of the bug
+    validations:
+      required: true
+  - type: textarea
+    attributes:
+      label: Steps to Reproduce
+      value: |
+        1. Go to '...'
+        2. Click on '...'
+        3. See error
+    validations:
+      required: true
+  - type: textarea
+    attributes:
+      label: Expected Behavior
+    validations:
+      required: true
+```
+
+Create `.github/ISSUE_TEMPLATE/feature_request.yml`:
+
+```yaml
+name: ✨ Feature Request
+description: Suggest a feature
+labels: [enhancement]
+body:
+  - type: textarea
+    attributes:
+      label: Problem Statement
+      description: What problem does this solve?
+    validations:
+      required: true
+  - type: textarea
+    attributes:
+      label: Proposed Solution
+    validations:
+      required: true
+```
+
+### CONTRIBUTING.md Pattern
+
+```markdown
+# Contributing
+
+## Development Setup
+1. Fork and clone the repository
+2. Run `[install command]`
+3. Create a feature branch from `main`
+
+## Commit Convention
+We use [Conventional Commits](https://conventionalcommits.org/).
+
+## Pull Request Process
+1. Ensure tests pass
+2. Update documentation if needed
+3. Request review from maintainers
+```
+
+---
+
 ## Rules Integration
 - **Commits**: Conventional commit format
 - **Branching**: Feature branch → PR → merge

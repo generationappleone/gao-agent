@@ -11,7 +11,7 @@ Write implementation plans that are clear enough for any engineer — or AI agen
 
 **Announce:** "I'm using the writing-plans skill to create the implementation plan."
 
-**Save plans to:** `docs/plans/YYYY-MM-DD-<feature-name>-plan.md`
+**Save plans to:** `.agent/plans/PLAN-YYYY-MM-DD-<feature-name>.md`
 
 ## Phase 0: Check for Brainstorm
 
@@ -128,6 +128,42 @@ Includes everything from STANDARD plus:
 - Risk mitigation strategies
 - Documentation plan
 
+## Phase 2.5: File Structure (BEFORE Tasks)
+
+Before writing tasks, define the complete file structure:
+
+```markdown
+## File Structure
+
+### New Files
+| Path | Purpose |
+|------|--------|
+| `src/services/payment.service.ts` | Payment processing logic |
+| `tests/services/payment.test.ts` | Payment service tests |
+
+### Modified Files
+| Path | Changes |
+|------|--------|
+| `src/routes/api.ts` | Add payment routes |
+
+### Deleted Files
+| Path | Reason |
+|------|--------|
+| (none) | — |
+```
+
+**Why file structure BEFORE tasks?**
+- Prevents structural confusion during implementation
+- Makes it clear which files already exist vs. need creation
+- Enables dependency analysis between tasks
+
+### Scope Check
+
+If the file structure shows changes across **3+ distinct directories/modules**:
+1. Consider splitting into multiple plans
+2. Or clearly delineate phases within the plan
+3. Flag to user: "This plan touches N modules. Should I split into separate plans?"
+
 ## Phase 3: Write the Plan
 
 ### Bite-Sized Task Granularity
@@ -177,16 +213,29 @@ Every plan MUST start with:
 ---
 ```
 
+### Phase 3.5: Plan Review (Optional — Subagent)
+
+If subagent dispatch is available, offer to run a plan review:
+
+"Would you like me to dispatch a plan reviewer to validate this plan? This catches decomposition and completeness issues."
+
+If yes, use `writing-plans/plan-reviewer-prompt.md` template.
+
+Review loop: max **5 iterations** to converge. If not converged after 5 rounds, present current state to user for decision.
+
 ## Phase 4: Handoff
 
 After saving the plan, present execution options:
 
-**"Plan saved to `docs/plans/<filename>.md`. How would you like to proceed?"**
+**"Plan saved to `.agent/plans/<filename>.md`. How would you like to proceed?"**
 
-1. **Execute sequentially** — Work through tasks one at a time with checkpoints
-2. **Execute with swarm** — Parallel execution with multiple agents (for independent tasks)
-3. **Review and refine** — Improve the plan document
-4. **Done for now** — Come back later
+1. **Execute with SDD** — Subagent-Driven Development (preferred if subagents available AND 3+ tasks)
+2. **Execute sequentially** — Work through tasks one at a time with checkpoints
+3. **Execute with swarm** — Parallel execution with multiple agents (for independent tasks)
+4. **Review and refine** — Improve the plan document
+5. **Done for now** — Come back later
+
+> **Note:** Options 1-3 use `executing-plans` skill. Option 1 additionally uses `subagent-driven-development` skill.
 
 ## Remember
 
@@ -213,10 +262,16 @@ After saving the plan, present execution options:
 
 **This skill feeds into:**
 - **executing-plans** — Executes the plan task by task
+- **subagent-driven-development** — SDD execution mode (if subagents available)
 - **test-driven-development** — Each task follows TDD cycle
 - **ui-ux-pro-max** — Design system generation for frontend plans
+- **plan-reviewer-prompt.md** — Plan review via subagent (Phase 3.5)
 
 **Pre-flight skills (invoked conditionally):**
 - **compatibility-check** — When new dependencies introduced
 - **threat-modeling** — When auth/data/API features involved
 - **data-privacy** — When PII processing involved
+
+**This skill is governed by:**
+- `rules/skill-routing.md` — Master controller hook
+- `skills/using-gao-agent/SKILL.md` — Skill routing mandate

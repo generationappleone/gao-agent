@@ -283,6 +283,20 @@ git branch -d [branch-name] 2>&1
 git push origin --delete [branch-name] 2>&1
 ```
 
+### Step 4.5 — Branch Completion (Source of Truth)
+
+For comprehensive branch completion options, use `skills/finishing-a-development-branch/SKILL.md` which provides the full 4-option methodology:
+
+| Option | Use When |
+|--------|----------|
+| **Merge** | Standard feature completion |
+| **Squash** | Many small commits → clean history |
+| **Rebase** | Linear history preferred |
+| **Archive** | Work paused/abandoned, preserve for later |
+
+> **This workflow orchestrates WHEN to complete a branch. The skill defines HOW.**
+> See `skills/finishing-a-development-branch/SKILL.md` for the detailed process.
+
 ---
 
 ## Phase 5: Releases & Tags

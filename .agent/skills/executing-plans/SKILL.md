@@ -41,19 +41,29 @@ Break plan into actionable tasks with:
 - Testing and quality check tasks
 - Specific, completable items
 
-### 1.4 Swarm Decision (Optional)
+### 1.4 Execution Mode Selection
 
-**Only suggest swarm mode when ALL of these are true:**
-- Plan has 5+ independent tasks
-- Tasks don't share files or have tight dependencies
-- User hasn't disabled swarm mode
+Choose the execution mode:
 
-**Ask:** "This plan has [N] independent tasks. Would you like to use parallel swarm execution, or proceed sequentially?"
+| Condition | Mode | Skill |
+|-----------|------|-------|
+| Subagents available AND 3+ independent tasks | **SDD (Subagent-Driven Development)** | `subagent-driven-development` |
+| 5+ independent tasks, no shared files | **Swarm (parallel execution)** | This skill (swarm section) |
+| Default / tightly coupled tasks | **Sequential** | This skill (default) |
 
-**If user chooses swarm:**
+> **SDD is preferred** when subagents are available. Fresh context per task produces higher quality output.
+
+**If SDD selected:**
+- Switch to `subagent-driven-development` skill for execution
+- This skill handles orchestration and progress tracking
+
+**If Swarm selected:**
 - Switch to worktree mode for git
 - Create isolated workspaces per agent
 - Coordinate via task queue with dependencies
+
+**If Sequential (default):**
+- Proceed to Phase 2 below
 
 ## Phase 2: Execute
 
@@ -148,6 +158,10 @@ git commit -m "feat(scope): description of what and why"
 - Note any follow-up work needed
 - Suggest next steps (review, compound knowledge)
 
+### Branch Completion
+
+After all tasks are complete, use `finishing-a-development-branch` skill for branch completion options (merge, squash, rebase, or archive).
+
 ## Key Principles
 
 | Principle | Description |
@@ -172,12 +186,18 @@ git commit -m "feat(scope): description of what and why"
 
 **Prerequisite skills:**
 - **writing-plans** — Creates the plan this skill executes
+- **using-gao-agent** — Master controller (loaded via skill-routing rule)
 
 **Skills used during execution:**
+- **subagent-driven-development** — SDD execution mode (preferred)
 - **test-driven-development** — Each task follows TDD
 - **verification-before-completion** — Before claiming done
 - **systematic-debugging** — When things break during execution
+- **finishing-a-development-branch** — Branch completion options
 
 **This skill feeds into:**
 - **code-review** — Review completed implementation
 - **knowledge-compounding** — Document learnings
+
+**This skill is governed by:**
+- `rules/skill-routing.md` — Master controller hook

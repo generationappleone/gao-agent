@@ -409,6 +409,109 @@ npx vitest --ui
 
 ---
 
+## Shipping Mock Utilities (Library Authors)
+
+When building libraries or shared packages, co-locate mock utilities with source code so consumers can use them in their tests:
+
+### Factory Functions
+
+```typescript
+// src/test-utils/factories.ts
+import type { User, Product, Order } from '../types';
+
+export function createMockUser(overrides: Partial<User> = {}): User {
+  return {
+    id: crypto.randomUUID(),
+    name: 'Test User',
+    email: 'test@example.com',
+    role: 'user',
+    createdAt: new Date('2026-01-01'),
+    ...overrides,
+  };
+}
+
+export function createMockProduct(overrides: Partial<Product> = {}): Product {
+  return {
+    id: crypto.randomUUID(),
+    name: 'Test Product',
+    price: 10000,
+    stock: 100,
+    ...overrides,
+  };
+}
+
+export function createMockOrder(
+  items: number = 1,
+  overrides: Partial<Order> = {}
+): Order {
+  return {
+    id: crypto.randomUUID(),
+    userId: crypto.randomUUID(),
+    items: Array.from({ length: items }, () => ({
+      productId: crypto.randomUUID(),
+      quantity: 1,
+      price: 10000,
+    })),
+    total: items * 10000,
+    status: 'pending',
+    ...overrides,
+  };
+}
+```
+
+### In-Memory State Adapters
+
+```typescript
+// src/test-utils/adapters.ts
+import type { StateAdapter } from '../types';
+
+export function createInMemoryAdapter(): StateAdapter {
+  const store = new Map<string, unknown>();
+
+  return {
+    async get(key: string) { return store.get(key) ?? null; },
+    async set(key: string, value: unknown) { store.set(key, value); },
+    async delete(key: string) { store.delete(key); },
+    async clear() { store.clear(); },
+    // Expose for assertions
+    _store: store,
+  };
+}
+```
+
+### Export Pattern
+
+```json
+// package.json
+{
+  "exports": {
+    ".": "./dist/index.js",
+    "./test-utils": "./dist/test-utils/index.js"
+  }
+}
+```
+
+Consumers use:
+```typescript
+import { createMockUser, createInMemoryAdapter } from '@org/core/test-utils';
+```
+
+### Co-Location Principle
+
+```
+src/
+├── services/
+│   ├── user.service.ts
+│   └── user.service.test.ts
+├── test-utils/          ← Shipped with the package
+│   ├── factories.ts
+│   ├── adapters.ts
+│   └── index.ts         ← Re-exports all test utils
+└── index.ts
+```
+
+---
+
 ## Rules Integration
 - **Framework**: Vitest (or Jest) with coverage and globals
 - **Patterns**: AAA, mocking (vi.fn/mock/spyOn), fake timers

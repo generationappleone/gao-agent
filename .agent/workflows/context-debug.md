@@ -361,6 +361,9 @@ If similar documentation exists → UPDATE instead of creating new.
 
 ### Step 5.4 — Create Solution Document
 
+> **Process reference:** See `skills/knowledge-compounding/SKILL.md` for the full knowledge compounding methodology — cross-referencing, pattern detection, and index management.
+> The template below is debug-specific. The skill provides the authoritative capture process.
+
 Save to `docs/solutions/[YYYY-MM-DD]-[slug].md`:
 
 ```markdown

@@ -58,3 +58,8 @@ Before claiming any status or expressing satisfaction:
 - Moving to next task in a plan
 - Claiming a bug is fixed
 - Delegating work to subagents
+
+---
+
+> **For complete verification protocol, methodology, and examples, see `skills/verification-before-completion/SKILL.md`.**
+> This rule defines WHAT must happen (enforcement). The skill defines HOW to do it (methodology).

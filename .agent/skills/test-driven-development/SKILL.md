@@ -155,6 +155,22 @@ Before marking work complete:
 
 Can't check all boxes? You skipped TDD. Start over.
 
+## Anti-Patterns Reference
+
+See `test-driven-development/testing-anti-patterns.md` for 5 common testing anti-patterns with gate functions:
+
+1. **Testing mock behavior** — Verify real logic, not mock configuration
+2. **Test-only methods** — Don't add production methods just for tests
+3. **Mocking without understanding** — Know WHY you mock each dependency
+4. **Incomplete mocks** — Cover failure modes, not just happy path
+5. **Integration tests as afterthought** — At least one real-chain test per feature
+
+## The Letter of the Law
+
+> **"Violating the letter of the rules is violating the spirit of the rules."**
+
+If you find yourself thinking "technically this counts as TDD because..." — you're violating TDD. The discipline is the point. Finding loopholes defeats the purpose.
+
 ## Integration
 
 **Used by:**
@@ -163,3 +179,9 @@ Can't check all boxes? You skipped TDD. Start over.
 
 **This skill pairs with:**
 - **verification-before-completion** — Verify tests actually pass before claiming done
+- **testing-anti-patterns.md** — Reference for common testing mistakes
+
+**This skill is governed by:**
+- `rules/adaptive-tdd.md` — TDD enforcement rule
+- `rules/skill-routing.md` — Master controller hook
+- `skills/using-gao-agent/SKILL.md` — Skill type: **RIGID** (in strict mode)

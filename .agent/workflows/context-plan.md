@@ -34,6 +34,8 @@ The user triggers this workflow by:
 > - Small bug fixes with clear reproduction steps
 > - Direct tasks ("add field X to model Y")
 > - User explicitly says "skip brainstorm"
+>
+> **⚠️ HARD GATE:** When brainstorming IS invoked (not skipped), the `<HARD-GATE>` in `skills/brainstorming/SKILL.md` takes full precedence: **NO CODE until design is approved.** The skip logic above only determines WHETHER to brainstorm, not whether the brainstorming process can be shortcut.
 
 ### Step 0.1 — Load Planning Skills & Mandatory Rules
 // turbo
