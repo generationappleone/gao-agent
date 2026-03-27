@@ -51,11 +51,13 @@ Load project understanding:
 // turbo
 Read relevant testing skills based on detected framework:
 - `skills/unit-testing/SKILL.md` — Unit testing patterns (AAA, mocking, fixtures)
-- `skills/playwright/SKILL.md` or `skills/cypress/SKILL.md` — E2E testing (if frontend)
+- `skills/playwright/SKILL.md` — E2E browser testing (**MANDATORY** for web — see `rules/web-testing.md`)
 - `skills/playwright-cli/SKILL.md` — CLI-based E2E testing (more token-efficient alternative)
 - `skills/security-audit/SKILL.md` — Security testing patterns
 - `skills/load-testing/SKILL.md` — Performance testing (if applicable)
 - `skills/accessibility-testing/SKILL.md` — A11y testing (if frontend)
+
+> ⚠️ **Rule: `web-testing.md`** — ALL web-based E2E testing MUST use Playwright. Do NOT use Cypress or Puppeteer.
 
 ### Step 1.2 — Load Related Plan (If Applicable)
 
@@ -126,8 +128,7 @@ Tools that can be installed and run directly by the agent:
 
 | Tool | Purpose | Status | Install Command | Skill |
 |------|---------|--------|----------------|-------|
-| Playwright | E2E/browser testing | ✅/❌ | `npm i -D @playwright/test` | playwright |
-| Cypress | E2E/component testing | ✅/❌ | `npm i -D cypress` | cypress |
+| Playwright | E2E/browser testing (**MANDATORY**) | ✅/❌ | `npm i -D @playwright/test && npx playwright install --with-deps chromium` | playwright |
 | Artillery | Load/performance testing | ✅/❌ | `npm i -D artillery` | load-testing |
 | Autocannon | HTTP benchmarking | ✅/❌ | `npm i -D autocannon` | load-testing |
 | k6 | Scriptable load testing | ✅/❌ | `choco install k6` / binary | load-testing |
@@ -183,10 +184,12 @@ If required tools are missing:
 ### 🟢 Auto-Install (Agent can install directly)
 | # | Tool | Purpose | Command |
 |---|------|---------|--------|
-| 1 | Playwright | E2E testing | `npm i -D @playwright/test && npx playwright install` |
+| 1 | Playwright (**MANDATORY**) | E2E testing | `npm i -D @playwright/test && npx playwright install --with-deps chromium` |
 | 2 | Artillery | Load testing | `npm i -D artillery` |
 | 3 | pa11y | Accessibility | `npm i -D pa11y` |
 | ... | ... | ... | ... |
+
+> ⚠️ **Playwright is always auto-installed** if missing (per `rules/web-testing.md`). The install command is OS-aware — `--with-deps` handles system dependencies on Windows, macOS, and Debian/Ubuntu.
 
 → **May I install these now?** (Yes / No / Select specific ones)
 
@@ -733,9 +736,21 @@ jmeter -n -t test-plan.jmx -l results.jtl -e -o report/ 2>&1 | tail -30
 
 ## Phase 7: UI/UX Testing (If Frontend Exists)
 
-### Step 7.1 — E2E Browser Testing (Skills: playwright, cypress)
+### Step 7.1 — E2E Browser Testing (Playwright — MANDATORY)
 
-Read the relevant skill BEFORE running:
+> ⚠️ **Rule: `web-testing.md`** — ALL web-based E2E testing MUST use Playwright.
+
+**Pre-flight: Auto-install Playwright if missing (OS-aware)**
+```bash
+# Check if Playwright is installed
+npx playwright --version 2>&1
+
+# If NOT installed, install with OS-appropriate command:
+# Windows (PowerShell): npm install -D @playwright/test; npx playwright install --with-deps chromium
+# macOS/Linux (Bash):   npm install -D @playwright/test && npx playwright install --with-deps chromium
+```
+
+Read `skills/playwright/SKILL.md` BEFORE running:
 
 ```bash
 # ─── Playwright (Skill: playwright) ───
@@ -744,10 +759,6 @@ npx playwright test --project=chromium 2>&1 | tail -30
 npx playwright test --project=firefox 2>&1 | tail -30
 npx playwright test --project=webkit 2>&1 | tail -30
 npx playwright show-report    # view HTML report
-
-# ─── Cypress (Skill: cypress) ───
-npx cypress run 2>&1 | tail -30
-npx cypress run --browser chrome 2>&1 | tail -30
 ```
 
 ### Step 7.2 — Cross-Browser Testing (Skill: cross-browser-testing)

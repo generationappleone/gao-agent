@@ -155,6 +155,7 @@ All rules are MANDATORY during execution:
 - `dependency-management.md` — Dependency vetting
 - `iso-27000-compliance.md` — Compliance
 - `ui-ux-design.md` — UI/UX standards (if frontend work)
+- `web-testing.md` — **Playwright mandatory** for all web-based E2E testing
 
 ---
 
@@ -409,6 +410,27 @@ npm audit --production 2>&1 | tail -20
 composer audit 2>&1 | tail -20
 ```
 
+#### F2. Playwright E2E Smoke Test (If Web Application — MANDATORY per `web-testing.md`)
+// turbo
+If the project is a web application, run Playwright browser smoke test:
+
+```bash
+# Pre-flight: Check if Playwright is installed
+npx playwright --version 2>&1
+
+# If NOT installed, auto-install (OS-aware):
+# Windows:     npm install -D @playwright/test; npx playwright install --with-deps chromium
+# macOS/Linux: npm install -D @playwright/test && npx playwright install --with-deps chromium
+
+# Run E2E tests (if test files exist)
+npx playwright test 2>&1 | tail -30
+
+# Or minimal smoke test if no test files exist:
+# Verify the app loads in a real browser via playwright-cli
+```
+
+> ⚠️ See `rules/web-testing.md` for full auto-install protocol and OS detection.
+
 #### G. Inter-Sprint Test Report
 
 After all checks, show the report:
@@ -423,6 +445,7 @@ After all checks, show the report:
 🚀 App Startup:     ✅ Running / ❌ CRASHED
 🗄️ DB Migrations:   ✅ Clean / ❌ PENDING/FAILED
 🔒 Security Audit:  ✅ No vulnerabilities / ⚠️ [X] found
+🌐 Playwright E2E:  ✅ Passing / ❌ FAILED / ⏭️ Skipped (not web app)
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 🟢 ALL CHECKS PASSED → Proceeding to next task/sprint...
@@ -509,6 +532,15 @@ npm run lint 2>&1 | tail -30
 4. **Security audit:**
 ```bash
 npm audit 2>&1 | tail -20
+```
+
+5. **Playwright E2E final verification (if web app — per `rules/web-testing.md`):**
+```bash
+# Auto-install if missing (see rules/web-testing.md for OS-aware protocol)
+npx playwright --version 2>&1 || npm install -D @playwright/test && npx playwright install --with-deps chromium
+
+# Run full E2E suite
+npx playwright test 2>&1 | tail -30
 ```
 
 ### Step 4.2 — Update Context Documentation
