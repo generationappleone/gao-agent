@@ -1,0 +1,59 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-settings.json",
+  "permissions": {
+    "allow": [
+      "Bash(ls:*)",
+      "Bash(find:*)",
+      "Bash(cat:*)",
+      "Bash(head:*)",
+      "Bash(tail:*)",
+      "Bash(wc:*)",
+      "Bash(echo:*)",
+      "Bash(pwd)",
+      "Bash(tree:*)",
+
+      "Bash(git status:*)",
+      "Bash(git log:*)",
+      "Bash(git diff:*)",
+      "Bash(git show:*)",
+      "Bash(git branch:*)",
+      "Bash(git remote:*)",
+      "Bash(git rev-parse:*)",
+      "Bash(git ls-files:*)",
+      "Bash(git config --get:*)",
+
+      "Bash(node --version)",
+      "Bash(npm --version)",
+      "Bash(npm list:*)",
+      "Bash(npm outdated:*)",
+      "Bash(npm view:*)",
+      "Bash(npx --version)",
+      "Bash(pnpm --version)",
+      "Bash(yarn --version)",
+
+      "Bash(php --version)",
+      "Bash(composer --version)",
+      "Bash(composer show:*)",
+      "Bash(composer outdated:*)",
+
+      "Bash(python --version)",
+      "Bash(python3 --version)",
+      "Bash(pip --version)",
+      "Bash(pip list:*)",
+
+      "Bash(go version)",
+      "Bash(java -version)",
+      "Bash(dotnet --version)",
+      "Bash(ruby --version)",
+      "Bash(rustc --version)",
+      "Bash(cargo --version)",
+
+      "Bash(docker --version)",
+      "Bash(docker ps:*)",
+      "Bash(docker images:*)",
+
+      "Bash(claude mcp list:*)",
+      "Bash(claude mcp get:*)"
+    ]
+  }
+}

@@ -194,6 +194,20 @@ git clone https://github.com/generationappleone/gao-agent.git
 cp -r gao-agent/.agent /path/to/your-project/.agent
 ```
 
+##### Step 1a (Claude Code only): Copy the Claude adapter
+
+Claude Code reads `CLAUDE.md` at project root and slash commands from `.claude/commands/`, not `.agent/AGENTS.md` and `.agent/workflows/`. The repo ships a thin adapter layer that bridges Claude Code to the same `.agent/` source of truth — no duplication, single set of files to maintain.
+
+```bash
+# Copy the bridge files alongside .agent/
+cp gao-agent/CLAUDE.md /path/to/your-project/CLAUDE.md
+cp -r gao-agent/.claude /path/to/your-project/.claude
+```
+
+After this step Claude Code recognizes all 19 `/context-*` slash commands. Each command in `.claude/commands/` is a wrapper that delegates to the matching `.agent/workflows/context-*.md` file. The cross-platform translation layer (e.g. `// turbo` → auto-proceed, Antigravity tool names → Claude tools, skill access via `.agent/skills/<name>/SKILL.md` paths) is documented in `CLAUDE.md`.
+
+> **Antigravity / Cursor / Windsurf / Gemini CLI users:** Skip Step 1a. Those clients read `.agent/AGENTS.md` and `.agent/workflows/` natively.
+
 #### Step 2: Initialize Project Context
 
 ```

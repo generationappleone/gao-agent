@@ -7,6 +7,9 @@
 .vscode/mcp.json
 .cursor/mcp.json
 
+# ----- Claude Code per-user local settings -----
+.claude/settings.local.json
+
 # ----- Environment variables (NEVER commit secrets) -----
 .env
 .env.local
